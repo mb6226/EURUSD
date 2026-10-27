@@ -1,0 +1,117 @@
+name: Download 1 Year EURUSD M1 OHLCV (Dukascopy)
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_date:
+        description: "Start date UTC (YYYY-MM-DD). Leave blank for one year ago."
+        required: false
+        type: string
+        default: ""
+      to_date:
+        description: "End date UTC, exclusive (YYYY-MM-DD). Leave blank for today."
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: download-eurusd-m1
+  cancel-in-progress: false
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip pandas
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: ""
+
+      - name: Resolve UTC date range
+        id: dates
+        env:
+          INPUT_FROM: ${{ inputs.from_date }}
+          INPUT_TO: ${{ inputs.to_date }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TO_DATE="${INPUT_TO:-$(date -u +%F)}"
+          FROM_DATE="${INPUT_FROM:-$(date -u -d "$TO_DATE - 1 year" +%F)}"
+          if [[ ! "$FROM_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ || ! "$TO_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Dates must use YYYY-MM-DD." >&2
+            exit 1
+          fi
+          if [[ "$FROM_DATE" > "$TO_DATE" || "$FROM_DATE" == "$TO_DATE" ]]; then
+            echo "from_date must be earlier than to_date." >&2
+            exit 1
+          fi
+          echo "from_date=$FROM_DATE" >> "$GITHUB_OUTPUT"
+          echo "to_date=$TO_DATE" >> "$GITHUB_OUTPUT"
+          echo "Downloading UTC range $FROM_DATE to $TO_DATE (end date exclusive)."
+
+      - name: Download and merge Dukascopy bid/ask M1 candles
+        run: |
+          python scripts/download_eurusd_data.py \
+            --from "${{ steps.dates.outputs.from_date }}" \
+            --to "${{ steps.dates.outputs.to_date }}" \
+            --output data/eurusd_m1.csv
+
+      - name: Validate downloaded data
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+          p = Path("data/eurusd_m1.csv")
+          df = pd.read_csv(p)
+          required = {"timestamp", "bid_open", "bid_high", "bid_low", "bid_close",
+                      "ask_open", "ask_high", "ask_low", "ask_close"}
+          missing = required - set(df.columns)
+          if missing:
+              raise SystemExit(f"Missing columns: {sorted(missing)}")
+          if len(df) < 1000:
+              raise SystemExit(f"Unexpectedly few candles: {len(df)}")
+          if df["timestamp"].duplicated().any():
+              raise SystemExit("Duplicate timestamps found.")
+          print(f"Validated {len(df):,} candles; {p.stat().st_size / 1024 / 1024:.1f} MiB")
+          print(f"First: {df.timestamp.iloc[0]}")
+          print(f"Last:  {df.timestamp.iloc[-1]}")
+          PY
+
+      - name: Upload CSV as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eurusd-dukascopy-m1-${{ steps.dates.outputs.from_date }}-to-${{ steps.dates.outputs.to_date }}
+          path: data/eurusd_m1.csv
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write workflow summary
+        if: always()
+        env:
+          FROM_DATE: ${{ steps.dates.outputs.from_date }}
+          TO_DATE: ${{ steps.dates.outputs.to_date }}
+        run: |
+          {
+            echo "## EURUSD M1 Dukascopy download"
+            echo "- Source: Dukascopy via dukascopy-node"
+            echo "- UTC range: ${FROM_DATE:-unknown} to ${TO_DATE:-unknown} (end date exclusive)"
+            echo "- Output: `data/eurusd_m1.csv` (Bid and Ask OHLCV)"
+            echo "- The CSV is uploaded as a 30-day workflow artifact; it is not committed to Git."
+          } >> "$GITHUB_STEP_SUMMARY"
