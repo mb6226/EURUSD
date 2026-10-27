@@ -1,0 +1,66 @@
+name: EURUSD precision research
+on:
+  workflow_dispatch:
+    inputs:
+      signal:
+        description: Baseline signal family
+        required: true
+        type: choice
+        options: [both, momentum, breakout]
+        default: both
+      train_cutoff:
+        description: Optional UTC cutoff date YYYY-MM-DD
+        required: false
+        type: string
+  push:
+    paths:
+      - scripts/**
+      - .github/workflows/eurusd-backtest.yml
+      - data/**
+permissions:
+  contents: read
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Check for input data
+        id: data
+        shell: bash
+        run: |
+          if [ -f data/eurusd_m1.csv ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Explain missing market data
+        if: steps.data.outputs.found != 'true'
+        run: |
+          echo "::warning::Add a licensed EURUSD M1 CSV at data/eurusd_m1.csv to run the analysis."
+          echo "Required columns: timestamp,open,high,low,close; optional executable bid_/ask_ OHLC columns."
+      - name: Run backtest
+        if: steps.data.outputs.found == 'true'
+        env:
+          SIGNAL: \${{ inputs.signal || 'both' }}
+          CUTOFF: \${{ inputs.train_cutoff }}
+        shell: bash
+        run: |
+          args=(--input data/eurusd_m1.csv --output reports/results.csv --spread-pips 1 --signal "$SIGNAL")
+          if [ -n "$CUTOFF" ]; then args+=(--train-cutoff "$CUTOFF"); fi
+          python scripts/backtest.py "\${args[@]}"
+      - name: Analyze time-of-day and excursions
+        if: steps.data.outputs.found == 'true'
+        run: python scripts/find_patterns.py --input data/eurusd_m1.csv --output reports/pattern_diagnostics.csv
+      - name: Upload reports
+        if: steps.data.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eurusd-research-results
+          path: reports/*.csv
+          if-no-files-found: error
