@@ -33,16 +33,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
-      - name: Install Python dependencies
-        run: python -m pip install --upgrade pip pandas
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: ""
+      - name: Install downloader and validation dependencies
+        run: python -m pip install --upgrade pip pandas pyarrow dukascopy-downloader
 
       - name: Resolve UTC date range
         id: dates
@@ -66,7 +59,7 @@ jobs:
           echo "to_date=$TO_DATE" >> "$GITHUB_OUTPUT"
           echo "Downloading UTC range $FROM_DATE to $TO_DATE (end date exclusive)."
 
-      - name: Download and merge Dukascopy bid/ask M1 candles
+      - name: Download and export Dukascopy bid/ask M1 candles
         run: |
           python scripts/download_eurusd_data.py \
             --from "${{ steps.dates.outputs.from_date }}" \
@@ -110,8 +103,8 @@ jobs:
         run: |
           {
             echo "## EURUSD M1 Dukascopy download"
-            echo "- Source: Dukascopy via dukascopy-node"
+            echo "- Source: Dukascopy via dukascopy-downloader (Python client)"
             echo "- UTC range: ${FROM_DATE:-unknown} to ${TO_DATE:-unknown} (end date exclusive)"
-            echo "- Output: `data/eurusd_m1.csv` (Bid and Ask OHLCV)"
+            echo "- Output: data/eurusd_m1.csv (Bid and Ask OHLCV)"
             echo "- The CSV is uploaded as a 30-day workflow artifact; it is not committed to Git."
           } >> "$GITHUB_STEP_SUMMARY"
