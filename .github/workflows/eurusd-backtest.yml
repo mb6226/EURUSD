@@ -47,13 +47,13 @@ jobs:
       - name: Run backtest
         if: steps.data.outputs.found == 'true'
         env:
-          SIGNAL: \${{ inputs.signal || 'both' }}
-          CUTOFF: \${{ inputs.train_cutoff }}
+          SIGNAL: ${{ inputs.signal || 'both' }}
+          CUTOFF: ${{ inputs.train_cutoff }}
         shell: bash
         run: |
           args=(--input data/eurusd_m1.csv --output reports/results.csv --spread-pips 1 --signal "$SIGNAL")
           if [ -n "$CUTOFF" ]; then args+=(--train-cutoff "$CUTOFF"); fi
-          python scripts/backtest.py "\${args[@]}"
+          python scripts/backtest.py "${args[@]}"
       - name: Analyze time-of-day and excursions
         if: steps.data.outputs.found == 'true'
         run: python scripts/find_patterns.py --input data/eurusd_m1.csv --output reports/pattern_diagnostics.csv
