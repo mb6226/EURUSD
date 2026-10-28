@@ -19,46 +19,65 @@ on:
       - data/**
 permissions:
   contents: read
+  actions: read
 jobs:
   backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install -r requirements.txt
-      - name: Check for input data
-        id: data
+      - name: Install analysis dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Download latest successful EURUSD M1 data artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if [ -f data/eurusd_m1.csv ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          artifact="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" --jq '[.artifacts[] | select(.name | startswith("eurusd-dukascopy-m1-")) | select(.expired == false)] | sort_by(.created_at) | last // empty')"
+          if [ -z "$artifact" ]; then
+            echo "::error::No unexpired EURUSD M1 data artifact found. Run the download-eurusd-m1 workflow first."
+            exit 1
           fi
-      - name: Explain missing market data
-        if: steps.data.outputs.found != 'true'
+          artifact_name="$(jq -r .name <<< "$artifact")"
+          run_id="$(jq -r .workflow_run.id <<< "$artifact")"
+          echo "Using artifact: $artifact_name (run $run_id)"
+          mkdir -p data
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact_name" --dir data
+          test -s data/eurusd_m1.csv
+          echo "Input file: data/eurusd_m1.csv"
+      - name: Validate data and show range
         run: |
-          echo "::warning::Add a licensed EURUSD M1 CSV at data/eurusd_m1.csv to run the analysis."
-          echo "Required columns: timestamp,open,high,low,close; optional executable bid_/ask_ OHLC columns."
-      - name: Run backtest
-        if: steps.data.outputs.found == 'true'
+          python - <<'PY'
+          import pandas as pd
+          p = "data/eurusd_m1.csv"
+          d = pd.read_csv(p)
+          required = {"timestamp", "bid_open", "bid_high", "bid_low", "bid_close",
+                      "ask_open", "ask_high", "ask_low", "ask_close"}
+          missing = required - set(d.columns)
+          if missing:
+              raise SystemExit(f"Missing required Bid/Ask columns: {sorted(missing)}")
+          d["timestamp"] = pd.to_datetime(d["timestamp"], utc=True)
+          if d["timestamp"].duplicated().any():
+              raise SystemExit("Duplicate timestamps found")
+          print(f"Rows: {len(d):,}; first: {d.timestamp.min()}; last: {d.timestamp.max()}")
+          PY
+      - name: Run baseline backtests
         env:
           SIGNAL: ${{ inputs.signal || 'both' }}
           CUTOFF: ${{ inputs.train_cutoff }}
         shell: bash
         run: |
-          args=(--input data/eurusd_m1.csv --output reports/results.csv --spread-pips 1 --signal "$SIGNAL")
+          args=(--input data/eurusd_m1.csv --output reports/results.csv --summary-output reports/summary.csv --spread-pips 1 --signal "$SIGNAL")
           if [ -n "$CUTOFF" ]; then args+=(--train-cutoff "$CUTOFF"); fi
           python scripts/backtest.py "${args[@]}"
-      - name: Analyze time-of-day and excursions
-        if: steps.data.outputs.found == 'true'
+      - name: Analyze time-of-day and future excursions
         run: python scripts/find_patterns.py --input data/eurusd_m1.csv --output reports/pattern_diagnostics.csv
       - name: Upload reports
-        if: steps.data.outputs.found == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: eurusd-research-results
