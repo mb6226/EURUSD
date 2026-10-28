@@ -34,7 +34,7 @@ def add_context(df):
     return pd.merge_asof(
         df.sort_values("timestamp"),
         m5[["timestamp", "m5_trend", "m5_range_pips"]].sort_values("timestamp"),
-        on="timestamp", direction="backward", allow_exact_matches=False,
+        on="timestamp", direction="backward", allow_exact_matches=True,
     )
 
 
