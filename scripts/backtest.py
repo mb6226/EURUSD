@@ -38,7 +38,7 @@ def add_context(df):
     )
 
 
-def run(df, family, spread):
+def run(df, family, spread, sl_pips=5.0, tp_pips=50.0):
     df = add_context(df)
     df["prev_up"] = df.close.shift(1) > df.open.shift(1)
     df["prev_down"] = df.close.shift(1) < df.open.shift(1)
@@ -62,8 +62,8 @@ def run(df, family, spread):
         ei = i + 1
         b = df.iloc[ei]
         entry = float(b.ask_open if side == "BUY" else b.bid_open) if has_ba else float(b.open) + (spread * PIP / 2 if side == "BUY" else -spread * PIP / 2)
-        sl = entry + (-2 if side == "BUY" else 2) * PIP
-        tp = entry + (200 if side == "BUY" else -200) * PIP
+        sl = entry + (-sl_pips if side == "BUY" else sl_pips) * PIP
+        tp = entry + (tp_pips if side == "BUY" else -tp_pips) * PIP
         result, exit_price, exit_time, xi = "OPEN_AT_END", float("nan"), pd.NaT, len(df) - 1
         for j in range(ei, len(df)):
             bar = df.iloc[j]
@@ -130,6 +130,8 @@ def main():
     p.add_argument("--output", default="reports/results.csv")
     p.add_argument("--summary-output", default="reports/summary.csv")
     p.add_argument("--spread-pips", type=float, default=1.0)
+    p.add_argument("--sl-pips", type=float, default=5.0)
+    p.add_argument("--tp-pips", type=float, default=50.0)
     p.add_argument("--signal", choices=["both", "momentum", "breakout"], default="both")
     p.add_argument("--train-cutoff", default="")
     a = p.parse_args()
@@ -137,7 +139,7 @@ def main():
     if len(df) < 100:
         raise SystemExit("Not enough M1 bars.")
     families = ["momentum", "breakout"] if a.signal == "both" else [a.signal]
-    r = pd.concat([run(df.copy(), f, a.spread_pips) for f in families], ignore_index=True)
+    r = pd.concat([run(df.copy(), f, a.spread_pips, a.sl_pips, a.tp_pips) for f in families], ignore_index=True)
     if a.train_cutoff:
         cutoff = pd.Timestamp(a.train_cutoff, tz="UTC")
         r["period"] = r.entry_time.map(lambda t: "train" if t < cutoff else "test")
@@ -146,7 +148,7 @@ def main():
     s = summarize(r)
     Path(a.summary_output).parent.mkdir(parents=True, exist_ok=True)
     s.to_csv(a.summary_output, index=False)
-    print(f"Bars: {len(df):,}; signal timeframe: M1; context/filter: completed M5 candle; spread: {a.spread_pips:g} pip")
+    print(f"Bars: {len(df):,}; signal timeframe: M1; context/filter: completed M5 candle; spread: {a.spread_pips:g} pip; SL: {a.sl_pips:g} pips; TP: {a.tp_pips:g} pips")
     if s.empty:
         print("No trades generated.")
     else:
