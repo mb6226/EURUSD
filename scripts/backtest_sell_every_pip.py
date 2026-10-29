@@ -107,7 +107,7 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0):
             else:
                 still.append(t)
         active = still
-        max_open = max(max_open, len(active))
+        max_open = max(max_open, sum(t["outcome"] == "OPEN" for t in active))
 
     for t in active:
         t["outcome"] = "OPEN_AT_END"
