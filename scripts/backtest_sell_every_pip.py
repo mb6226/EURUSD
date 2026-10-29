@@ -61,7 +61,7 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0):
         # A crossing creates one independent sell per full pip crossed.
         close = float(bar.bid_close)
         delta = close - anchor
-        steps = int(math.floor(abs(delta) / (step_pips * PIP) + 1e-9))
+        steps = int(math.floor(abs(delta) / (step_pips * PIP) + 1e-9)) if i < len(d) - 1 else 0
         if steps:
             direction = 1 if delta > 0 else -1
             total_triggers += steps
