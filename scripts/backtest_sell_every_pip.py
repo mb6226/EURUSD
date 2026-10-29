@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Backtest a sell-on-each-1-pip-price-move grid on EURUSD M1 Bid/Ask candles.
+"""Backtest EURUSD sell-limit grid on M1 Bid/Ask candles.
 
-Approximation: a trigger is detected from consecutive M1 closes. Each crossed
-1-pip threshold schedules one SELL for the next candle's Bid open. Every
-position is independent, with a 2-pip stop and 60-pip target. Intrabar
-SL/TP collisions are resolved conservatively as SL.
+A fixed grid is spaced every step_pips. A level becomes eligible only after
+Bid has fallen at least arm_drop_pips below it; then a SELL LIMIT is placed at
+that level and remains pending until filled. At most one pending order or open
+position may exist at a level. After a trade closes, that level cannot arm
+again until price has returned to the level, then fallen the required distance
+again. SL/TP collisions within one candle are resolved as SL conservatively.
 """
 import argparse
-from pathlib import Path
 import math
+from pathlib import Path
+
 import pandas as pd
 
 PIP = 0.0001
@@ -28,131 +31,180 @@ def load_data(path):
     return d
 
 
-def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0):
-    active = []
+def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0, arm_drop_pips=60.0):
+    step = step_pips * PIP
+    arm_drop = arm_drop_pips * PIP
+    first = float(d.iloc[0].bid_close)
+    low_all = float(d.bid_low.min())
+    high_all = float(d.bid_high.max())
+    # Fixed price levels, aligned to the first observed price and spaced evenly.
+    low_idx = math.floor((low_all - arm_drop - first) / step) - 1
+    high_idx = math.ceil((high_all - first) / step) + 1
+    levels = {k: {
+        "level": first + k * step,
+        "state": "READY",  # READY, PENDING, OPEN, WAIT_RESET
+        "armed_time": pd.NaT,
+        "entry_time": pd.NaT,
+        "entry_i": None,
+        "entry": math.nan,
+        "stop": math.nan,
+        "target": math.nan,
+        "trade_no": 0,
+    } for k in range(low_idx, high_idx + 1)}
+
     trades = []
-    anchor = float(d.iloc[0].bid_close)
+    total_armed = 0
+    total_filled = 0
     max_open = 0
-    total_triggers = 0
 
     for i in range(1, len(d)):
         bar = d.iloc[i]
         ts = bar.timestamp
-        remaining = []
-        # Resolve all previously opened positions using executable ASK prices
-        # to close short positions.
-        for t in active:
-            sl_hit = float(bar.ask_high) >= t["stop"]
-            tp_hit = float(bar.ask_low) <= t["target"]
-            if sl_hit or tp_hit:
-                if sl_hit:  # conservative if both levels were touched in one M1 bar
-                    outcome, exit_price = ("SL_AMBIGUOUS_CONSERVATIVE" if tp_hit else "SL"), t["stop"]
-                else:
-                    outcome, exit_price = "TP", t["target"]
-                t.update(exit_time=ts, exit_price=exit_price, outcome=outcome,
-                         pnl_pips=(t["entry"] - exit_price) / PIP,
-                         bars_held=i - t["entry_i"])
-                trades.append(t)
-            else:
-                remaining.append(t)
-        active = remaining
+        bid_o, bid_h, bid_l = float(bar.bid_open), float(bar.bid_high), float(bar.bid_low)
+        ask_h, ask_l = float(bar.ask_high), float(bar.ask_low)
 
-        # Detect threshold crossings using the previous close-to-close move.
-        # A crossing creates one independent sell per full pip crossed.
-        close = float(bar.bid_close)
-        delta = close - anchor
-        steps = int(math.floor(abs(delta) / (step_pips * PIP) + 1e-9)) if i < len(d) - 1 else 0
-        if steps:
-            direction = 1 if delta > 0 else -1
-            total_triggers += steps
-            for k in range(steps):
-                # The threshold is recorded for audit; execution is next M1 open.
-                level = anchor + direction * (k + 1) * step_pips * PIP
-                active.append({
-                    "signal_time": ts,
-                    "entry_time": pd.NaT,
-                    "trigger_level": level,
-                    "entry": math.nan, "stop": math.nan, "target": math.nan,
-                    "exit_time": pd.NaT, "exit_price": math.nan, "outcome": "PENDING",
-                    "pnl_pips": math.nan, "bars_held": math.nan, "entry_i": i + 1,
-                    "direction": "SELL",
-                })
-            anchor += direction * steps * step_pips * PIP
-
-        # Pending entries from the prior candle are filled at this candle's Bid open.
-        # New triggers at this candle's close remain pending until next candle.
-        for t in active:
-            if t["outcome"] == "PENDING" and t["entry_i"] == i:
-                entry = float(bar.bid_open)
-                t.update(entry_time=ts, entry=entry, stop=entry + sl_pips * PIP,
-                         target=entry - tp_pips * PIP, outcome="OPEN")
-        # Any entries scheduled for this bar should be checked against its range.
-        still = []
-        for t in active:
-            if t["outcome"] != "OPEN":
-                still.append(t)
+        # 1) Manage positions that were already open before this candle.
+        for info in levels.values():
+            if info["state"] != "OPEN":
                 continue
-            # Entry is at this candle open, so its later high/low can hit SL or TP.
-            sl_hit = float(bar.ask_high) >= t["stop"]
-            tp_hit = float(bar.ask_low) <= t["target"]
-            if sl_hit or tp_hit:
-                if sl_hit:
-                    outcome, exit_price = ("SL_AMBIGUOUS_CONSERVATIVE" if tp_hit else "SL"), t["stop"]
-                else:
-                    outcome, exit_price = "TP", t["target"]
-                t.update(exit_time=ts, exit_price=exit_price, outcome=outcome,
-                         pnl_pips=(t["entry"] - exit_price) / PIP,
-                         bars_held=i - t["entry_i"])
-                trades.append(t)
+            sl_hit = ask_h >= info["stop"]
+            tp_hit = ask_l <= info["target"]
+            if not (sl_hit or tp_hit):
+                continue
+            if sl_hit:
+                outcome = "SL_AMBIGUOUS_CONSERVATIVE" if tp_hit else "SL"
+                exit_price = info["stop"]
             else:
-                still.append(t)
-        active = still
-        max_open = max(max_open, sum(t["outcome"] == "OPEN" for t in active))
+                outcome, exit_price = "TP", info["target"]
+            trades.append({
+                "level": info["level"], "signal_time": info["armed_time"],
+                "entry_time": info["entry_time"], "entry": info["entry"],
+                "stop": info["stop"], "target": info["target"],
+                "exit_time": ts, "exit_price": exit_price, "outcome": outcome,
+                "pnl_pips": (info["entry"] - exit_price) / PIP,
+                "bars_held": i - info["entry_i"], "direction": "SELL",
+                "trade_number_at_level": info["trade_no"],
+            })
+            info.update(state="WAIT_RESET", entry_time=pd.NaT, entry_i=None,
+                        entry=math.nan, stop=math.nan, target=math.nan)
 
-    for t in active:
-        t["outcome"] = "OPEN_AT_END"
-        t["exit_time"] = pd.NaT
-        t["exit_price"] = math.nan
-        t["pnl_pips"] = math.nan
-        t["bars_held"] = len(d) - 1 - t["entry_i"]
-        t.pop("entry_i", None)
-    # Remove internal field for closed positions too.
-    for t in trades:
-        t.pop("entry_i", None)
-    result = pd.DataFrame(trades + active)
-    if not result.empty:
-        result = result.drop(columns=[], errors="ignore")
-    return result, total_triggers, max_open
+        # 2) Fill pending sell limits armed on an earlier candle.
+        # Sell limits execute at the limit, or at a better price if the market
+        # opens above the limit. The OHLC data cannot reveal exact intrabar order.
+        for info in levels.values():
+            if info["state"] != "PENDING":
+                continue
+            level = info["level"]
+            if bid_o >= level:
+                entry = bid_o
+            elif bid_h >= level:
+                entry = level
+            else:
+                continue
+            info.update(state="OPEN", entry_time=ts, entry_i=i, entry=entry,
+                        stop=entry + sl_pips * PIP, target=entry - tp_pips * PIP)
+            total_filled += 1
+
+        # 3) Check positions filled this candle against its remaining OHLC range.
+        # Conservative handling: if both SL and TP are touched, count SL.
+        for info in levels.values():
+            if info["state"] != "OPEN" or info["entry_i"] != i:
+                continue
+            sl_hit = ask_h >= info["stop"]
+            tp_hit = ask_l <= info["target"]
+            if not (sl_hit or tp_hit):
+                continue
+            if sl_hit:
+                outcome = "SL_AMBIGUOUS_CONSERVATIVE" if tp_hit else "SL"
+                exit_price = info["stop"]
+            else:
+                outcome, exit_price = "TP", info["target"]
+            trades.append({
+                "level": info["level"], "signal_time": info["armed_time"],
+                "entry_time": info["entry_time"], "entry": info["entry"],
+                "stop": info["stop"], "target": info["target"],
+                "exit_time": ts, "exit_price": exit_price, "outcome": outcome,
+                "pnl_pips": (info["entry"] - exit_price) / PIP,
+                "bars_held": 0, "direction": "SELL",
+                "trade_number_at_level": info["trade_no"],
+            })
+            info.update(state="WAIT_RESET", entry_time=pd.NaT, entry_i=None,
+                        entry=math.nan, stop=math.nan, target=math.nan)
+
+        # 4) A closed level must first recover to its level before it can be
+        # armed again. Do not re-arm on the same candle as the reset.
+        for info in levels.values():
+            if info["state"] == "WAIT_RESET" and bid_h >= info["level"]:
+                info["state"] = "READY"
+
+        # 5) Arm levels only after Bid has dropped the full required distance.
+        # Newly armed limits cannot fill until a later candle.
+        if i < len(d) - 1:
+            for info in levels.values():
+                if info["state"] == "READY" and bid_l <= info["level"] - arm_drop:
+                    info.update(state="PENDING", armed_time=ts)
+                    total_armed += 1
+
+        max_open = max(max_open, sum(v["state"] == "OPEN" for v in levels.values()))
+
+    # Report positions and pending limit orders still alive at the end of data.
+    for info in levels.values():
+        if info["state"] == "OPEN":
+            trades.append({
+                "level": info["level"], "signal_time": info["armed_time"],
+                "entry_time": info["entry_time"], "entry": info["entry"],
+                "stop": info["stop"], "target": info["target"],
+                "exit_time": pd.NaT, "exit_price": math.nan, "outcome": "OPEN_AT_END",
+                "pnl_pips": math.nan, "bars_held": len(d) - 1 - info["entry_i"],
+                "direction": "SELL", "trade_number_at_level": info["trade_no"],
+            })
+        elif info["state"] == "PENDING":
+            trades.append({
+                "level": info["level"], "signal_time": info["armed_time"],
+                "entry_time": pd.NaT, "entry": math.nan, "stop": math.nan,
+                "target": math.nan, "exit_time": pd.NaT, "exit_price": math.nan,
+                "outcome": "PENDING_AT_END", "pnl_pips": math.nan,
+                "bars_held": math.nan, "direction": "SELL",
+                "trade_number_at_level": info["trade_no"],
+            })
+
+    cols = ["level", "signal_time", "entry_time", "entry", "stop", "target",
+            "exit_time", "exit_price", "outcome", "pnl_pips", "bars_held",
+            "direction", "trade_number_at_level"]
+    result = pd.DataFrame(trades, columns=cols)
+    stats = {"levels_checked": len(levels), "limits_placed": total_armed,
+             "limits_filled": total_filled, "max_simultaneous_open_positions": max_open}
+    return result, stats
 
 
-def summarize(trades, triggers, max_open, step_pips, sl_pips, tp_pips):
-    closed = trades[trades.outcome != "OPEN_AT_END"].copy() if not trades.empty else trades.copy()
+def summarize(trades, stats, step_pips, arm_drop_pips, sl_pips, tp_pips):
+    closed = trades[trades.outcome.isin(["TP", "SL", "SL_AMBIGUOUS_CONSERVATIVE"])].copy()
     wins = closed[closed.outcome == "TP"]
     losses = closed[closed.outcome.str.startswith("SL")] if not closed.empty else closed
-    pnl = closed.pnl_pips.fillna(0.0) if not closed.empty else pd.Series(dtype=float)
+    pnl = closed.pnl_pips if not closed.empty else pd.Series(dtype=float)
     ordered = closed.sort_values("exit_time") if not closed.empty else closed
-    equity = ordered.pnl_pips.fillna(0).cumsum() if not ordered.empty else pd.Series(dtype=float)
+    equity = ordered.pnl_pips.cumsum() if not ordered.empty else pd.Series(dtype=float)
     peak = equity.cummax().clip(lower=0) if not equity.empty else equity
     dd = peak - equity if not equity.empty else equity
     gross_profit = float(wins.pnl_pips.sum()) if not wins.empty else 0.0
     gross_loss = abs(float(losses.pnl_pips.sum())) if not losses.empty else 0.0
     hold = closed.bars_held.dropna() if not closed.empty else pd.Series(dtype=float)
     row = {
-        "trigger_count": triggers, "total_trades_including_open": len(trades),
-        "closed_trades": len(closed), "open_at_end": int((trades.outcome == "OPEN_AT_END").sum()) if not trades.empty else 0,
+        **stats,
+        "closed_trades": len(closed),
+        "open_at_end": int((trades.outcome == "OPEN_AT_END").sum()) if not trades.empty else 0,
+        "pending_limits_at_end": int((trades.outcome == "PENDING_AT_END").sum()) if not trades.empty else 0,
         "wins": len(wins), "losses": len(losses),
         "win_rate_pct": round(100 * len(wins) / len(closed), 4) if len(closed) else 0.0,
         "net_pips": round(float(pnl.sum()), 2),
         "gross_profit_pips": round(gross_profit, 2), "gross_loss_pips": round(gross_loss, 2),
         "profit_factor": round(gross_profit / gross_loss, 4) if gross_loss else None,
         "expectancy_pips_per_closed_trade": round(float(pnl.mean()), 4) if len(pnl) else 0.0,
-        "avg_win_pips": round(float(wins.pnl_pips.mean()), 2) if not wins.empty else 0.0,
-        "avg_loss_pips": round(float(losses.pnl_pips.mean()), 2) if not losses.empty else 0.0,
         "max_drawdown_pips_realized": round(float(dd.max()), 2) if not dd.empty else 0.0,
         "avg_bars_held": round(float(hold.mean()), 2) if len(hold) else 0.0,
         "median_bars_held": round(float(hold.median()), 2) if len(hold) else 0.0,
-        "max_simultaneous_open_positions": max_open,
-        "step_pips": step_pips, "sl_pips": sl_pips, "tp_pips": tp_pips,
+        "step_pips": step_pips, "arm_drop_pips": arm_drop_pips,
+        "sl_pips": sl_pips, "tp_pips": tp_pips,
     }
     return pd.DataFrame([row])
 
@@ -163,22 +215,23 @@ def main():
     p.add_argument("--output", default="reports/sell_every_pip_trades.csv")
     p.add_argument("--summary-output", default="reports/sell_every_pip_summary.csv")
     p.add_argument("--step-pips", type=float, default=1.0)
+    p.add_argument("--arm-drop-pips", type=float, default=60.0)
     p.add_argument("--sl-pips", type=float, default=2.0)
     p.add_argument("--tp-pips", type=float, default=60.0)
     a = p.parse_args()
-    if min(a.step_pips, a.sl_pips, a.tp_pips) <= 0:
-        raise SystemExit("step, SL and TP must all be positive")
+    if min(a.step_pips, a.arm_drop_pips, a.sl_pips, a.tp_pips) <= 0:
+        raise SystemExit("grid step, arm drop, SL and TP must all be positive")
     d = load_data(a.input)
-    trades, triggers, max_open = backtest(d, a.step_pips, a.sl_pips, a.tp_pips)
-    summary = summarize(trades, triggers, max_open, a.step_pips, a.sl_pips, a.tp_pips)
+    trades, stats = backtest(d, a.step_pips, a.sl_pips, a.tp_pips, a.arm_drop_pips)
+    summary = summarize(trades, stats, a.step_pips, a.arm_drop_pips, a.sl_pips, a.tp_pips)
     Path(a.output).parent.mkdir(parents=True, exist_ok=True)
     Path(a.summary_output).parent.mkdir(parents=True, exist_ok=True)
     trades.to_csv(a.output, index=False)
     summary.to_csv(a.summary_output, index=False)
     print(f"Bars: {len(d):,}; data: {d.timestamp.min()} -> {d.timestamp.max()}")
-    print("Rule: sell once per full 1-pip close-to-close move, next M1 Bid open; all trades independent.")
-    print("Execution: short entry Bid, short exits Ask; 1-pip spread embedded in Bid/Ask.")
-    print("Intrabar SL/TP collision: conservative SL; entry-bar exits ignored due to unknown intrabar order.")
+    print(f"Rule: fixed {a.step_pips:g}-pip levels; wait for a {a.arm_drop_pips:g}-pip fall below each level, then place a SELL LIMIT at that level.")
+    print("Constraint: at most one pending order or open position per level; after close, level must recover to itself before re-arming.")
+    print("Execution: sell limit uses Bid; short exits use Ask. Same-candle SL/TP ambiguity is resolved as SL.")
     print(summary.to_string(index=False))
     print(f"Saved {a.output} and {a.summary_output}")
 
