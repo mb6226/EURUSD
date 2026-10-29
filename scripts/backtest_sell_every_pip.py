@@ -142,7 +142,7 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0, arm_drop_pips=60.0):
         if i < len(d) - 1:
             for info in levels.values():
                 if info["state"] == "READY" and bid_l <= info["level"] - arm_drop:
-                    info.update(state="PENDING", armed_time=ts)
+                    info.update(state="PENDING", armed_time=ts, trade_no=info["trade_no"] + 1)
                     total_armed += 1
 
         max_open = max(max_open, sum(v["state"] == "OPEN" for v in levels.values()))
