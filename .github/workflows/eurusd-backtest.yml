@@ -75,8 +75,8 @@ jobs:
           args=(--input data/eurusd_m1.csv --output reports/results.csv --summary-output reports/summary.csv --spread-pips 1 --signal "$SIGNAL")
           if [ -n "$CUTOFF" ]; then args+=(--train-cutoff "$CUTOFF"); fi
           python scripts/backtest.py "${args[@]}"
-      - name: Run sell-limit grid test (arm after 60-pip drop; max one position per level)
-        run: python scripts/backtest_sell_every_pip.py --input data/eurusd_m1.csv --output reports/sell_every_pip_trades.csv --summary-output reports/sell_every_pip_summary.csv --step-pips 2.5 --arm-drop-pips 60 --sl-pips 2 --tp-pips 60
+      - name: Run sell-limit grid test (2.5-pip grid; arm after 60-pip drop; SL 2 pips; TP 100 pips)
+        run: python scripts/backtest_sell_every_pip.py --input data/eurusd_m1.csv --output reports/sell_every_pip_trades.csv --summary-output reports/sell_every_pip_summary.csv --step-pips 2.5 --arm-drop-pips 60 --sl-pips 2 --tp-pips 100
       - name: Analyze time-of-day and future excursions
         run: python scripts/find_patterns.py --input data/eurusd_m1.csv --output reports/pattern_diagnostics.csv
       - name: Upload reports
