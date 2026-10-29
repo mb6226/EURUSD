@@ -33,15 +33,17 @@ def load_data(path):
 def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0, arm_drop_pips=60.0):
     step = step_pips * PIP
     arm_drop = arm_drop_pips * PIP
-    first = float(d.iloc[0].bid_close)
     low_all = float(d.bid_low.min())
     high_all = float(d.bid_high.max())
-    low_idx = math.floor((low_all - arm_drop - first) / step) - 2
-    high_idx = math.ceil((high_all - first) / step) + 2
+    # Anchor the grid to absolute round-price multiples, not the first close.
+    # For 2.5 pips on EURUSD this yields levels such as 1.11400, 1.11425,
+    # 1.11450, 1.11475, 1.11500, etc.
+    low_idx = math.floor((low_all - arm_drop) / step) - 2
+    high_idx = math.ceil(high_all / step) + 2
     levels = {}
     for k in range(low_idx, high_idx + 1):
         levels[k] = {
-            "level": first + k * step, "state": "READY",
+            "level": round(k * step, 5), "state": "READY",
             "armed_time": pd.NaT, "entry_time": pd.NaT, "entry_i": None,
             "entry": math.nan, "stop": math.nan, "target": math.nan,
             "trade_no": 0, "ready_after": 0,
@@ -70,6 +72,9 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0, arm_drop_pips=60.0):
                     ready_after=i + 1)
 
     for i in range(1, len(d)):
+        # Count positions that were already open at the start of this candle,
+        # before any exits are processed.
+        max_open = max(max_open, len(active_ids))
         bar = d.iloc[i]
         ts = bar.timestamp
         bid_o, bid_h, bid_l = float(bar.bid_open), float(bar.bid_high), float(bar.bid_low)
@@ -107,6 +112,10 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0, arm_drop_pips=60.0):
             active_ids.add(k)
             total_filled += 1
 
+        # Capture the true concurrent count immediately after fills, before
+        # same-candle SL/TP processing can remove newly opened positions.
+        max_open = max(max_open, len(active_ids))
+
         # Entry-candle exit check. Intrabar order is unknown; SL wins collisions.
         for k in list(active_ids):
             info = levels[k]
@@ -135,8 +144,8 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0, arm_drop_pips=60.0):
         # this bar. This avoids falsely arming levels already below price at
         # the start of the dataset. New limits cannot fill until a later bar.
         if i < len(d) - 1 and prev_close > bid_l:
-            k_min = math.ceil((bid_l + arm_drop - first) / step - 1e-10)
-            k_max = math.ceil((prev_close + arm_drop - first) / step - 1e-10) - 1
+            k_min = math.ceil((bid_l + arm_drop) / step - 1e-10)
+            k_max = math.ceil((prev_close + arm_drop) / step - 1e-10) - 1
             for k in range(k_min, k_max + 1):
                 if k not in levels:
                     continue
@@ -216,7 +225,7 @@ def main():
     p.add_argument("--input", required=True)
     p.add_argument("--output", default="reports/sell_every_pip_trades.csv")
     p.add_argument("--summary-output", default="reports/sell_every_pip_summary.csv")
-    p.add_argument("--step-pips", type=float, default=1.0)
+    p.add_argument("--step-pips", type=float, default=2.5)
     p.add_argument("--arm-drop-pips", type=float, default=60.0)
     p.add_argument("--sl-pips", type=float, default=2.0)
     p.add_argument("--tp-pips", type=float, default=60.0)
