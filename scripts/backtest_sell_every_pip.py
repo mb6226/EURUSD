@@ -92,11 +92,7 @@ def backtest(d, step_pips=1.0, sl_pips=2.0, tp_pips=60.0):
             if t["outcome"] != "OPEN":
                 still.append(t)
                 continue
-            # Avoid checking positions on their entry candle if entry was just filled:
-            # OHLC cannot reveal whether the high/low occurred before or after entry.
-            if t["entry_i"] == i:
-                still.append(t)
-                continue
+            # Entry is at this candle open, so its later high/low can hit SL or TP.
             sl_hit = float(bar.ask_high) >= t["stop"]
             tp_hit = float(bar.ask_low) <= t["target"]
             if sl_hit or tp_hit:
