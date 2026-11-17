@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eurusd-ai-monitor.invalid/schemas/data.schema.json",
+  "title": "Source Data Contracts",
+  "$defs": {
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_id",
+        "measure",
+        "data_type",
+        "unit",
+        "observation_frequency",
+        "effective_date_field",
+        "publication_time_field",
+        "value_kind"
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "measure": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_type": {
+          "enum": [
+            "TIME_SERIES",
+            "DOCUMENT",
+            "EVENT",
+            "QUOTE"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observation_frequency": {
+          "enum": [
+            "REALTIME",
+            "INTRADAY",
+            "DAILY",
+            "WEEKLY",
+            "MONTHLY",
+            "QUARTERLY",
+            "EVENT_DRIVEN",
+            "ON_DEMAND"
+          ]
+        },
+        "effective_date_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publication_time_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value_kind": {
+          "enum": [
+            "SCALAR",
+            "RANGE",
+            "DOCUMENT",
+            "EVENT"
+          ]
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "product_id",
+        "observed_at_utc",
+        "published_at_utc",
+        "effective_at_utc",
+        "retrieved_at_utc",
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "observed_at_utc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "published_at_utc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "effective_at_utc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "retrieved_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lower",
+                "upper"
+              ],
+              "properties": {
+                "lower": {
+                  "type": "number"
+                },
+                "upper": {
+                  "type": "number"
+                }
+              }
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_record_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

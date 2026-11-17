@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Federal Reserve - Monetary Policy",
+    "url": "https://www.federalreserve.gov/monetarypolicy.htm",
+    "topic": "US monetary policy",
+    "type": "official"
+  },
+  {
+    "name": "Federal Reserve - FOMC calendars",
+    "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "topic": "FOMC schedule",
+    "type": "official"
+  },
+  {
+    "name": "ECB - Monetary policy decisions",
+    "url": "https://www.ecb.europa.eu/press/govcdec/mopo/html/index.en.html",
+    "topic": "Euro area monetary policy",
+    "type": "official"
+  },
+  {
+    "name": "BIS - Foreign exchange",
+    "url": "https://www.bis.org/statistics/fx.htm",
+    "topic": "FX market statistics",
+    "type": "official"
+  },
+  {
+    "name": "IMF - World Economic Outlook",
+    "url": "https://www.imf.org/en/Publications/WEO",
+    "topic": "Global macroeconomics",
+    "type": "official"
+  },
+  {
+    "name": "FRED",
+    "url": "https://fred.stlouisfed.org/",
+    "topic": "US economic time series",
+    "type": "official"
+  },
+  {
+    "name": "Eurostat",
+    "url": "https://ec.europa.eu/eurostat",
+    "topic": "European economic statistics",
+    "type": "official"
+  },
+  {
+    "name": "US Bureau of Labor Statistics",
+    "url": "https://www.bls.gov/",
+    "topic": "US labor and inflation data",
+    "type": "official"
+  }
+]

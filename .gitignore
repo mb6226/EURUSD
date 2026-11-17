@@ -1,0 +1,54 @@
+﻿# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+*credentials*
+
+# Databases and runtime files
+*.db
+*.sqlite
+*.sqlite3
+*-wal
+*-shm
+
+# Market data, logs and local outputs
+*.csv
+*.jsonl
+*.log
+*.pdf
+vision_test.py
+vision_test_result.txt
+
+# Local/private documentation and duplicate addon
+README_FA.md
+eurusd_ai_knowledge_v2_addon/
+
+# Backups
+*backup*
+*.bak
+*.old
+
+# Operational state
+source_registry/operational/
+**/operational/
+
+# Local backups and intermediate copies
+*before_precision_patch*
+*.bak
+*.old
+
+# SQLite sidecar files
+*-wal
+*-shm

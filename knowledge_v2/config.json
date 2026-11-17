@@ -1,0 +1,12 @@
+{
+  "ollama_url": "http://localhost:11434",
+  "chat_model": "qwen2.5vl:7b",
+  "embedding_model": "nomic-embed-text",
+  "database": "data/knowledge/knowledge.db",
+  "library_dir": "knowledge/library",
+  "chunk_chars": 1400,
+  "chunk_overlap": 220,
+  "top_k": 6,
+  "use_embeddings": true,
+  "temperature": 0.1
+}

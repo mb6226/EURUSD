@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eurusd-ai-monitor.invalid/schemas/source.schema.json",
+  "title": "Source Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "name",
+    "category",
+    "publisher",
+    "topics",
+    "access",
+    "enabled",
+    "auto_fetch",
+    "fetch",
+    "products",
+    "validation_profile",
+    "failure_policy"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "enum": [
+        "MONETARY_POLICY",
+        "ECONOMIC_DATA",
+        "ECONOMIC_CALENDAR",
+        "FINANCIAL_MARKETS",
+        "FX_MARKET",
+        "STABLECOINS",
+        "NEWS_GEOPOLITICS"
+      ]
+    },
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "role",
+        "authority_tier"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "OFFICIAL_PRIMARY",
+            "REGULATOR",
+            "DATA_DISTRIBUTOR",
+            "RESEARCH",
+            "ISSUER_DISCLOSURE"
+          ]
+        },
+        "authority_tier": {
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E"
+          ]
+        }
+      }
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter",
+        "canonical_url",
+        "format",
+        "credential_env"
+      ],
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "format": {
+          "enum": [
+            "HTML",
+            "JSON",
+            "CSV",
+            "XML",
+            "PDF",
+            "MT5"
+          ]
+        },
+        "credential_env": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "auto_fetch": {
+      "type": "boolean"
+    },
+    "fetch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "minimum_interval_seconds",
+        "max_attempts",
+        "retry_backoff_seconds"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "EVENT_DRIVEN",
+            "INTERVAL",
+            "MANUAL"
+          ]
+        },
+        "minimum_interval_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retry_backoff_seconds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "data.schema.json#/$defs/product"
+      }
+    },
+    "validation_profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "failure_policy": {
+      "enum": [
+        "KEEP_LAST_VALID_MARK_STALE"
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "config_schema_version": 1,
+  "strategy_version": "experimental_baseline_v1",
+  "algorithm_version": "price_action_contract_v1",
+  "pip_size": "0.0001",
+  "pivot_left_bars": 2,
+  "pivot_right_bars": 2,
+  "min_correction_pips": "5",
+  "max_correction_ratio": "0.80",
+  "min_wick_body_ratio": "1.5",
+  "bullish_close_location_min": "0.70",
+  "bearish_close_location_max": "0.30",
+  "pullback_tolerance_pips": "2",
+  "setup_expiry_bars": 30,
+  "stop_loss_pips": "5",
+  "take_profit_pips": "50",
+  "trailing_stop_enabled": false,
+  "parameters_validated": false,
+  "live_signals_enabled": false,
+  "entry_gap_policy": null
+}

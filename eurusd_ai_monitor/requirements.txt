@@ -1,0 +1,4 @@
+MetaTrader5>=5.0.45
+pandas>=2.2
+Pillow>=10.0
+python-dotenv>=1.0

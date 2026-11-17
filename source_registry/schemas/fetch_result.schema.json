@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eurusd-ai-monitor.invalid/schemas/fetch_result.schema.json",
+  "title": "Fetch Adapter Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "product_id",
+    "observations",
+    "retrieved_at_utc",
+    "source_url",
+    "record_count"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "product_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "retrieved_at_utc": {
+      "$ref": "#/$defs/utcDateTime"
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://"
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "utcDateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "decimalString": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+    },
+    "decimalRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "low",
+        "high"
+      ],
+      "properties": {
+        "low": {
+          "$ref": "#/$defs/decimalString"
+        },
+        "high": {
+          "$ref": "#/$defs/decimalString"
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "product_id",
+        "value",
+        "unit",
+        "effective_at_utc",
+        "published_at_utc",
+        "source_record_id"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/decimalString"
+            },
+            {
+              "$ref": "#/$defs/decimalRange"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effective_at_utc": {
+          "$ref": "#/$defs/utcDateTime"
+        },
+        "published_at_utc": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/utcDateTime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_record_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

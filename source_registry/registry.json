@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "FED_FOMC_POLICY",
+      "name": "Federal Reserve FOMC Policy Decisions",
+      "category": "MONETARY_POLICY",
+      "publisher": {
+        "name": "Board of Governors of the Federal Reserve System",
+        "role": "OFFICIAL_PRIMARY",
+        "authority_tier": "A"
+      },
+      "topics": [
+        "USD",
+        "policy_rate",
+        "monetary_policy"
+      ],
+      "access": {
+        "adapter": "http_html",
+        "canonical_url": "https://www.federalreserve.gov/monetarypolicy/openmarket.htm",
+        "format": "HTML",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "EVENT_DRIVEN",
+        "minimum_interval_seconds": 3600,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          60,
+          300
+        ]
+      },
+      "products": [
+        {
+          "product_id": "FED_TARGET_RANGE",
+          "measure": "federal_funds_target_range",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "EVENT_DRIVEN",
+          "effective_date_field": "effective_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "RANGE"
+        }
+      ],
+      "validation_profile": "policy_rate",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "ECB_POLICY_RATES",
+      "name": "ECB Key Interest Rates",
+      "category": "MONETARY_POLICY",
+      "publisher": {
+        "name": "European Central Bank",
+        "role": "OFFICIAL_PRIMARY",
+        "authority_tier": "A"
+      },
+      "topics": [
+        "EUR",
+        "policy_rate",
+        "monetary_policy"
+      ],
+      "access": {
+        "adapter": "http_html",
+        "canonical_url": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/key_ecb_interest_rates/html/index.en.html",
+        "format": "HTML",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "EVENT_DRIVEN",
+        "minimum_interval_seconds": 3600,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          60,
+          300
+        ]
+      },
+      "products": [
+        {
+          "product_id": "ECB_DEPOSIT_FACILITY_RATE",
+          "measure": "deposit_facility_rate",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "EVENT_DRIVEN",
+          "effective_date_field": "effective_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "ECB_MAIN_REFINANCING_RATE",
+          "measure": "main_refinancing_rate",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "EVENT_DRIVEN",
+          "effective_date_field": "effective_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "ECB_MARGINAL_LENDING_RATE",
+          "measure": "marginal_lending_rate",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "EVENT_DRIVEN",
+          "effective_date_field": "effective_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "policy_rate",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    }
+  ]
+}

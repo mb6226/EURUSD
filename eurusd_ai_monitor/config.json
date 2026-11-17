@@ -1,0 +1,28 @@
+{
+  "symbol": "EURUSD",
+  "timeframes": [
+    "M1",
+    "M5"
+  ],
+  "poll_seconds": 2,
+  "bars_to_fetch": 300,
+  "screenshot_max_age_seconds": 30,
+  "spread_warning_pips": 2.0,
+  "pip_size": 0.0001,
+  "alert_only": true,
+  "risk": {
+    "stop_loss_pips": 5,
+    "take_profit_pips": 50,
+    "one_position_per_session": true,
+    "trailing_stop": false
+  },
+  "sessions": [
+    "London",
+    "New York"
+  ],
+  "vision": {
+    "enabled": false,
+    "mode": "both",
+    "note": "Vision provider is intentionally not connected in this starter. Add a provider after selecting the model/API."
+  }
+}

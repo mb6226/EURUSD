@@ -1,0 +1,4 @@
+اسناد مجاز و قابل استفاده را در همین پوشه قرار بده:
+PDF، TXT، MD یا HTML.
+سپس اجرا کن:
+python knowledge_v2\cli.py ingest-folder knowledge\library
