@@ -17,6 +17,8 @@ from eurusd_ai_monitor.engines.price_action_engine import summarize_structure
 from eurusd_ai_monitor.engines.vision_engine import inspect_screenshot
 from eurusd_ai_monitor.engines.decision_engine import evaluate
 from eurusd_ai_monitor.engines.market_context_builder import MarketContextBuilder
+from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
+from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.mt5_market_adapter import MT5MarketDataAdapter
 from eurusd_ai_monitor.alerts.signal_manager import SignalManager
@@ -57,6 +59,73 @@ def _quality_payload(quality) -> dict:
     }
 
 
+def _evidence_payload(evidence) -> dict:
+    candle = evidence.candle
+    return {
+        "candle_id": evidence.candle_id,
+        "role": evidence.role.value,
+        "confirmed_at_utc": evidence.confirmed_at_utc.isoformat(),
+        "algorithm_version": evidence.algorithm_version,
+        "parameter_version": evidence.parameter_version,
+        "supporting_candle_ids": list(evidence.supporting_candle_ids),
+        "candle": {
+            "timeframe": candle.timeframe,
+            "open_time_utc": candle.candle_open_time_utc.isoformat(),
+            "open": str(candle.open),
+            "high": str(candle.high),
+            "low": str(candle.low),
+            "close": str(candle.close),
+        },
+    }
+
+
+def _technical_structure_payload(structure) -> dict:
+    trend = structure.trend
+    swing_break = structure.protected_swing_break
+    return {
+        "status": "ANALYZED",
+        "evaluated_at_utc": structure.evaluated_at_utc.isoformat(),
+        "algorithm_version": structure.algorithm_version,
+        "parameter_version": structure.parameter_version,
+        "trend": {
+            "direction": trend.direction.value,
+            "confirmed_at_utc": trend.confirmed_at_utc.isoformat(),
+            "swing_highs": [_evidence_payload(ref) for ref in trend.swing_highs],
+            "swing_lows": [_evidence_payload(ref) for ref in trend.swing_lows],
+            "protected_swing": (
+                _evidence_payload(trend.protected_swing)
+                if trend.protected_swing is not None
+                else None
+            ),
+        },
+        "pivots": [
+            {
+                "kind": pivot.kind.value,
+                "price": str(pivot.price),
+                "evidence": _evidence_payload(pivot.evidence),
+            }
+            for pivot in structure.pivots
+        ],
+        "structure_time_utc": (
+            structure.structure_time_utc.isoformat()
+            if structure.structure_time_utc
+            else None
+        ),
+        "protected_swing_break": (
+            {
+                "broken_direction": swing_break.broken_direction.value,
+                "protected_swing": _evidence_payload(swing_break.protected_swing),
+                "structure_time_utc": swing_break.structure_time_utc.isoformat(),
+                "break_candle_open_time_utc": swing_break.break_candle.candle_open_time_utc.isoformat(),
+                "break_close": str(swing_break.break_candle.close),
+                "confirmed_at_utc": swing_break.confirmed_at_utc.isoformat(),
+            }
+            if swing_break is not None
+            else None
+        ),
+    }
+
+
 def main():
     config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
     data_dir = ROOT / "data" / "market"
@@ -72,6 +141,7 @@ def main():
         max_age_seconds=config.get("context_max_age_seconds", {"M1": 180, "M5": 900}),
     )
     signals = SignalManager(ROOT / "logs")
+    technical_engine = TechnicalEngine(load_strategy_config())
 
     connector.connect()
     print("[MONITOR] Alert-only mode. No order functions are present.")
@@ -87,6 +157,19 @@ def main():
                 )
                 structures = {}
                 screenshots = {}
+                technical_analysis = None
+                technical_error = None
+                if snapshot.quality.is_valid:
+                    try:
+                        technical_analysis = _technical_structure_payload(
+                            technical_engine.analyze_snapshot(snapshot)
+                        )
+                    except Exception as exc:
+                        technical_error = (
+                            f"TechnicalEngine failed: {type(exc).__name__}: {exc}"
+                        )
+                else:
+                    technical_error = "Market context quality gate failed"
                 for tf in config["timeframes"]:
                     candles = getattr(snapshot, f"{tf.lower()}_candles", ())
                     frame = _candles_frame(candles)
@@ -101,11 +184,14 @@ def main():
                     )
 
                 tick = dict(snapshot.tick or {})
-                if not snapshot.quality.is_valid:
+                if not snapshot.quality.is_valid or technical_error is not None:
                     decision = {
                         "decision": "WAIT",
                         "direction": "NONE",
-                        "reasons": ["Market context quality gate failed", *snapshot.quality.issues],
+                        "reasons": [
+                            technical_error or "Market context quality gate failed",
+                            *snapshot.quality.issues,
+                        ],
                         "trade_execution": "DISABLED",
                     }
                 else:
@@ -119,6 +205,14 @@ def main():
                     "symbol": snapshot.symbol,
                     "tick": tick,
                     "market_structure": structures,
+                    "technical_analysis": (
+                        technical_analysis
+                        if technical_analysis is not None
+                        else {
+                            "status": "SKIPPED",
+                            "reason": technical_error,
+                        }
+                    ),
                     "screenshots": screenshots,
                     "market_context": {
                         "timestamp_utc": snapshot.timestamp_utc.isoformat(),
