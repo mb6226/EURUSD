@@ -415,7 +415,7 @@ class TechnicalEngineTests(unittest.TestCase):
     def test_analyze_snapshot_rejects_unsorted_candles(self):
         candles = uptrend_candles()
         snapshot = self._snapshot((candles[1], candles[0], *candles[2:]))
-        with self.assertRaisesRegex(ValueError, "chronologically"):
+        with self.assertRaisesRegex(ValueError, "sorted"):
             self.engine.analyze_snapshot(snapshot)
 
     def test_analyze_snapshot_rejects_open_m5_candle(self):
@@ -439,7 +439,7 @@ class TechnicalEngineTests(unittest.TestCase):
             broker_server=BROKER,
             symbol=SYMBOL,
             timeframe="M1",
-            candle_open_time_utc=BASE + timedelta(minutes=64),
+            candle_open_time_utc=BASE + timedelta(minutes=64, seconds=30),
             open=Decimal("1.1"),
             high=Decimal("1.101"),
             low=Decimal("1.099"),
