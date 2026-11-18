@@ -439,7 +439,7 @@ class TechnicalEngineTests(unittest.TestCase):
             broker_server=BROKER,
             symbol=SYMBOL,
             timeframe="M1",
-            candle_open_time_utc=BASE + timedelta(minutes=64, seconds=30),
+            candle_open_time_utc=BASE + timedelta(minutes=65),
             open=Decimal("1.1"),
             high=Decimal("1.101"),
             low=Decimal("1.099"),
@@ -451,7 +451,7 @@ class TechnicalEngineTests(unittest.TestCase):
         m5 = uptrend_candles()
         snapshot = MarketSnapshot(
             symbol=SYMBOL,
-            timestamp_utc=m5[-1].candle_open_time_utc + timedelta(minutes=5),
+            timestamp_utc=m5[-1].candle_open_time_utc + timedelta(minutes=5, seconds=30),
             broker_server=BROKER,
             m1_candles=(m1,),
             m5_candles=m5,
