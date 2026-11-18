@@ -86,6 +86,7 @@ def main():
                 for tf in config["timeframes"]:
                     candles = getattr(snapshot, f"{tf.lower()}_candles", ())
                     frame = _candles_frame(candles)
+                    frame.to_csv(data_dir / f"{config['symbol']}_{tf}.csv", index=False)
                     structures[tf] = summarize_structure(
                         frame,
                         closed_candles_only=True,
