@@ -14,6 +14,7 @@ from eurusd_ai_monitor.models.price_action import (
     Trend,
     TrendDirection,
 )
+from eurusd_ai_monitor.models.market_snapshot import MarketSnapshot
 from eurusd_ai_monitor.storage.market_data_store import Candle, TIMEFRAME_SECONDS
 from eurusd_ai_monitor.strategy_config import StrategyConfig
 
@@ -176,6 +177,28 @@ class TechnicalEngine:
         _validate_m5_context(context)
 
         return self._analyze_validated_context(context)
+
+    def analyze_snapshot(self, snapshot: MarketSnapshot) -> TechnicalStructure:
+        """Analyze the M5 candles in a validated, point-in-time market snapshot.
+
+        Snapshot quality is a hard gate. The MarketContext constructor then
+        enforces symbol/source consistency, chronological uniqueness, and
+        closed-candle boundaries for both supplied timeframes.
+        """
+        if not isinstance(snapshot, MarketSnapshot):
+            raise TypeError("snapshot must be a MarketSnapshot")
+        if not snapshot.quality.is_valid:
+            details = "; ".join(snapshot.quality.issues) or "unspecified quality failure"
+            raise ValueError(f"market snapshot quality gate failed: {details}")
+
+        context = MarketContext(
+            symbol=snapshot.symbol,
+            source_id=snapshot.broker_server,
+            as_of_utc=snapshot.timestamp_utc,
+            m1_candles=snapshot.m1_candles,
+            m5_candles=snapshot.m5_candles,
+        )
+        return self.analyze_m5(context)
 
     def analyze_m5_at(
         self,
