@@ -12,14 +12,14 @@ PROJECT_ROOT = ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from engines.mt5_engine import MT5Connector
-from engines.price_action_engine import summarize_structure
-from engines.vision_engine import inspect_screenshot
-from engines.decision_engine import evaluate
-from engines.market_context_builder import MarketContextBuilder
-from storage.market_data_store import MarketDataStore
-from storage.mt5_market_adapter import MT5MarketDataAdapter
-from alerts.signal_manager import SignalManager
+from eurusd_ai_monitor.engines.mt5_engine import MT5Connector
+from eurusd_ai_monitor.engines.price_action_engine import summarize_structure
+from eurusd_ai_monitor.engines.vision_engine import inspect_screenshot
+from eurusd_ai_monitor.engines.decision_engine import evaluate
+from eurusd_ai_monitor.engines.market_context_builder import MarketContextBuilder
+from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
+from eurusd_ai_monitor.storage.mt5_market_adapter import MT5MarketDataAdapter
+from eurusd_ai_monitor.alerts.signal_manager import SignalManager
 
 
 def _candles_frame(candles) -> pd.DataFrame:
@@ -101,12 +101,20 @@ def main():
                     )
 
                 tick = dict(snapshot.tick or {})
-                decision = evaluate(
-                    structures.get("M1", {}),
-                    structures.get("M5", {}),
-                    tick,
-                    screenshots,
-                )
+                if not snapshot.quality.is_valid:
+                    decision = {
+                        "decision": "WAIT",
+                        "direction": "NONE",
+                        "reasons": ["Market context quality gate failed", *snapshot.quality.issues],
+                        "trade_execution": "DISABLED",
+                    }
+                else:
+                    decision = evaluate(
+                        structures.get("M1", {}),
+                        structures.get("M5", {}),
+                        tick,
+                        screenshots,
+                    )
                 payload = {
                     "symbol": snapshot.symbol,
                     "tick": tick,
