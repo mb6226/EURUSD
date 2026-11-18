@@ -12,6 +12,8 @@ from eurusd_ai_monitor.models.price_action import (
     MarketContext,
     TrendDirection,
 )
+from eurusd_ai_monitor.models.context_quality import ContextQuality
+from eurusd_ai_monitor.models.market_snapshot import MarketSnapshot
 from eurusd_ai_monitor.storage.market_data_store import Candle
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 
@@ -379,6 +381,86 @@ class TechnicalEngineTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "sorted"):
             context((candles[0], candles[0]))
 
+
+
+    def _snapshot(self, candles, *, valid=True, m1_candles=()):
+        candles = tuple(candles)
+        as_of = candles[-1].candle_open_time_utc + timedelta(minutes=5)
+        return MarketSnapshot(
+            symbol=SYMBOL,
+            timestamp_utc=as_of,
+            broker_server=BROKER,
+            m1_candles=tuple(m1_candles),
+            m5_candles=candles,
+            tick=None,
+            spread_pips=None,
+            quality=ContextQuality(
+                is_valid=valid,
+                issues=() if valid else ("fixture quality failure",),
+            ),
+        )
+
+    def test_analyze_snapshot_matches_existing_m5_contract(self):
+        snapshot = self._snapshot(uptrend_candles())
+        direct = self.engine.analyze_m5(context(uptrend_candles()))
+        adapted = self.engine.analyze_snapshot(snapshot)
+        self.assertEqual(adapted, direct)
+        self.assertEqual(adapted.trend.direction, TrendDirection.UP)
+
+    def test_analyze_snapshot_rejects_invalid_quality(self):
+        snapshot = self._snapshot(uptrend_candles(), valid=False)
+        with self.assertRaisesRegex(ValueError, "quality gate failed"):
+            self.engine.analyze_snapshot(snapshot)
+
+    def test_analyze_snapshot_rejects_unsorted_candles(self):
+        candles = uptrend_candles()
+        snapshot = self._snapshot((candles[1], candles[0], *candles[2:]))
+        with self.assertRaisesRegex(ValueError, "chronologically"):
+            self.engine.analyze_snapshot(snapshot)
+
+    def test_analyze_snapshot_rejects_open_m5_candle(self):
+        candles = uptrend_candles()
+        last = candles[-1]
+        snapshot = MarketSnapshot(
+            symbol=SYMBOL,
+            timestamp_utc=last.candle_open_time_utc + timedelta(minutes=4),
+            broker_server=BROKER,
+            m1_candles=(),
+            m5_candles=candles,
+            tick=None,
+            spread_pips=None,
+            quality=ContextQuality(is_valid=True),
+        )
+        with self.assertRaisesRegex(ValueError, "not closed"):
+            self.engine.analyze_snapshot(snapshot)
+
+    def test_analyze_snapshot_rejects_open_m1_candle(self):
+        m1 = Candle(
+            broker_server=BROKER,
+            symbol=SYMBOL,
+            timeframe="M1",
+            candle_open_time_utc=BASE + timedelta(minutes=64),
+            open=Decimal("1.1"),
+            high=Decimal("1.101"),
+            low=Decimal("1.099"),
+            close=Decimal("1.1"),
+            tick_volume=10,
+            spread=2,
+            real_volume=0,
+        )
+        m5 = uptrend_candles()
+        snapshot = MarketSnapshot(
+            symbol=SYMBOL,
+            timestamp_utc=m5[-1].candle_open_time_utc + timedelta(minutes=5),
+            broker_server=BROKER,
+            m1_candles=(m1,),
+            m5_candles=m5,
+            tick=None,
+            spread_pips=None,
+            quality=ContextQuality(is_valid=True),
+        )
+        with self.assertRaisesRegex(ValueError, "not closed"):
+            self.engine.analyze_snapshot(snapshot)
 
 if __name__ == "__main__":
     unittest.main()
