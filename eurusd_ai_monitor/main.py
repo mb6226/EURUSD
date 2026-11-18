@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 
 import pandas as pd
+
+ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = ROOT.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from engines.mt5_engine import MT5Connector
 from engines.price_action_engine import summarize_structure
@@ -14,8 +20,6 @@ from engines.market_context_builder import MarketContextBuilder
 from storage.market_data_store import MarketDataStore
 from storage.mt5_market_adapter import MT5MarketDataAdapter
 from alerts.signal_manager import SignalManager
-
-ROOT = Path(__file__).resolve().parent
 
 
 def _candles_frame(candles) -> pd.DataFrame:
