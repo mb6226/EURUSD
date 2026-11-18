@@ -1,15 +1,21 @@
 from __future__ import annotations
 import pandas as pd
 
-def summarize_structure(df: pd.DataFrame, lookback: int = 20) -> dict:
+def summarize_structure(
+    df: pd.DataFrame,
+    lookback: int = 20,
+    *,
+    closed_candles_only: bool = False,
+) -> dict:
     """
     Transparent starter heuristic, NOT the user's final trading rules.
-    Uses completed candles only (excludes the currently forming last bar).
+    If input contains a forming candle, exclude it by default. Callers that
+    provide an all-closed-candle frame can opt in to using its final row.
     """
     if len(df) < lookback + 3:
         return {"status": "INSUFFICIENT_DATA", "bias": "UNKNOWN"}
 
-    closed = df.iloc[:-1].copy()
+    closed = df.copy() if closed_candles_only else df.iloc[:-1].copy()
     recent = closed.tail(lookback)
     prior = closed.iloc[-(lookback * 2):-lookback]
 
