@@ -29,12 +29,22 @@ class MarketContextBuilder:
     ) -> None:
         if isinstance(minimum_candles, bool) or not isinstance(minimum_candles, int) or minimum_candles < 1:
             raise ValueError("minimum_candles must be a positive integer")
+        age_limits = dict(max_age_seconds or {"M1": 180, "M5": 900})
+        if any(
+            not isinstance(tf, str)
+            or tf not in TIMEFRAME_SECONDS
+            or isinstance(value, bool)
+            or not isinstance(value, int)
+            or value < 0
+            for tf, value in age_limits.items()
+        ):
+            raise ValueError("max_age_seconds must contain supported timeframes and non-negative integer limits")
         self._connector = connector
         self._store = store
         self._adapter = adapter
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._minimum_candles = minimum_candles
-        self._max_age_seconds = dict(max_age_seconds or {"M1": 180, "M5": 900})
+        self._max_age_seconds = age_limits
 
     @staticmethod
     def _utc(value: datetime, name: str) -> datetime:
