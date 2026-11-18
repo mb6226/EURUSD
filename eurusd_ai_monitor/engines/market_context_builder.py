@@ -51,10 +51,8 @@ class MarketContextBuilder:
         count: int = 300,
     ) -> MarketSnapshot:
         frames = tuple(timeframes)
-        if not frames or any(tf not in TIMEFRAME_SECONDS for tf in frames):
-            raise ValueError("timeframes must be a non-empty set of supported values")
-        if len(set(frames)) != len(frames):
-            raise ValueError("timeframes must not contain duplicates")
+        if frames != self.DEFAULT_TIMEFRAMES:
+            raise ValueError("MarketSnapshot requires timeframes exactly ('M1', 'M5')")
         if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
             raise ValueError("count must be a positive integer")
 
