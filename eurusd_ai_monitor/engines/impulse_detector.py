@@ -87,8 +87,21 @@ class ImpulseDetector:
                 pivot.evidence.confirmed_at_utc,
             ),
         )
+        # A single outside candle can satisfy both strict high and low pivot
+        # tests. Its direction is ambiguous, so exclude that timestamp rather
+        # than inventing an ordering between two pivots formed simultaneously.
+        by_time: dict[object, list[Pivot]] = {}
+        for pivot in ordered:
+            by_time.setdefault(
+                pivot.evidence.candle.candle_open_time_utc,
+                [],
+            ).append(pivot)
+
         result: list[Pivot] = []
         for pivot in ordered:
+            timestamp = pivot.evidence.candle.candle_open_time_utc
+            if len(by_time[timestamp]) != 1:
+                continue
             if not result or result[-1].kind is not pivot.kind:
                 result.append(pivot)
                 continue
