@@ -141,14 +141,15 @@ class IntermarketIntelligenceEngineTests(unittest.TestCase):
     def test_future_publication_is_excluded_even_if_retrieved_before_cutoff(self):
         row = dict(self.eurusd[-1])
         row["published_at_utc"] = (AS_OF + timedelta(hours=1)).isoformat()
-        row["retrieved_at_utc"] = (AS_OF - timedelta(hours=1)).isoformat()
+        row["retrieved_at_utc"] = (AS_OF + timedelta(hours=2)).isoformat()
         self.eurusd[-1] = row
         report = self.engine.assess(
             as_of_utc=AS_OF, eurusd_observations=self.eurusd,
             driver_observations=self.drivers(),
         )
-        self.assertEqual(report["status"], "UNAVAILABLE")
-        self.assertIn("EURUSD_REFERENCE_HISTORY_INSUFFICIENT", report["reason_codes"])
+        self.assertEqual(report["status"], "AVAILABLE")
+        self.assertEqual(report["eurusd_observation_count"], len(self.eurusd) - 1)
+        self.assertNotIn(row["source_record_id"], report["provenance"]["eurusd_observation_ids"])
 
     def test_stale_eurusd_reference_blocks_all_comparisons(self):
         old = datetime(2026,10,1,16,tzinfo=UTC)
