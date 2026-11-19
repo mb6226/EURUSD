@@ -43,6 +43,11 @@ from eurusd_ai_monitor.engines.regime_conditioned_outcome_evaluator import (
     RegimeConditionedOutcomeEvaluator,
 )
 from eurusd_ai_monitor.engines.market_regime_engine import MarketRegimeEngine
+from eurusd_ai_monitor.engines.quantitative_market_statistics_engine import (
+    QuantitativeMarketStatisticsEngine, QuantitativeThresholds,
+)
+from eurusd_ai_monitor.engines.liquidity_microstructure_engine import LiquidityMicrostructureEngine
+from eurusd_ai_monitor.engines.multi_domain_runtime import build_live_specialist_reports
 from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
 from eurusd_ai_monitor.engines.research_intelligence_runtime import build_research_intelligence_payload
 from eurusd_ai_monitor.engines.research_intelligence_sources import build_research_intelligence_sources
@@ -419,6 +424,13 @@ def main():
         minimum_group_samples=int(config.get("statistics_minimum_group_samples", 30)),
     )
     market_regime_engine = MarketRegimeEngine(pip_size=strategy_config.pip_size)
+    quantitative_market_statistics_engine = QuantitativeMarketStatisticsEngine(
+        QuantitativeThresholds(pip_size=strategy_config.pip_size)
+    )
+    liquidity_microstructure_engine = LiquidityMicrostructureEngine(
+        minimum_samples=int(config.get("liquidity_minimum_samples", 20)),
+        max_age_seconds=config.get("context_max_age_seconds", {"M1": 180, "M5": 900}),
+    )
     research_intelligence_engine = ResearchIntelligenceEngine(
         max_current_age_seconds=int(config.get("research_intelligence_max_age_seconds", 300)),
     )
@@ -709,6 +721,12 @@ def main():
                     news_payload,
                 )
                 fusion_payload = fusion_assessment.to_dict()
+                live_specialist_reports = build_live_specialist_reports(
+                    snapshot,
+                    quantitative_engine=quantitative_market_statistics_engine,
+                    liquidity_engine=liquidity_microstructure_engine,
+                    pip_size=strategy_config.pip_size,
+                )
                 research_sources = build_research_intelligence_sources(
                     {
                         "fusion_assessment": fusion_payload,
@@ -719,6 +737,7 @@ def main():
                         "setup_outcome_observation": setup_outcome,
                         "statistical_outcome_evaluation": statistical_outcome_report,
                         "regime_conditioned_outcome_evaluation": regime_conditioned_outcome_report,
+                        **live_specialist_reports,
                     },
                     broker_server=snapshot.broker_server,
                     symbol=snapshot.symbol,
@@ -758,6 +777,7 @@ def main():
                     "statistical_outcome_evaluation": statistical_outcome_report,
                     "regime_conditioned_outcome_evaluation": regime_conditioned_outcome_report,
                     "market_regime_intelligence": market_regime_report,
+                    **live_specialist_reports,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
                     "technical_analysis": (
