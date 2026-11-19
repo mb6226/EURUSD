@@ -288,10 +288,16 @@ class PriceActionRuntime:
     ) -> RecoveryStatus:
         marker = getattr(self._recovery_gate, "mark_reconciliation", None)
         if callable(marker):
-            status = marker(snapshot.broker_server, snapshot.symbol, reason_code)
-            if isinstance(status, RecoveryStatus):
-                return status
+            try:
+                status = marker(snapshot.broker_server, snapshot.symbol, reason_code)
+                if isinstance(status, RecoveryStatus):
+                    return status
+            except Exception:
+                # Even if persistence is unavailable, this in-memory result
+                # remains fail-closed and the monitor must publish WAIT.
+                pass
         return RecoveryStatus.RECONCILIATION
+
     @staticmethod
     def _result(
         snapshot: MarketSnapshot,
