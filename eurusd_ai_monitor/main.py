@@ -44,6 +44,7 @@ from eurusd_ai_monitor.engines.regime_conditioned_outcome_evaluator import (
 )
 from eurusd_ai_monitor.engines.market_regime_engine import MarketRegimeEngine
 from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
+from eurusd_ai_monitor.engines.research_intelligence_runtime import build_research_intelligence_payload
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -745,26 +746,13 @@ def main():
                         "evaluated_at_utc": regime_conditioned_outcome_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                 }
-                try:
-                    research_intelligence = research_intelligence_engine.build_report(
-                        evaluated_at_utc=snapshot.timestamp_utc,
-                        broker_server=snapshot.broker_server,
-                        symbol=snapshot.symbol,
-                        sources=research_sources,
-                    )
-                except Exception as exc:
-                    research_intelligence = {
-                        "status": "DEGRADED",
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
-                        "broker_server": snapshot.broker_server,
-                        "symbol": snapshot.symbol,
-                        "reason_codes": [
-                            f"RESEARCH_INTELLIGENCE_ERROR:{type(exc).__name__}"
-                        ],
-                        "decision_authority": "ASSESSMENT_ONLY",
-                        "trade_authority": "NONE",
-                        "order_execution": "DISABLED",
-                    }
+                research_intelligence = build_research_intelligence_payload(
+                    research_intelligence_engine,
+                    evaluated_at_utc=snapshot.timestamp_utc,
+                    broker_server=snapshot.broker_server,
+                    symbol=snapshot.symbol,
+                    sources=research_sources,
+                )
                 payload = {
                     "fusion_assessment": fusion_payload,
                     "research_intelligence": research_intelligence,
