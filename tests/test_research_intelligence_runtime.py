@@ -165,6 +165,28 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
             report["reason_codes"],
         )
 
+    def test_explicit_null_specialist_identity_is_not_treated_as_omitted(self):
+        payloads = {
+            name: {"status": "AVAILABLE", "evaluated_at_utc": NOW.isoformat()}
+            for name in RESEARCH_SOURCE_NAMES
+        }
+        payloads["market_regime_intelligence"]["symbol"] = None
+        sources = build_research_intelligence_sources(
+            payloads, broker_server="Broker-Demo", symbol="EURUSD"
+        )
+        self.assertEqual(sources["market_regime_intelligence"]["symbol"], "")
+        report = ResearchIntelligenceEngine().build_report(
+            evaluated_at_utc=NOW,
+            broker_server="Broker-Demo",
+            symbol="EURUSD",
+            sources=sources,
+        )
+        self.assertEqual(report["status"], "DEGRADED")
+        self.assertIn(
+            "MARKET_REGIME_INTELLIGENCE_IDENTITY_MISMATCH",
+            report["reason_codes"],
+        )
+
     def test_source_envelope_rejects_invalid_cycle_identity(self):
         with self.assertRaises(ValueError):
             build_research_intelligence_sources(
