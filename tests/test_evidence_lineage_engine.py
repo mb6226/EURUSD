@@ -45,11 +45,8 @@ class EvidenceLineageEngineTests(unittest.TestCase):
         )
 
     def test_missing_sources_are_partial_and_authority_is_restricted(self):
-        result = self.audit({name: {} for name in (
-            "technical_analysis", "fusion_assessment", "market_regime_intelligence",
-            "price_action_lifecycle", "setup_assessment",
-        )})
-        self.assertEqual(result["status"], "TRACEABLE")
+        result = self.audit()
+        self.assertEqual(result["status"], "PARTIAL")
         self.assertEqual(result["inventory"]["total_candles"], 2)
         self.assertEqual(result["trade_authority"], "NONE")
         self.assertEqual(result["order_execution"], "DISABLED")
@@ -117,6 +114,17 @@ class EvidenceLineageEngineTests(unittest.TestCase):
         }}})
         self.assertEqual(result["status"], "DEGRADED")
 
+    def test_fusion_evidence_ids_resolve_to_m5(self):
+        result = self.audit({"fusion_assessment": {
+            "specialists": [
+                {"specialist": "technical", "evidence_ids": [self.m5_id]},
+                {"specialist": "price_action", "evidence_ids": [self.m5_id]},
+            ]
+        }})
+        item = next(x for x in result["source_manifest"] if x["source"] == "fusion_assessment")
+        self.assertEqual(item["status"], "TRACEABLE")
+        self.assertEqual(item["reference_count"], 1)
+
     def test_market_regime_can_reference_both_timeframes(self):
         result = self.audit({"market_regime_intelligence": {
             "provenance": {"m5_candle_ids": [self.m5_id],
@@ -154,12 +162,9 @@ class EvidenceLineageEngineTests(unittest.TestCase):
                          second["inventory"]["inventory_sha256"])
 
     def test_orphaned_candles_are_reported_not_failed(self):
-        result = self.audit({name: {} for name in (
-            "technical_analysis", "fusion_assessment", "market_regime_intelligence",
-            "price_action_lifecycle", "setup_assessment",
-        )})
+        result = self.audit({"setup_assessment": {"rejection": {"candle_id": self.m1_id}}})
         self.assertEqual(result["status"], "TRACEABLE")
-        self.assertEqual(result["reference_coverage"]["orphaned_inventory_count"], 2)
+        self.assertEqual(result["reference_coverage"]["orphaned_inventory_count"], 1)
 
     def test_builder_uses_stable_evidence_id_format(self):
         expected = (
@@ -179,13 +184,9 @@ class EvidenceLineageRuntimeTests(unittest.TestCase):
         inventory = build_candle_inventory((candle(),), evaluated_at_utc=NOW)
         result = build_evidence_lineage_payload(
             engine, evaluated_at_utc=NOW, broker_server="Broker-Demo",
-            symbol="EURUSD", candle_inventory=inventory,
-            sources={name: {} for name in (
-                "technical_analysis", "fusion_assessment", "market_regime_intelligence",
-                "price_action_lifecycle", "setup_assessment",
-            )},
+            symbol="EURUSD", candle_inventory=inventory, sources={},
         )
-        self.assertEqual(result["status"], "TRACEABLE")
+        self.assertEqual(result["status"], "PARTIAL")
 
     def test_runtime_failure_fails_closed(self):
         result = build_evidence_lineage_payload(
