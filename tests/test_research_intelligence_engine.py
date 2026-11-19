@@ -171,6 +171,35 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
                 broker_server="Broker-Demo", symbol="EURUSD", sources=sources(),
             )
 
+    def test_optional_quantitative_specialist_missing_does_not_break_legacy_cycle(self):
+        result = self.build()
+        self.assertEqual(result["status"], "COHERENT")
+        self.assertEqual(
+            result["current_context"]["quantitative_market_statistics"]["source_status"],
+            "MISSING",
+        )
+        item = next(
+            entry for entry in result["source_manifest"]
+            if entry["source"] == "quantitative_market_statistics"
+        )
+        self.assertEqual(item["class"], "OPTIONAL_CURRENT")
+
+    def test_quantitative_insufficient_data_is_partial_not_directional(self):
+        items = sources()
+        items["quantitative_market_statistics"] = {
+            "payload": {
+                "status": "INSUFFICIENT_DATA",
+                "evaluated_at_utc": NOW.isoformat(),
+                "reason_codes": ["M1_HISTORY_TOO_SHORT"],
+            },
+            "evaluated_at_utc": NOW.isoformat(),
+        }
+        result = self.build(items)
+        self.assertEqual(result["status"], "PARTIAL")
+        state = result["current_context"]["quantitative_market_statistics"]
+        self.assertEqual(state["source_status"], "INCOMPLETE")
+        self.assertIn("M1_HISTORY_TOO_SHORT", state["reason_codes"])
+
 
 if __name__ == "__main__":
     unittest.main()
