@@ -77,3 +77,11 @@ Current Fusion specialists include technical, Price Action, macro calendar, and 
 - Do not silently treat placeholder modules as available specialists.
 - Do not make Price Action the default next phase merely because it is the most mature area.
 - Every future phase must cite the Master Architecture, identify its North Star capability, and define end-to-end acceptance.
+
+## Post-Phase 24/25 source-contract clarification
+
+Phase 24 is merged at `f2438f721385df09123f310ee61c9f0465a14737`. Phase 25 closes a specific contract omission: the research synthesis engine already classified liquidity/microstructure as an optional current-cycle source, but the canonical source-envelope builder did not list that source name. The envelope now preserves a supplied liquidity payload, its broker/symbol identity, and its own evaluation timestamp; missing input remains explicitly missing.
+
+This is a contract correction, **not live integration**. The current monitoring loop in `eurusd_ai_monitor/main.py` still constructs research sources from Fusion, market regime, Price Action, setup/session eligibility, and historical outcome reports. It does not invoke the quantitative, macro-fundamental, policy-rate, intermarket, positioning, or liquidity specialists as live cycle participants. Those remain tested research foundations with manual/explicit inputs where applicable. No source is promoted to available merely because its engine exists.
+
+The next priority is a bounded central-integration slice: map actual per-cycle producer availability, define source applicability/freshness and missing-state behavior, then connect only specialists whose inputs and provenance can be supplied without hidden fetching or fabricated timestamps. Preserve alert-only/WAIT behavior and all existing authority boundaries.

@@ -115,8 +115,19 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
         self.assertEqual(len(report["source_manifest"]), 12)
         manifest_sources = {item["source"] for item in report["source_manifest"]}
         self.assertIn("liquidity_microstructure_intelligence", manifest_sources)
+        self.assertIs(sources["liquidity_microstructure_intelligence"]["payload"], payloads["liquidity_microstructure_intelligence"])
+        self.assertEqual(sources["liquidity_microstructure_intelligence"]["evaluated_at_utc"], NOW.isoformat())
         self.assertEqual(report["status"], "COHERENT")
         self.assertEqual(sources["market_regime_intelligence"]["evaluated_at_utc"], NOW.isoformat())
+
+    def test_missing_optional_liquidity_source_is_explicit_in_envelope(self):
+        sources = build_research_intelligence_sources(
+            {}, broker_server="Broker-Demo", symbol="EURUSD"
+        )
+        self.assertIn("liquidity_microstructure_intelligence", sources)
+        self.assertIsNone(sources["liquidity_microstructure_intelligence"]["payload"])
+        self.assertEqual(sources["liquidity_microstructure_intelligence"]["broker_server"], "Broker-Demo")
+        self.assertEqual(sources["liquidity_microstructure_intelligence"]["symbol"], "EURUSD")
 
     def test_missing_specialist_timestamp_is_not_replaced_by_cycle_time(self):
         payloads = {
