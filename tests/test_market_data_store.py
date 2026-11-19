@@ -55,7 +55,7 @@ class MarketDataStoreTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 )
             }
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
 
         self.assertEqual(
             tables,
@@ -63,6 +63,9 @@ class MarketDataStoreTests(unittest.TestCase):
                 "candles",
                 "candle_revisions",
                 "backfill_checkpoints",
+                "pa_lifecycle_state",
+                "pa_lifecycle_events",
+                "pa_lifecycle_recovery",
                 "sqlite_sequence",
             },
         )
@@ -129,6 +132,9 @@ class MarketDataStoreTests(unittest.TestCase):
         MarketDataStore(legacy_path)
         with closing(sqlite3.connect(legacy_path)) as db:
             db.execute("DROP TABLE backfill_checkpoints")
+            db.execute("DROP TABLE pa_lifecycle_recovery")
+            db.execute("DROP TABLE pa_lifecycle_events")
+            db.execute("DROP TABLE pa_lifecycle_state")
             db.execute("PRAGMA user_version = 1")
             db.commit()
 
@@ -141,8 +147,114 @@ class MarketDataStoreTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 )
             }
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
         self.assertIn("backfill_checkpoints", tables)
+        self.assertIn("pa_lifecycle_state", tables)
+        self.assertIn("pa_lifecycle_events", tables)
+        self.assertIn("pa_lifecycle_recovery", tables)
+
+    def test_v2_market_database_migrates_without_losing_market_data(self):
+        legacy_path = Path(self.temp_dir.name) / "v2_market.sqlite"
+        legacy_store = MarketDataStore(legacy_path)
+        candle = self.make_candle()
+        as_of = candle.candle_open_time_utc + timedelta(minutes=1)
+        legacy_store.upsert_candles(
+            [candle], as_of_utc=as_of, observed_at_utc=as_of
+        )
+        with closing(sqlite3.connect(legacy_path)) as db:
+            db.execute("DROP TABLE pa_lifecycle_recovery")
+            db.execute("DROP TABLE pa_lifecycle_events")
+            db.execute("DROP TABLE pa_lifecycle_state")
+            db.execute("PRAGMA user_version = 2")
+            db.commit()
+
+        migrated = MarketDataStore(legacy_path)
+        self.assertEqual(
+            migrated.get_closed_candles("Demo-Server", "EURUSD", "M1"),
+            [candle],
+        )
+        with closing(sqlite3.connect(legacy_path)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
+            tables = {
+                row[0] for row in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                )
+            }
+        self.assertTrue({
+            "pa_lifecycle_state", "pa_lifecycle_events", "pa_lifecycle_recovery"
+        }.issubset(tables))
+
+    def test_revision_watermark_and_paged_revision_reads_are_scoped_and_ordered(self):
+        open_time = datetime(2026, 11, 17, 12, 0, tzinfo=timezone.utc)
+        observed = open_time + timedelta(minutes=1)
+        original = self.make_candle(open_time)
+        corrected_once = self.make_candle(
+            open_time, close="1.08060", high="1.08110"
+        )
+        corrected_twice = self.make_candle(
+            open_time, close="1.08070", high="1.08120"
+        )
+        self.store.upsert_candles(
+            [original], as_of_utc=observed, observed_at_utc=observed
+        )
+        self.store.upsert_candles(
+            [corrected_once],
+            as_of_utc=observed + timedelta(minutes=1),
+            observed_at_utc=observed + timedelta(minutes=1),
+        )
+        self.store.upsert_candles(
+            [corrected_twice],
+            as_of_utc=observed + timedelta(minutes=2),
+            observed_at_utc=observed + timedelta(minutes=2),
+        )
+
+        watermark = self.store.get_candle_revision_watermark(
+            "Demo-Server", "EURUSD", "M1"
+        )
+        self.assertEqual(watermark, 2)
+        self.assertEqual(
+            self.store.get_candle_revision_watermark(
+                "Other-Server", "EURUSD", "M1"
+            ),
+            0,
+        )
+        first_page = self.store.get_candle_revisions(
+            "Demo-Server", "EURUSD", "M1", limit=1
+        )
+        second_page = self.store.get_candle_revisions(
+            "Demo-Server", "EURUSD", "M1",
+            after_revision_id=first_page[-1].revision_id,
+            through_revision_id=watermark,
+        )
+        self.assertEqual(len(first_page), 1)
+        self.assertEqual(len(second_page), 1)
+        self.assertLess(first_page[0].revision_id, second_page[0].revision_id)
+        self.assertEqual(first_page[0].old_values["close"], "1.08050")
+        self.assertEqual(first_page[0].new_values["close"], "1.08060")
+        self.assertEqual(second_page[0].old_values["close"], "1.08060")
+        self.assertEqual(second_page[0].new_values["close"], "1.08070")
+        self.assertEqual(
+            self.store.get_candle_revisions(
+                "Demo-Server", "EURUSD", "M1",
+                after_revision_id=watermark,
+            ),
+            [],
+        )
+
+    def test_revision_query_rejects_invalid_bounds_and_limit(self):
+        with self.assertRaisesRegex(ValueError, "non-negative integer"):
+            self.store.get_candle_revisions(
+                "Demo-Server", "EURUSD", "M1", after_revision_id=-1
+            )
+        with self.assertRaisesRegex(ValueError, "positive integer"):
+            self.store.get_candle_revisions(
+                "Demo-Server", "EURUSD", "M1", limit=0
+            )
+        with self.assertRaisesRegex(ValueError, "through_revision_id"):
+            self.store.get_candle_revisions(
+                "Demo-Server", "EURUSD", "M1",
+                after_revision_id=5, through_revision_id=4
+            )
 
     def test_stores_exact_decimal_strings_and_ignores_duplicate_batch_rows(self):
         candle = self.make_candle()
