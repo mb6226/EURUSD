@@ -356,7 +356,10 @@ class MacroCalendarEngine:
                 raise CalendarSourceError(f"invalid source timezone for {source_id}") from exc
 
     def refresh_due(self) -> dict[str, dict]:
-        now = self.clock().astimezone(timezone.utc)
+        clock_value = self.clock()
+        if clock_value.tzinfo is None or clock_value.utcoffset() is None:
+            raise CalendarSourceError("calendar clock must return a timezone-aware datetime")
+        now = clock_value.astimezone(timezone.utc)
         states = self.store.get_source_states()
         results = {}
         for source in self.sources:
@@ -439,7 +442,10 @@ class MacroCalendarEngine:
         horizon_hours: int = 72,
         currencies: tuple[str, ...] = ("EUR", "USD"),
     ) -> dict:
-        now = (now_utc or self.clock()).astimezone(timezone.utc)
+        clock_value = now_utc or self.clock()
+        if clock_value.tzinfo is None or clock_value.utcoffset() is None:
+            raise CalendarSourceError("context timestamp must be timezone-aware")
+        now = clock_value.astimezone(timezone.utc)
         if horizon_hours <= 0 or horizon_hours > 24 * 31:
             raise ValueError("horizon_hours must be between 1 and 744")
         events = self.store.list_events(
@@ -480,8 +486,8 @@ class MacroCalendarEngine:
             )
             serialized.append(item)
         serialized.sort(key=lambda item: (
-            item["scheduled_at_utc"] is None,
-            item["scheduled_at_utc"] or item["scheduled_date"],
+            item["scheduled_date"],
+            item["scheduled_at_utc"] or "",
             item["event_id"],
         ))
         return {
