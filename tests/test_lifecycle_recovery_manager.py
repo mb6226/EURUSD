@@ -165,7 +165,7 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
                 (
                     BROKER,
                     SYMBOL,
-                    self.candles[0].candle_open_time_utc.isoformat().replace("+00:00", "Z"),
+                    self.candles[0].candle_open_time_utc.isoformat(timespec="microseconds").replace("+00:00", "Z"),
                 ),
             )
             connection.commit()
