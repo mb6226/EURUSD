@@ -11,11 +11,20 @@ _CURRENT = (
     "setup_assessment",
     "session_eligibility",
     "quantitative_market_statistics",
+    "macro_fundamentals_intelligence",
+    "policy_rate_differential_intelligence",
     "intermarket_intelligence",
     "positioning_sentiment_intelligence",
     "liquidity_microstructure_intelligence",
 )
-_OPTIONAL_CURRENT = {"quantitative_market_statistics", "intermarket_intelligence", "positioning_sentiment_intelligence", "liquidity_microstructure_intelligence"}
+_OPTIONAL_CURRENT = {
+    "quantitative_market_statistics",
+    "macro_fundamentals_intelligence",
+    "policy_rate_differential_intelligence",
+    "intermarket_intelligence",
+    "positioning_sentiment_intelligence",
+    "liquidity_microstructure_intelligence",
+}
 _HISTORICAL = (
     "setup_outcome_observation",
     "statistical_outcome_evaluation",
@@ -265,9 +274,18 @@ class ResearchIntelligenceEngine:
             if raw in {"WAIT_SETUP", "WAITING_FOR_SETUP"}:
                 return "INCOMPLETE"
             return "AVAILABLE"
-        if name == "positioning_sentiment_intelligence":
-            if raw in {"PARTIAL", "INSUFFICIENT_DATA"}: return "INCOMPLETE"
-            if raw in {"STALE", "BLOCKED", "UNAVAILABLE", "DEGRADED"}: return raw
+        if name in {
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+            "intermarket_intelligence",
+            "positioning_sentiment_intelligence",
+        }:
+            if raw == "NOT_CONFIGURED":
+                return "MISSING"
+            if raw in {"PARTIAL", "INSUFFICIENT_DATA", "UNAVAILABLE"}:
+                return "INCOMPLETE"
+            if raw in {"STALE", "BLOCKED", "DEGRADED"}:
+                return raw
             return "AVAILABLE" if raw == "AVAILABLE" else raw
         if name == "liquidity_microstructure_intelligence":
             if raw in {"PARTIAL", "INSUFFICIENT_DATA"}: return "INCOMPLETE"
@@ -315,7 +333,9 @@ class ResearchIntelligenceEngine:
                       "volatility_state", "trend_direction", "lower_timeframe_alignment",
                       "lifecycle_state", "reason_code", "timeframes", "provenance",
                       "spread", "tick_activity", "price_range", "body_to_range_median_ratio",
-                      "excluded_unclosed_candle_count", "interpretation_limits"):
+                      "inflation", "unemployment", "usd_minus_eur_spread",
+                      "differential_definition", "instrument_proxy", "report_family",
+                      "benchmark", "excluded_unclosed_candle_count", "interpretation_limits"):
             if field in payload:
                 compact[field] = payload[field]
         if "reason_codes" in payload:

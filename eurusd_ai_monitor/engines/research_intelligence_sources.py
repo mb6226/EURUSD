@@ -13,6 +13,8 @@ RESEARCH_SOURCE_NAMES = (
     "statistical_outcome_evaluation",
     "regime_conditioned_outcome_evaluation",
     "quantitative_market_statistics",
+    "macro_fundamentals_intelligence",
+    "policy_rate_differential_intelligence",
     "intermarket_intelligence",
     "positioning_sentiment_intelligence",
     "liquidity_microstructure_intelligence",
