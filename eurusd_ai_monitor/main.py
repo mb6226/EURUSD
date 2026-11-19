@@ -17,9 +17,13 @@ from eurusd_ai_monitor.engines.price_action_engine import summarize_structure
 from eurusd_ai_monitor.engines.vision_engine import inspect_screenshot
 from eurusd_ai_monitor.engines.decision_engine import evaluate
 from eurusd_ai_monitor.engines.market_context_builder import MarketContextBuilder
+from eurusd_ai_monitor.engines.price_action_coordinator import PriceActionCoordinator
+from eurusd_ai_monitor.engines.price_action_runtime import PriceActionRuntime
+from eurusd_ai_monitor.engines.lifecycle_recovery_manager import LifecycleRecoveryManager
 from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
+from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
 from eurusd_ai_monitor.storage.mt5_market_adapter import MT5MarketDataAdapter
 from eurusd_ai_monitor.alerts.signal_manager import SignalManager
 
@@ -126,6 +130,72 @@ def _technical_structure_payload(structure) -> dict:
     }
 
 
+def _price_action_runtime_payload(result, recovery_details: dict) -> dict:
+    structure = result.technical_structure
+    transition = result.transition
+    lifecycle = transition.lifecycle if transition is not None else None
+    lifecycle_payload = None
+    if lifecycle is not None:
+        lifecycle_payload = {
+            "lifecycle_id": lifecycle.lifecycle_id,
+            "state": lifecycle.state.value,
+            "trend_direction": lifecycle.trend_direction.value,
+            "impulse": {
+                "direction": lifecycle.impulse.direction.value,
+                "start_price": str(lifecycle.impulse.start_price),
+                "end_price": str(lifecycle.impulse.end_price),
+                "size_pips": str(lifecycle.impulse.size_pips),
+                "started_at_utc": lifecycle.impulse.started_at_utc.isoformat(),
+                "ended_at_utc": lifecycle.impulse.ended_at_utc.isoformat(),
+                "confirmed_at_utc": lifecycle.impulse.confirmed_at_utc.isoformat(),
+            },
+            "depth_pips": str(lifecycle.depth_pips),
+            "retracement_ratio": str(lifecycle.retracement_ratio),
+            "age_bars": lifecycle.age_bars,
+            "last_processed_m5_utc": lifecycle.last_processed_m5_utc.isoformat(),
+            "confirmed_at_utc": (
+                lifecycle.confirmed_at_utc.isoformat()
+                if lifecycle.confirmed_at_utc is not None else None
+            ),
+            "warnings": [warning.value for warning in lifecycle.warnings],
+            "algorithm_version": lifecycle.algorithm_version,
+            "parameter_version": lifecycle.parameter_version,
+            "evidence_candle_ids": [
+                lifecycle.impulse.start_pivot.candle_id,
+                lifecycle.impulse.end_pivot.candle_id,
+                lifecycle.candidate_start_evidence.candle_id,
+                lifecycle.extreme_evidence.candle_id,
+                *[ref.candle_id for ref in lifecycle.correction_pivots],
+            ],
+        }
+    return {
+        "status": result.status.value,
+        "broker_server": result.broker_server,
+        "evaluated_at_utc": result.evaluated_at_utc.isoformat(),
+        "technical_structure": (
+            _technical_structure_payload(structure) if structure is not None else None
+        ),
+        "transition_type": (
+            transition.transition_type.value if transition is not None else None
+        ),
+        "lifecycle_id": result.lifecycle_id,
+        "lifecycle_snapshot": lifecycle_payload,
+        "lifecycle_state": (
+            result.lifecycle_state.value if result.lifecycle_state is not None else None
+        ),
+        "persistence_status": (
+            result.persistence_status.value
+            if result.persistence_status is not None else None
+        ),
+        "recovery": recovery_details,
+        "revision_watermark": result.revision_watermark,
+        "record_version": result.record_version,
+        "state_version": result.state_version,
+        "reason_codes": list(result.reason_codes),
+        "trade_authority": result.trade_authority,
+    }
+
+
 def main():
     config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
     data_dir = ROOT / "data" / "market"
@@ -141,7 +211,17 @@ def main():
         max_age_seconds=config.get("context_max_age_seconds", {"M1": 180, "M5": 900}),
     )
     signals = SignalManager(ROOT / "logs")
-    technical_engine = TechnicalEngine(load_strategy_config())
+    strategy_config = load_strategy_config()
+    technical_engine = TechnicalEngine(strategy_config)
+    lifecycle_store = LifecycleStore(market_store)
+    recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
+    price_action_runtime = PriceActionRuntime(
+        coordinator=PriceActionCoordinator(),
+        lifecycle_store=lifecycle_store,
+        config=strategy_config,
+        recovery_gate=recovery_manager,
+    )
+    recovered_streams = set()
 
     connector.connect()
     print("[MONITOR] Alert-only mode. No order functions are present.")
@@ -154,6 +234,21 @@ def main():
                 snapshot = context_builder.build(
                     timeframes=tuple(config["timeframes"]),
                     count=config["bars_to_fetch"],
+                )
+                stream_key = (snapshot.broker_server, snapshot.symbol)
+                if stream_key not in recovered_streams:
+                    recovery_manager.recover_stream(
+                        snapshot.broker_server,
+                        snapshot.symbol,
+                        strategy_config,
+                    )
+                    recovered_streams.add(stream_key)
+                price_action_result = price_action_runtime.process(snapshot)
+                price_action_payload = _price_action_runtime_payload(
+                    price_action_result,
+                    recovery_manager.get_details(
+                        snapshot.broker_server, snapshot.symbol
+                    ),
                 )
                 structures = {}
                 screenshots = {}
@@ -184,14 +279,27 @@ def main():
                     )
 
                 tick = dict(snapshot.tick or {})
-                if not snapshot.quality.is_valid or technical_error is not None:
+                price_action_blocked = price_action_result.status.value not in (
+                    "PROCESSED",
+                    "NO_LIFECYCLE",
+                )
+                if (
+                    not snapshot.quality.is_valid
+                    or technical_error is not None
+                    or price_action_blocked
+                ):
+                    decision_reasons = []
+                    if technical_error is not None:
+                        decision_reasons.append(technical_error)
+                    if not snapshot.quality.is_valid:
+                        decision_reasons.append("Market context quality gate failed")
+                        decision_reasons.extend(snapshot.quality.issues)
+                    if price_action_blocked:
+                        decision_reasons.extend(price_action_result.reason_codes)
                     decision = {
                         "decision": "WAIT",
                         "direction": "NONE",
-                        "reasons": [
-                            technical_error or "Market context quality gate failed",
-                            *snapshot.quality.issues,
-                        ],
+                        "reasons": decision_reasons,
                         "trade_execution": "DISABLED",
                     }
                 else:
@@ -205,6 +313,7 @@ def main():
                     "symbol": snapshot.symbol,
                     "tick": tick,
                     "market_structure": structures,
+                    "price_action_lifecycle": price_action_payload,
                     "technical_analysis": (
                         technical_analysis
                         if technical_analysis is not None
@@ -228,6 +337,13 @@ def main():
                     **decision,
                 }
                 signals.publish(payload)
+                if price_action_result.status.value not in ("PROCESSED", "NO_LIFECYCLE"):
+                    print(
+                        "[PRICE_ACTION] "
+                        + price_action_result.status.value
+                        + ": "
+                        + " | ".join(price_action_result.reason_codes)
+                    )
                 if not snapshot.quality.is_valid:
                     print("[CONTEXT] Invalid market context: " + " | ".join(snapshot.quality.issues))
                 elif snapshot.quality.warnings:
