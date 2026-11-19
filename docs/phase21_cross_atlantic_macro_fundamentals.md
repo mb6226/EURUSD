@@ -18,10 +18,12 @@ The registry now includes two official primary publishers, with all products ena
   - `US_CPI_ALL_ITEMS_INDEX` — CPI all-items index, unit `index_1982_84_100`.
   - `US_UNEMPLOYMENT_RATE` — civilian unemployment rate, unit `percent_of_labor_force`.
 - `EUROSTAT_MACRO`
-  - `EA_HICP_ALL_ITEMS_INDEX` — euro-area HICP all-items index, unit `index_2015_100`.
-  - `EA_UNEMPLOYMENT_RATE` — euro-area harmonised unemployment rate, unit `percent_of_labor_force`.
+  - `EA_HICP_ALL_ITEMS_INDEX` — euro-area HICP all-items index, unit `index_2015_100` (Eurostat `prc_hicp_midx`, all items `CP00`, index unit `I15`, euro-area aggregate).
+  - `EA_UNEMPLOYMENT_RATE` — euro-area harmonised unemployment rate, unit `percent_of_labor_force` (Eurostat `une_rt_m`, total sex, ages 15–74, seasonally adjusted, euro-area aggregate).
 
-`OfficialMacroSeriesAdapter` normalizes provider-extracted records. The transport/parser is injected; the adapter does not make HTTP requests or scrape either provider. Each record must include a `YYYY-MM` reference period, a finite decimal value, and a timezone-aware actual publication timestamp. The effective timestamp is normalized to the first day of the reference month at 00:00 UTC. A stable product/month record identity lets Phase 15 append revisions as new versions.
+BLS provider extraction should bind the CPI product to the unadjusted all-items CPI-U series `CUUR0000SA0` and the unemployment product to seasonally adjusted civilian unemployment series `LNS14000000`. Provider extraction must preserve the exact reference month and the actual official release timestamp; the adapter does not infer release times from a generic calendar rule.
+
+`OfficialMacroSeriesAdapter` normalizes provider-extracted records. The transport/parser is injected; the adapter does not make HTTP requests or scrape either provider. Each record must include a `YYYY-MM` reference period, a finite decimal value, and a timezone-aware actual publication timestamp. The effective timestamp is normalized to the first day of the reference month at 00:00 UTC. The canonical source-record identity is always product plus reference month, even if a provider's own row identifier changes between vintages; this lets Phase 15 append revisions as new versions.
 
 The adapter accepts only the four declared source/product pairs, rejects duplicate months, malformed periods, invalid numbers, missing/naive publication timestamps, and publication timestamps preceding the reference month. Incremental empty responses are allowed; empty full-history responses fail closed.
 
