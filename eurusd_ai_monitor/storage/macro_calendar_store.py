@@ -263,7 +263,9 @@ class MacroCalendarStore:
             if event.scheduled_at_utc is not None:
                 if not (start_utc.astimezone(timezone.utc) <= event.scheduled_at_utc <= end_utc.astimezone(timezone.utc)):
                     continue
-            elif not (start_day <= event.scheduled_date <= end_day):
+            # Date-only releases have no exact instant. Include adjacent local
+            # calendar dates so UTC/local midnight offsets cannot hide them.
+            elif not (start_day - timedelta(days=1) <= event.scheduled_date <= end_day + timedelta(days=1)):
                 continue
             results.append(event)
         return tuple(results)
