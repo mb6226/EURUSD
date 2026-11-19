@@ -70,11 +70,31 @@ class StoredLifecycleRecord:
     record_version: int
     revision_watermark: int
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.lifecycle, CorrectionLifecycle):
+            raise TypeError("lifecycle must be a CorrectionLifecycle")
+        if type(self.state_version) is not int or self.state_version < 0:
+            raise ValueError("state_version must be a non-negative integer")
+        if self.state_version != self.lifecycle.state_version:
+            raise ValueError("state_version must match the lifecycle snapshot")
+        if type(self.record_version) is not int or self.record_version <= 0:
+            raise ValueError("record_version must be a positive integer")
+        if type(self.revision_watermark) is not int or self.revision_watermark < 0:
+            raise ValueError("revision_watermark must be a non-negative integer")
+
 
 @dataclass(frozen=True)
 class LifecycleStreamState:
     active_record: StoredLifecycleRecord | None
     revision_watermark: int
+
+    def __post_init__(self) -> None:
+        if self.active_record is not None and not isinstance(
+            self.active_record, StoredLifecycleRecord
+        ):
+            raise TypeError("active_record must be StoredLifecycleRecord or None")
+        if type(self.revision_watermark) is not int or self.revision_watermark < 0:
+            raise ValueError("revision_watermark must be a non-negative integer")
 
 
 @dataclass(frozen=True)
@@ -534,6 +554,10 @@ class LifecycleStore:
                 indexed_watermark = int(row["revision_watermark"])
                 if record_version <= 0 or indexed_watermark < 0:
                     raise LifecycleIntegrityError("invalid indexed lifecycle versions")
+                if indexed_watermark > watermark:
+                    raise LifecycleIntegrityError(
+                        "lifecycle revision watermark exceeds the current M5 watermark"
+                    )
             except Exception as exc:
                 if isinstance(exc, LifecycleIntegrityError):
                     raise
