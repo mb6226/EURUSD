@@ -68,6 +68,8 @@ class CorrectionDetector:
                 raise TypeError(f"{name} must be a Decimal")
             if not value.is_finite() or value <= 0:
                 raise ValueError(f"{name} must be finite and greater than zero")
+        if max_correction_ratio > 1:
+            raise ValueError("max_correction_ratio must not exceed 1")
 
         ordered = tuple(sorted(m5_candles, key=lambda c: c.candle_open_time_utc))
         if ordered != m5_candles:
