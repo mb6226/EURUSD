@@ -13,8 +13,9 @@ _CURRENT = (
     "quantitative_market_statistics",
     "intermarket_intelligence",
     "positioning_sentiment_intelligence",
+    "liquidity_microstructure_intelligence",
 )
-_OPTIONAL_CURRENT = {"quantitative_market_statistics", "intermarket_intelligence", "positioning_sentiment_intelligence"}
+_OPTIONAL_CURRENT = {"quantitative_market_statistics", "intermarket_intelligence", "positioning_sentiment_intelligence", "liquidity_microstructure_intelligence"}
 _HISTORICAL = (
     "setup_outcome_observation",
     "statistical_outcome_evaluation",
@@ -268,6 +269,10 @@ class ResearchIntelligenceEngine:
             if raw in {"PARTIAL", "INSUFFICIENT_DATA"}: return "INCOMPLETE"
             if raw in {"STALE", "BLOCKED", "UNAVAILABLE", "DEGRADED"}: return raw
             return "AVAILABLE" if raw == "AVAILABLE" else raw
+        if name == "liquidity_microstructure_intelligence":
+            if raw in {"PARTIAL", "INSUFFICIENT_DATA"}: return "INCOMPLETE"
+            if raw in {"STALE", "BLOCKED", "UNAVAILABLE", "DEGRADED"}: return raw
+            return "AVAILABLE" if raw == "AVAILABLE" else raw
         if name == "intermarket_intelligence":
             if raw in {"PARTIAL", "INSUFFICIENT_DATA"}:
                 return "INCOMPLETE"
@@ -308,7 +313,9 @@ class ResearchIntelligenceEngine:
         compact = {"state": str(state), "source_status": source_status}
         for field in ("groups", "drivers", "directional_agreement", "directional_bias", "regime",
                       "volatility_state", "trend_direction", "lower_timeframe_alignment",
-                      "lifecycle_state", "reason_code", "timeframes", "provenance"):
+                      "lifecycle_state", "reason_code", "timeframes", "provenance",
+                      "spread", "tick_activity", "price_range", "body_to_range_median_ratio",
+                      "excluded_unclosed_candle_count", "interpretation_limits"):
             if field in payload:
                 compact[field] = payload[field]
         if "reason_codes" in payload:

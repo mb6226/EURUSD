@@ -245,6 +245,36 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(state["source_status"], "INCOMPLETE")
         self.assertIn("groups", state)
 
+    def test_optional_liquidity_specialist_missing_does_not_break_legacy_cycle(self):
+        result = self.build()
+        self.assertEqual(result["status"], "COHERENT")
+        self.assertEqual(
+            result["current_context"]["liquidity_microstructure_intelligence"]["source_status"],
+            "MISSING",
+        )
+        item = next(
+            entry for entry in result["source_manifest"]
+            if entry["source"] == "liquidity_microstructure_intelligence"
+        )
+        self.assertEqual(item["class"], "OPTIONAL_CURRENT")
+
+    def test_partial_liquidity_specialist_is_preserved_as_incomplete(self):
+        items = sources()
+        items["liquidity_microstructure_intelligence"] = {
+            "payload": {
+                "status": "PARTIAL",
+                "reason_codes": ["M5_SPREAD_OBSERVATIONS_MISSING"],
+                "timeframes": {"M1": {"status": "AVAILABLE"}, "M5": {"status": "PARTIAL"}},
+            },
+            "evaluated_at_utc": NOW.isoformat(),
+        }
+        result = self.build(items)
+        self.assertEqual(result["status"], "PARTIAL")
+        state = result["current_context"]["liquidity_microstructure_intelligence"]
+        self.assertEqual(state["source_status"], "INCOMPLETE")
+        self.assertIn("timeframes", state)
+        self.assertIn("M5_SPREAD_OBSERVATIONS_MISSING", state["reason_codes"])
+
     def test_quantitative_quality_block_is_not_promoted_to_available(self):
         items = sources()
         items["quantitative_market_statistics"] = {

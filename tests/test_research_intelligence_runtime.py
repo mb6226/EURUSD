@@ -112,7 +112,9 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
             symbol="EURUSD",
             sources=sources,
         )
-        self.assertEqual(len(report["source_manifest"]), 11)
+        self.assertEqual(len(report["source_manifest"]), 12)
+        manifest_sources = {item["source"] for item in report["source_manifest"]}
+        self.assertIn("liquidity_microstructure_intelligence", manifest_sources)
         self.assertEqual(report["status"], "COHERENT")
         self.assertEqual(sources["market_regime_intelligence"]["evaluated_at_utc"], NOW.isoformat())
 
