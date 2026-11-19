@@ -176,6 +176,20 @@ class PriceActionRuntime:
             active_lifecycle = (
                 active_record.lifecycle if active_record is not None else None
             )
+            if (
+                active_record is not None
+                and active_record.revision_watermark != stream.revision_watermark
+            ):
+                return self._result(
+                    snapshot,
+                    PriceActionRuntimeStatus.WAIT_RECOVERY,
+                    lifecycle=active_lifecycle,
+                    recovery_status=recovery_status,
+                    revision_watermark=stream.revision_watermark,
+                    record_version=active_record.record_version,
+                    state_version=active_record.state_version,
+                    reason_codes=("UNRECONCILED_M5_CANDLE_REVISION",),
+                )
 
             structure = self._technical_engine.analyze_snapshot(snapshot)
             if active_lifecycle is not None and (
