@@ -23,7 +23,7 @@ The package README states that general fundamental analysis, statistical researc
 | Macro calendar | `calendar_engine.py`, official-source adapters/config, SQLite store, tests | Calendar/event ingestion implemented; not full macro/fundamental interpretation |
 | News ingestion | `news_engine.py`, source config, SQLite store, tests | Official RSS/Atom ingestion; context-only, not full semantic/news-impact intelligence |
 | Fundamental intelligence | `fundamental_engine.py` contains only a placeholder docstring | Placeholder / absent implementation |
-| General statistical intelligence | `statistical_engine.py` contains only a placeholder docstring | Placeholder / absent implementation |
+| General statistical intelligence | `quantitative_market_statistics_engine.py` (Phase 18) computes deterministic M1/M5 return, range, true-range and efficiency distributions; existing `statistical_outcome_evaluator.py` remains setup-MFE/MAE-only | Initial descriptive specialist implemented; event studies, wave/sequence statistics, conditional models and uncertainty research remain absent. Research synthesis accepts the specialist as optional; live runtime invocation is not yet wired |
 | Outcome statistics | `statistical_outcome_evaluator.py`, regime-conditioned evaluator | Descriptive MFE/MAE only; not a general quantitative brain or realized trade performance |
 | Fusion | `fusion_engine.py`, runtime integration | Evidence fusion with bounded authority; not a complete central intelligence orchestrator |
 | Unified research synthesis | Phase 13 research engine/runtime/source envelopes | Read-only synthesis of existing specialist outputs |
@@ -42,7 +42,7 @@ The package README states that general fundamental analysis, statistical researc
 
 ## Runtime integration observations
 
-The inspected `main.py` orchestrates MT5, market context, technical, Price Action, macro calendar, news, Fusion, setup/session eligibility, outcome tracking, market regime, and research intelligence. The inspected runtime does not import/execute the fundamental/statistical placeholders, vision interpretation, learning placeholders, or knowledge-v2 RAG package.
+The inspected `main.py` orchestrates MT5, market context, technical, Price Action, macro calendar, news, Fusion, setup/session eligibility, outcome tracking, market regime, and research intelligence. The inspected runtime does not import/execute the fundamental placeholder, vision interpretation, learning placeholders, or knowledge-v2 RAG package. Phase 18 adds a deterministic quantitative market-statistics specialist and an optional central-research input contract, but does not yet wire automatic specialist execution into the monitoring loop.
 
 Current Fusion specialists include technical, Price Action, macro calendar, and news. Macro/news are context-only. Phase 13 synthesizes current specialist and historical descriptive outcome payloads; its contract says it is not a directional specialist, backtest, optimizer, or learner. Phase 14 adds evidence-lineage validation to the cycle, not missing specialist domains.
 
@@ -60,7 +60,7 @@ Current Fusion specialists include technical, Price Action, macro calendar, and 
 
 1. Maintain this product North Star, capability audit, dependency map, and source-of-truth register.
 2. Design and implement the canonical point-in-time data plane and source-registry integration so every specialist consumes consistent, provenance-rich observations.
-3. Implement **Quantitative/Statistical Intelligence** (general market statistics, not just setup MFE/MAE) to provide objective measurement across domains.
+3. Extend Phase 18 quantitative foundations with event studies, wave/sequence statistics, conditional distributions and uncertainty estimates; connect the specialist to the monitoring runtime only after explicit data/freshness integration and acceptance.
 4. Implement full **Macro/Fundamental Intelligence** using existing calendar/news foundations and additional reliable point-in-time sources.
 5. Add **Intermarket Intelligence** with explicit instrument mapping, timestamp alignment, and empirical relationship validation.
 6. Add **Liquidity/Microstructure** and **Positioning/Sentiment** only where reliable, legally usable data exists; label proxies honestly.
