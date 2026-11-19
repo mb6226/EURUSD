@@ -90,6 +90,29 @@
           "non-monetary policy meeting"
         ]
       }
+    },
+    {
+      "source_id": "FED_FOMC_CALENDAR",
+      "name": "Federal Reserve — FOMC Meeting Calendar",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "format": "FED_HTML",
+      "currency_codes": [
+        "USD"
+      ],
+      "category": "MONETARY_POLICY",
+      "timezone": "America/New_York",
+      "enabled": true,
+      "refresh_interval_seconds": 86400,
+      "stale_after_seconds": 2592000,
+      "impact_rules": {
+        "HIGH": [
+          "fomc policy decision"
+        ],
+        "MEDIUM": [
+          "fomc monetary policy strategy meeting"
+        ],
+        "LOW": []
+      }
     }
   ]
 }
