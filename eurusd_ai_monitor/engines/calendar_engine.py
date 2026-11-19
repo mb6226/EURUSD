@@ -99,6 +99,7 @@ def parse_ics_events(contents: str, source_timezone: str) -> list[dict]:
             raise CalendarSourceError(f"VEVENT {index} is missing DTSTART or SUMMARY")
         params, start_value = item["DTSTART"]
         scheduled_date, scheduled_at = _parse_ics_datetime(start_value, params, source_timezone)
+        event_timezone = params.get("TZID") or ("UTC" if start_value.endswith("Z") else source_timezone)
         uid = item.get("UID", ({}, f"{scheduled_date.isoformat()}|{item['SUMMARY'][1]}"))[1]
         status = item.get("STATUS", ({}, "CONFIRMED"))[1].upper()
         updated = None
@@ -111,6 +112,7 @@ def parse_ics_events(contents: str, source_timezone: str) -> list[dict]:
             "description": item.get("DESCRIPTION", ({}, ""))[1].strip(),
             "scheduled_date": scheduled_date,
             "scheduled_at_utc": scheduled_at,
+            "source_timezone": event_timezone,
             "status": status,
             "url": item.get("URL", ({}, ""))[1].strip(),
             "source_updated_at_utc": updated,
@@ -464,7 +466,7 @@ class MacroCalendarEngine:
             impact_reason=reason,
             scheduled_date=record["scheduled_date"],
             scheduled_at_utc=record.get("scheduled_at_utc"),
-            source_timezone=source["timezone"],
+            source_timezone=record.get("source_timezone", source["timezone"]),
             status=status,
             reference_period=record.get("reference_period"),
             actual=None, forecast=None, previous=None, result_unit=None,
