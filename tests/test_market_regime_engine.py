@@ -114,6 +114,7 @@ class MarketRegimeEngineTests(unittest.TestCase):
         self.assertEqual(one, two)
         self.assertEqual(len(one["provenance"]["m5_candle_ids"]), 20)
         self.assertTrue(one["provenance"]["m1_is_context_only"])
+        self.assertEqual(one["provenance"]["m1_window_end_utc"], BASE.isoformat())
 
     def test_threshold_contract_rejects_overlapping_efficiency_bands(self):
         with self.assertRaises(ValueError):
