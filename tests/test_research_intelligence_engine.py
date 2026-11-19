@@ -81,6 +81,25 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(result["status"], "BLOCKED")
         self.assertEqual(result["current_context"]["session_eligibility"]["state"], "BLOCKED")
 
+    def test_identity_mismatch_degrades_report(self):
+        items = sources()
+        items["market_regime_intelligence"]["symbol"] = "GBPUSD"
+        result = self.build(items)
+        self.assertEqual(result["status"], "DEGRADED")
+        self.assertIn("MARKET_REGIME_INTELLIGENCE_IDENTITY_MISMATCH", result["reason_codes"])
+
+    def test_outside_session_is_not_reported_as_eligible(self):
+        items = sources()
+        items["session_eligibility"]["payload"]["status"] = "OUTSIDE_SESSION"
+        result = self.build(items)
+        self.assertEqual(result["status"], "BLOCKED")
+
+    def test_unknown_regime_is_partial_not_coherent(self):
+        items = sources()
+        items["market_regime_intelligence"]["payload"]["regime"] = "UNKNOWN"
+        result = self.build(items)
+        self.assertEqual(result["status"], "PARTIAL")
+
     def test_historical_insufficient_data_is_not_current_context_failure(self):
         result = self.build()
         self.assertEqual(result["status"], "COHERENT")
