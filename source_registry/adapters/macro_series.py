@@ -147,6 +147,8 @@ class OfficialMacroSeriesAdapter(FetchAdapter):
     def _normalize(self, record: RawRecord) -> Observation:
         period = self._period(record["reference_period"])
         published = self._published(record["published_at_utc"])
+        if published < period:
+            raise FetchValidationError("published_at_utc cannot precede the reference month")
         source_record_id = record.get("source_record_id")
         if source_record_id is None:
             source_record_id = f"{self.product_id}:{period.strftime('%Y-%m')}"
