@@ -18,7 +18,7 @@ DEFAULT_MARKET_DATA_DB_PATH = (
     / "market_data.sqlite"
 )
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 3
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS candles (
@@ -96,6 +96,68 @@ CREATE TABLE IF NOT EXISTS backfill_checkpoints (
     CHECK (requested_start_utc < requested_end_utc),
     CHECK (next_from_utc >= requested_start_utc),
     CHECK (next_from_utc <= requested_end_utc)
+);
+"""
+
+_PA_LIFECYCLE_SCHEMA = """
+CREATE TABLE IF NOT EXISTS pa_lifecycle_state (
+    lifecycle_id TEXT PRIMARY KEY,
+    broker_server TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    state TEXT NOT NULL CHECK (
+        state IN ('CANDIDATE', 'CONFIRMED', 'DEEPENING',
+                  'RESOLVED', 'INVALIDATED', 'EXPIRED')
+    ),
+    state_version INTEGER NOT NULL CHECK (state_version >= 0),
+    record_version INTEGER NOT NULL CHECK (record_version > 0),
+    algorithm_version TEXT NOT NULL,
+    parameter_version TEXT NOT NULL,
+    last_processed_m5_utc TEXT NOT NULL,
+    revision_watermark INTEGER NOT NULL CHECK (revision_watermark >= 0),
+    snapshot_json TEXT NOT NULL,
+    updated_at_utc TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pa_active_lifecycle_stream
+    ON pa_lifecycle_state (broker_server, symbol)
+    WHERE state IN ('CANDIDATE', 'CONFIRMED', 'DEEPENING');
+
+CREATE INDEX IF NOT EXISTS idx_pa_lifecycle_stream_updated
+    ON pa_lifecycle_state (broker_server, symbol, updated_at_utc);
+
+CREATE TABLE IF NOT EXISTS pa_lifecycle_events (
+    event_id TEXT PRIMARY KEY,
+    lifecycle_id TEXT NOT NULL,
+    event_sequence INTEGER NOT NULL CHECK (event_sequence > 0),
+    transition_type TEXT NOT NULL,
+    previous_state TEXT,
+    current_state TEXT NOT NULL,
+    occurred_at_utc TEXT NOT NULL,
+    reason_codes_json TEXT NOT NULL,
+    evidence_refs_json TEXT NOT NULL,
+    lifecycle_snapshot_json TEXT NOT NULL,
+    revision_watermark INTEGER NOT NULL CHECK (revision_watermark >= 0),
+    created_at_utc TEXT NOT NULL,
+    UNIQUE (lifecycle_id, event_sequence),
+    FOREIGN KEY (lifecycle_id)
+        REFERENCES pa_lifecycle_state (lifecycle_id)
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_pa_lifecycle_events_time
+    ON pa_lifecycle_events (lifecycle_id, event_sequence);
+
+CREATE TABLE IF NOT EXISTS pa_lifecycle_recovery (
+    broker_server TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (
+        status IN ('NORMAL', 'RECONCILIATION', 'QUARANTINED')
+    ),
+    reason_code TEXT NOT NULL,
+    revision_watermark INTEGER NOT NULL CHECK (revision_watermark >= 0),
+    checked_at_utc TEXT NOT NULL,
+    details_json TEXT NOT NULL,
+    PRIMARY KEY (broker_server, symbol)
 );
 """
 
@@ -215,6 +277,18 @@ class BackfillCheckpoint:
     updated_at_utc: datetime
 
 
+@dataclass(frozen=True)
+class CandleRevision:
+    revision_id: int
+    broker_server: str
+    symbol: str
+    timeframe: str
+    candle_open_time_utc: datetime
+    detected_at_utc: datetime
+    old_values: dict[str, object]
+    new_values: dict[str, object]
+
+
 class MarketDataStore:
     """Independent SQLite archive for validated MT5 candle data."""
 
@@ -239,13 +313,16 @@ class MarketDataStore:
             connection.execute("PRAGMA journal_mode = WAL")
             connection.execute("PRAGMA synchronous = FULL")
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, _SCHEMA_VERSION):
+            if version not in (0, 1, 2, _SCHEMA_VERSION):
                 raise RuntimeError(
                     f"Unsupported market database schema version: {version}"
                 )
-            schema = _BACKFILL_SCHEMA if version == 1 else (
-                _SCHEMA + "\n" + _BACKFILL_SCHEMA
-            )
+            if version == 1:
+                schema = _BACKFILL_SCHEMA + "\\n" + _PA_LIFECYCLE_SCHEMA
+            elif version == 2:
+                schema = _PA_LIFECYCLE_SCHEMA
+            else:
+                schema = _SCHEMA + "\\n" + _BACKFILL_SCHEMA + "\\n" + _PA_LIFECYCLE_SCHEMA
             connection.executescript(
                 "BEGIN IMMEDIATE;\n"
                 + schema
@@ -537,6 +614,96 @@ class MarketDataStore:
                 tick_volume=row["tick_volume"],
                 spread=row["spread"],
                 real_volume=row["real_volume"],
+            )
+            for row in rows
+        ]
+
+    def get_candle_revision_watermark(
+        self,
+        broker_server: str,
+        symbol: str,
+        timeframe: str,
+    ) -> int:
+        """Return the latest revision ID for one broker/symbol/timeframe stream."""
+        _validate_identifier(broker_server, "broker_server")
+        _validate_identifier(symbol, "symbol")
+        if timeframe not in TIMEFRAME_SECONDS:
+            raise ValueError(f"Unsupported timeframe: {timeframe!r}")
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT COALESCE(MAX(revision_id), 0) AS watermark
+                FROM candle_revisions
+                WHERE broker_server = ? AND symbol = ? AND timeframe = ?
+                """,
+                (broker_server, symbol, timeframe),
+            ).fetchone()
+        return int(row["watermark"])
+
+    def get_candle_revisions(
+        self,
+        broker_server: str,
+        symbol: str,
+        timeframe: str,
+        *,
+        after_revision_id: int = 0,
+        through_revision_id: int | None = None,
+        limit: int = 500,
+    ) -> list[CandleRevision]:
+        """Read revisions in stable revision-ID order, using an exclusive lower bound."""
+        _validate_identifier(broker_server, "broker_server")
+        _validate_identifier(symbol, "symbol")
+        if timeframe not in TIMEFRAME_SECONDS:
+            raise ValueError(f"Unsupported timeframe: {timeframe!r}")
+        if isinstance(after_revision_id, bool) or not isinstance(after_revision_id, int) or after_revision_id < 0:
+            raise ValueError("after_revision_id must be a non-negative integer")
+        if through_revision_id is not None and (
+            isinstance(through_revision_id, bool)
+            or not isinstance(through_revision_id, int)
+            or through_revision_id < after_revision_id
+        ):
+            raise ValueError("through_revision_id must be an integer >= after_revision_id")
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+            raise ValueError("limit must be a positive integer")
+
+        clauses = [
+            "broker_server = ?",
+            "symbol = ?",
+            "timeframe = ?",
+            "revision_id > ?",
+        ]
+        parameters: list[object] = [
+            broker_server, symbol, timeframe, after_revision_id
+        ]
+        if through_revision_id is not None:
+            clauses.append("revision_id <= ?")
+            parameters.append(through_revision_id)
+        parameters.append(limit)
+
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT revision_id, broker_server, symbol, timeframe,
+                       candle_open_time_utc, detected_at_utc,
+                       old_values_json, new_values_json
+                FROM candle_revisions
+                WHERE """ + " AND ".join(clauses) + """
+                ORDER BY revision_id ASC
+                LIMIT ?
+                """,
+                parameters,
+            ).fetchall()
+
+        return [
+            CandleRevision(
+                revision_id=int(row["revision_id"]),
+                broker_server=row["broker_server"],
+                symbol=row["symbol"],
+                timeframe=row["timeframe"],
+                candle_open_time_utc=_timestamp_from_db(row["candle_open_time_utc"]),
+                detected_at_utc=_timestamp_from_db(row["detected_at_utc"]),
+                old_values=json.loads(row["old_values_json"]),
+                new_values=json.loads(row["new_values_json"]),
             )
             for row in rows
         ]
