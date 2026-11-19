@@ -28,6 +28,7 @@ from eurusd_ai_monitor.engines.lifecycle_recovery_manager import LifecycleRecove
 from eurusd_ai_monitor.engines.calendar_engine import MacroCalendarEngine
 from eurusd_ai_monitor.engines.news_engine import NewsEngine
 from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
+from eurusd_ai_monitor.engines.setup_pattern_engine import SetupPatternEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -368,6 +369,7 @@ def main():
     strategy_config = load_strategy_config()
     technical_engine = TechnicalEngine(strategy_config)
     fusion_engine = FusionEngine(max_evidence_age_seconds=300)
+    setup_pattern_engine = SetupPatternEngine(strategy_config)
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -478,6 +480,25 @@ def main():
                         snapshot.broker_server, snapshot.symbol
                     ),
                 )
+                active_lifecycle = (
+                    price_action_result.transition.lifecycle
+                    if price_action_result.transition is not None
+                    else None
+                )
+                try:
+                    setup_assessment = setup_pattern_engine.assess(
+                        active_lifecycle,
+                        snapshot.m1_candles,
+                        snapshot.timestamp_utc,
+                    ).to_dict()
+                except Exception as exc:
+                    setup_assessment = {
+                        "stage": "BLOCKED",
+                        "reason_codes": [f"SETUP_ASSESSMENT_ERROR:{type(exc).__name__}"],
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "entry_eligibility": "BLOCKED",
+                    }
                 structures = {}
                 screenshots = {}
                 technical_analysis = None
@@ -552,6 +573,7 @@ def main():
                     "tick": tick,
                     "market_structure": structures,
                     "price_action_lifecycle": price_action_payload,
+                    "setup_assessment": setup_assessment,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
                     "technical_analysis": (
