@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "BLS_US_RELEASES",
+      "name": "U.S. Bureau of Labor Statistics — Official Release Calendar",
+      "url": "https://www.bls.gov/schedule/news_release/bls.ics",
+      "format": "ICS",
+      "currency_codes": [
+        "USD"
+      ],
+      "category": "ECONOMIC_RELEASE",
+      "timezone": "America/New_York",
+      "enabled": true,
+      "refresh_interval_seconds": 21600,
+      "stale_after_seconds": 604800,
+      "impact_rules": {
+        "HIGH": [
+          "employment situation",
+          "consumer price index",
+          "cpi"
+        ],
+        "MEDIUM": [
+          "producer price",
+          "job openings",
+          "productivity",
+          "employment cost index",
+          "import and export price"
+        ],
+        "LOW": [
+          "metropolitan area",
+          "state employment",
+          "real earnings"
+        ]
+      }
+    },
+    {
+      "source_id": "BEA_US_RELEASES",
+      "name": "U.S. Bureau of Economic Analysis — Machine-Readable Release Schedule",
+      "url": "https://apps.bea.gov/API/signup/release_dates.json",
+      "format": "BEA_JSON",
+      "currency_codes": [
+        "USD"
+      ],
+      "category": "ECONOMIC_RELEASE",
+      "timezone": "UTC",
+      "enabled": true,
+      "refresh_interval_seconds": 21600,
+      "stale_after_seconds": 604800,
+      "impact_rules": {
+        "HIGH": [
+          "gross domestic product",
+          "personal income and outlays"
+        ],
+        "MEDIUM": [
+          "international trade",
+          "corporate profits",
+          "international transactions"
+        ],
+        "LOW": [
+          "satellite account",
+          "state",
+          "county"
+        ]
+      }
+    },
+    {
+      "source_id": "ECB_GOVERNING_COUNCIL",
+      "name": "European Central Bank — Governing Council Meeting Calendar",
+      "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+      "format": "ECB_HTML",
+      "currency_codes": [
+        "EUR"
+      ],
+      "category": "MONETARY_POLICY",
+      "timezone": "Europe/Berlin",
+      "enabled": true,
+      "refresh_interval_seconds": 86400,
+      "stale_after_seconds": 2592000,
+      "impact_rules": {
+        "HIGH": [
+          "monetary policy meeting",
+          "followed by press conference"
+        ],
+        "MEDIUM": [
+          "governing council"
+        ],
+        "LOW": [
+          "general council",
+          "non-monetary policy meeting"
+        ]
+      }
+    }
+  ]
+}
