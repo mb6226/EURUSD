@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from threading import Lock, Thread
 from pathlib import Path
 
 import pandas as pd
@@ -229,6 +230,21 @@ def main():
         macro_calendar_store,
         ROOT / "calendar_sources.json",
     )
+    calendar_refresh_lock = Lock()
+
+    def start_calendar_refresh() -> None:
+        if not calendar_refresh_lock.acquire(blocking=False):
+            return
+
+        def refresh_worker() -> None:
+            try:
+                start_calendar_refresh()
+            except Exception as exc:
+                print(f"[MACRO_CALENDAR] {type(exc).__name__}: {exc}")
+            finally:
+                calendar_refresh_lock.release()
+
+        Thread(target=refresh_worker, name="macro-calendar-refresh", daemon=True).start()
 
     connector.connect()
     print("[MONITOR] Alert-only mode. No order functions are present.")
