@@ -473,36 +473,42 @@ class LifecycleStore:
     def load_active(self, broker_server: str, symbol: str) -> CorrectionLifecycle | None:
         _validate_identifier(broker_server, "broker_server")
         _validate_identifier(symbol, "symbol")
-        placeholders = ", ".join("?" for _ in self._ACTIVE_STATES)
         with closing(self._market_data_store._connect()) as connection:
             rows = connection.execute(
-                f"""
-                SELECT lifecycle_id, state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state
+                """
+                SELECT lifecycle_id, state, broker_server, symbol, snapshot_json
+                FROM pa_lifecycle_state
                 WHERE broker_server = ? AND symbol = ?
-                  AND state IN ({placeholders})
                 ORDER BY updated_at_utc DESC
                 """,
-                (broker_server, symbol, *self._ACTIVE_STATES),
+                (broker_server, symbol),
             ).fetchall()
-        if len(rows) > 1:
+
+        active: list[CorrectionLifecycle] = []
+        for row in rows:
+            try:
+                lifecycle = CorrectionLifecycle.from_dict(json.loads(row["snapshot_json"]))
+                if (
+                    lifecycle.lifecycle_id != row["lifecycle_id"]
+                    or lifecycle.state.value != row["state"]
+                    or lifecycle.broker_server != row["broker_server"]
+                    or lifecycle.symbol != row["symbol"]
+                ):
+                    raise LifecycleIntegrityError(
+                        "snapshot identity/state differs from indexed row"
+                    )
+            except Exception as exc:
+                raise LifecycleIntegrityError(
+                    f"corrupt lifecycle snapshot for {row['lifecycle_id']}"
+                ) from exc
+            if lifecycle.state.value in self._ACTIVE_STATES:
+                active.append(lifecycle)
+
+        if len(active) > 1:
             raise LifecycleIntegrityError(
                 "multiple active lifecycles exist for one broker/symbol stream"
             )
-        if not rows:
-            return None
-        try:
-            lifecycle = CorrectionLifecycle.from_dict(json.loads(rows[0]["snapshot_json"]))
-            if (
-                lifecycle.state.value != rows[0]["state"]
-                or lifecycle.broker_server != rows[0]["broker_server"]
-                or lifecycle.symbol != rows[0]["symbol"]
-            ):
-                raise LifecycleIntegrityError("active snapshot identity/state differs from indexed row")
-            return lifecycle
-        except Exception as exc:
-            raise LifecycleIntegrityError(
-                f"corrupt active lifecycle snapshot for {rows[0]['lifecycle_id']}"
-            ) from exc
+        return active[0] if active else None
 
     def get_events(
         self,
