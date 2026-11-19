@@ -122,3 +122,12 @@ Phase 30 adds `HistoricalDatasetValidationEngine` for read-only integrity audits
 The same engine creates chronological train/validation/test partitions for timestamped scenario reports, with an outcome-horizon embargo that purges train and validation samples whose forward windows could cross the next partition boundary. It reports partition times/counts and source report indices; no random shuffle or model fitting is performed.
 
 Limitations: wall-clock coverage is not session-calendar-aware; weekend/holiday/maintenance gaps are not distinguished from missing feed data. The market store still lacks a complete as-of candle-version reader, and the scenario archive/upstream specialist provenance need separate completeness audits. This is a single holdout split, not repeated rolling-origin walk-forward folds. No source fetching, data repair, DB mutation, calibration, learning, strategy/risk change, or order execution is introduced.
+
+
+## Post-Phase 31 — Point-in-time multi-domain evidence reconstruction
+
+Phase 31 adds `PointInTimeReconstructionEngine` plus a JSONL runtime adapter. It reconstructs broker-specific closed M1/M5 candles as-of a historical instant by reversing later revision deltas and requiring closed-bar availability evidence; reads source-registry observations with publication/retrieval/effective-time cutoffs; rolls back versioned news and macro-calendar event payloads; and reassesses archived specialist reports through the central scenario engine at each historical timestamp.
+
+This is evidence reconstruction and archived-report reassessment, not historical specialist recomputation. The observation store only supplies products that were actually ingested. News unchanged refreshes lack complete append-only versioning and are excluded where prior availability cannot be proven. Candle closure is conservatively inferred from first/last-seen timestamps; dedicated closure events would be stronger. Macro calendar source-health state is mutable and not replayed. No live fetching, DB/log mutation, model training, calibration, source weighting, trading authority or order execution is added.
+
+The reconstructed raw evidence is paired with, but not yet transformed into or injected as, central-engine specialist reports. Central reassessment consumes only archived report objects that pass point-in-time timestamp and identity checks; this phase does not add new directional votes from raw reconstructed observations.
