@@ -213,6 +213,7 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
             self.store.get_recovery_record(BROKER, SYMBOL)["reason_code"],
             "MANUAL_REVIEW_REQUIRED",
         )
+
     def test_missing_startup_record_fails_closed(self):
         self.assertEqual(
             self.manager.get_status(BROKER, SYMBOL),
