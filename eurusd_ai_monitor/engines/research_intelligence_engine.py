@@ -10,7 +10,9 @@ _CURRENT = (
     "price_action_lifecycle",
     "setup_assessment",
     "session_eligibility",
+    "quantitative_market_statistics",
 )
+_OPTIONAL_CURRENT = {"quantitative_market_statistics"}
 _HISTORICAL = (
     "setup_outcome_observation",
     "statistical_outcome_evaluation",
@@ -69,6 +71,18 @@ class ResearchIntelligenceEngine:
 
         for name in (*_CURRENT, *_HISTORICAL):
             entry = sources.get(name)
+            if name in _OPTIONAL_CURRENT and (
+                not isinstance(entry, Mapping) or entry.get("payload") is None
+            ):
+                current_states[name] = {"state": "MISSING", "source_status": "MISSING"}
+                manifest.append({
+                    "source": name, "class": "OPTIONAL_CURRENT",
+                    "status": "MISSING", "source_status": "MISSING",
+                    "evaluated_at_utc": None,
+                    "reason_codes": [f"{name.upper()}_MISSING"],
+                    "authority_violations": [],
+                })
+                continue
             if not isinstance(entry, Mapping):
                 manifest.append({
                     "source": name, "class": "CURRENT" if name in _CURRENT else "HISTORICAL",
@@ -146,7 +160,7 @@ class ResearchIntelligenceEngine:
             reasons.extend(str(code) for code in reason_codes if code)
             manifest.append({
                 "source": name,
-                "class": "CURRENT" if name in _CURRENT else "HISTORICAL",
+                "class": "OPTIONAL_CURRENT" if name in _OPTIONAL_CURRENT else ("CURRENT" if name in _CURRENT else "HISTORICAL"),
                 "status": source_status,
                 "source_status": self._source_status(name, payload),
                 "evaluated_at_utc": source_time.isoformat() if source_time else None,
@@ -248,6 +262,8 @@ class ResearchIntelligenceEngine:
             if raw in {"WAIT_SETUP", "WAITING_FOR_SETUP"}:
                 return "INCOMPLETE"
             return "AVAILABLE"
+        if name == "quantitative_market_statistics" and raw == "INSUFFICIENT_DATA":
+            return "INCOMPLETE"
         if raw in {"DEGRADED", "UNAVAILABLE"}:
             return raw
         if name == "market_regime_intelligence" and str(payload.get("regime", "")).upper() == "UNKNOWN":
@@ -277,7 +293,7 @@ class ResearchIntelligenceEngine:
         compact = {"state": str(state), "source_status": source_status}
         for field in ("directional_agreement", "directional_bias", "regime",
                       "volatility_state", "trend_direction", "lower_timeframe_alignment",
-                      "lifecycle_state", "reason_code"):
+                      "lifecycle_state", "reason_code", "timeframes", "provenance"):
             if field in payload:
                 compact[field] = payload[field]
         if "reason_codes" in payload:
