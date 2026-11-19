@@ -151,6 +151,12 @@ class LifecycleStateMachine:
         # Collect newly confirmed correction pivots without reprocessing old ones.
         known_ids = {ref.candle_id for ref in lifecycle.correction_pivots}
         candidate_open = lifecycle.candidate_start_evidence.candle.candle_open_time_utc
+        pivot_counts: dict[str, int] = {}
+        for pivot in structure.pivots:
+            if pivot.evidence.candle.candle_open_time_utc >= candidate_open:
+                pivot_counts[pivot.evidence.candle_id] = (
+                    pivot_counts.get(pivot.evidence.candle_id, 0) + 1
+                )
         fresh_pivots = tuple(
             pivot
             for pivot in structure.pivots
@@ -158,6 +164,7 @@ class LifecycleStateMachine:
             and pivot.evidence.candle.candle_open_time_utc >= candidate_open
             and pivot.evidence.confirmed_at_utc <= structure.evaluated_at_utc
             and pivot.evidence.candle_id not in known_ids
+            and pivot_counts[pivot.evidence.candle_id] == 1
         )
         fresh_pivots = tuple(
             sorted(
