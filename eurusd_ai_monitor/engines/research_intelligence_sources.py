@@ -39,12 +39,23 @@ def build_research_intelligence_sources(
     for name in RESEARCH_SOURCE_NAMES:
         payload = payloads.get(name)
         identity = payload if isinstance(payload, Mapping) else {}
-        source_broker = identity.get("broker_server", broker_server)
-        source_symbol = identity.get("symbol", symbol)
+        provenance = identity.get("provenance", {})
+        if not isinstance(provenance, Mapping):
+            provenance = {}
+        source_broker = identity.get(
+            "broker_server", provenance.get("broker_server", broker_server)
+        )
+        source_symbol = identity.get(
+            "symbol", provenance.get("symbol", symbol)
+        )
         # An explicitly published null identity is malformed, not an omission.
-        if "broker_server" in identity and source_broker is None:
+        if (("broker_server" in identity and source_broker is None)
+                or ("broker_server" not in identity
+                    and "broker_server" in provenance and source_broker is None)):
             source_broker = ""
-        if "symbol" in identity and source_symbol is None:
+        if (("symbol" in identity and source_symbol is None)
+                or ("symbol" not in identity
+                    and "symbol" in provenance and source_symbol is None)):
             source_symbol = ""
         sources[name] = {
             "payload": payload,
