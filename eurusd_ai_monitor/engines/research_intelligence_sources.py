@@ -39,10 +39,17 @@ def build_research_intelligence_sources(
     for name in RESEARCH_SOURCE_NAMES:
         payload = payloads.get(name)
         identity = payload if isinstance(payload, Mapping) else {}
+        source_broker = identity.get("broker_server", broker_server)
+        source_symbol = identity.get("symbol", symbol)
+        # An explicitly published null identity is malformed, not an omission.
+        if "broker_server" in identity and source_broker is None:
+            source_broker = ""
+        if "symbol" in identity and source_symbol is None:
+            source_symbol = ""
         sources[name] = {
             "payload": payload,
-            "broker_server": identity.get("broker_server", broker_server),
-            "symbol": identity.get("symbol", symbol),
+            "broker_server": source_broker,
+            "symbol": source_symbol,
             # Do not substitute the cycle timestamp here. Missing source time is
             # a provenance defect and must fail closed in ResearchIntelligenceEngine.
             "evaluated_at_utc": identity.get("evaluated_at_utc"),
