@@ -9,6 +9,7 @@ from eurusd_ai_monitor.engines.calendar_engine import (
     MacroCalendarEngine,
     parse_bea_release_dates,
     parse_ecb_meeting_calendar_html,
+    parse_fomc_calendar_html,
     parse_ics_events,
 )
 from eurusd_ai_monitor.storage.macro_calendar_store import MacroCalendarStore
@@ -81,6 +82,27 @@ class CalendarParserTests(unittest.TestCase):
             parse_bea_release_dates(json.dumps({
                 "GDP": {"release_dates": ["2026-11-25T13:30:00"]}
             }))
+
+    def test_fomc_parser_uses_second_meeting_day_and_marks_future_dates_tentative(self):
+        html = """
+        <html><body>
+          <h2>2026 FOMC Meetings</h2>
+          January 27-28 Statement Press Conference
+          December 8-9* Statement Press Conference
+          <h2>2027 FOMC Meetings</h2>
+          January 26-27 Statement Press Conference
+          October 26-27 Monetary Policy Strategy Meeting
+        </body></html>
+        """
+        records = parse_fomc_calendar_html(
+            html, as_of_date=datetime(2026, 11, 19, tzinfo=timezone.utc).date()
+        )
+        by_date = {item["scheduled_date"].isoformat(): item for item in records}
+        self.assertEqual(by_date["2026-01-28"]["status"], "CONFIRMED")
+        self.assertEqual(by_date["2026-12-09"]["status"], "TENTATIVE")
+        self.assertEqual(by_date["2027-01-27"]["status"], "TENTATIVE")
+        self.assertIn("strategy meeting", by_date["2027-10-27"]["title"])
+        self.assertIsNone(by_date["2027-10-27"]["scheduled_at_utc"])
 
     def test_ecb_html_parser_extracts_meeting_dates_without_inventing_times(self):
         html = """
