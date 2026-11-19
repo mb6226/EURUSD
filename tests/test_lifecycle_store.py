@@ -1,6 +1,7 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -282,6 +283,24 @@ class LifecycleStoreTests(unittest.TestCase):
         )
         self.assertIsNone(self.store.load_active(BROKER, SYMBOL))
         self.assertEqual(self.store.load_by_id(self.lifecycle.lifecycle_id), expired)
+
+    def test_load_by_id_rejects_snapshot_lifecycle_id_mismatch(self):
+        self.save_created()
+        with closing(sqlite3.connect(self.db_path)) as db:
+            row = db.execute(
+                "SELECT snapshot_json FROM pa_lifecycle_state WHERE lifecycle_id = ?",
+                (self.lifecycle.lifecycle_id,),
+            ).fetchone()
+            payload = json.loads(row[0])
+            payload["lifecycle_id"] = "different-valid-lifecycle-id"
+            db.execute(
+                "UPDATE pa_lifecycle_state SET snapshot_json = ? WHERE lifecycle_id = ?",
+                (json.dumps(payload), self.lifecycle.lifecycle_id),
+            )
+            db.commit()
+
+        with self.assertRaises(LifecycleIntegrityError):
+            self.store.load_by_id(self.lifecycle.lifecycle_id)
 
     def test_load_active_rejects_indexed_state_snapshot_mismatch(self):
         self.save_created()
