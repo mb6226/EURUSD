@@ -149,11 +149,13 @@ class OfficialMacroSeriesAdapter(FetchAdapter):
         published = self._published(record["published_at_utc"])
         if published < period:
             raise FetchValidationError("published_at_utc cannot precede the reference month")
-        source_record_id = record.get("source_record_id")
-        if source_record_id is None:
-            source_record_id = f"{self.product_id}:{period.strftime('%Y-%m')}"
-        if not isinstance(source_record_id, str) or not source_record_id.strip():
+        provider_record_id = record.get("source_record_id")
+        if provider_record_id is not None and (
+            not isinstance(provider_record_id, str) or not provider_record_id.strip()
+        ):
             raise FetchValidationError("source_record_id must be a non-empty string")
+        # The canonical observation identity must remain stable across revisions.
+        source_record_id = f"{self.product_id}:{period.strftime('%Y-%m')}"
         return Observation(
             source_id=self.source_id,
             product_id=self.product_id,
