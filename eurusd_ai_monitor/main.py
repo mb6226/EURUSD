@@ -46,6 +46,10 @@ from eurusd_ai_monitor.engines.market_regime_engine import MarketRegimeEngine
 from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
 from eurusd_ai_monitor.engines.research_intelligence_runtime import build_research_intelligence_payload
 from eurusd_ai_monitor.engines.research_intelligence_sources import build_research_intelligence_sources
+from eurusd_ai_monitor.engines.evidence_lineage_engine import (
+    EvidenceLineageEngine, build_candle_inventory,
+)
+from eurusd_ai_monitor.engines.evidence_lineage_runtime import build_evidence_lineage_payload
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -70,6 +74,13 @@ def _candles_frame(candles) -> pd.DataFrame:
         }
         for candle in candles
     ])
+
+
+def _candle_lineage_inventory(snapshot) -> list[dict]:
+    return build_candle_inventory(
+        (*snapshot.m1_candles, *snapshot.m5_candles),
+        evaluated_at_utc=snapshot.timestamp_utc,
+    )
 
 
 def _quality_payload(quality) -> dict:
@@ -411,6 +422,7 @@ def main():
     research_intelligence_engine = ResearchIntelligenceEngine(
         max_current_age_seconds=int(config.get("research_intelligence_max_age_seconds", 300)),
     )
+    evidence_lineage_engine = EvidenceLineageEngine()
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -718,9 +730,24 @@ def main():
                     symbol=snapshot.symbol,
                     sources=research_sources,
                 )
+                evidence_lineage = build_evidence_lineage_payload(
+                    evidence_lineage_engine,
+                    evaluated_at_utc=snapshot.timestamp_utc,
+                    broker_server=snapshot.broker_server,
+                    symbol=snapshot.symbol,
+                    candle_inventory=_candle_lineage_inventory(snapshot),
+                    sources={
+                        "fusion_assessment": fusion_payload,
+                        "market_regime_intelligence": market_regime_report,
+                        "price_action_lifecycle": price_action_payload,
+                        "setup_assessment": setup_assessment,
+                        "technical_analysis": technical_analysis or {"status": "SKIPPED"},
+                    },
+                )
                 payload = {
                     "fusion_assessment": fusion_payload,
                     "research_intelligence": research_intelligence,
+                    "evidence_lineage": evidence_lineage,
                     "symbol": snapshot.symbol,
                     "tick": tick,
                     "market_structure": structures,
