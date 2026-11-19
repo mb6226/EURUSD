@@ -42,6 +42,7 @@ class ObservationStore:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS setup_observations (
                     setup_key TEXT PRIMARY KEY,
+                    lifecycle_id TEXT NOT NULL,
                     broker_server TEXT NOT NULL,
                     symbol TEXT NOT NULL,
                     session_name TEXT NOT NULL CHECK(session_name IN ('LONDON','NEW_YORK')),
@@ -91,7 +92,7 @@ class ObservationStore:
         return db
 
     def update(
-        self, *, setup_key: str, broker_server: str, symbol: str,
+        self, *, setup_key: str, lifecycle_id: str, broker_server: str, symbol: str,
         session_name: str | None, session_date: str | None,
         direction: str, reference_at_utc: datetime, reference_price: Decimal,
         pip_size: Decimal, evaluated_at_utc: datetime, candles: tuple[Candle, ...],
@@ -130,12 +131,12 @@ class ObservationStore:
                         return self._waiting(setup_key)
                     db.execute("""
                         INSERT INTO setup_observations (
-                            setup_key,broker_server,symbol,session_name,session_date,
+                            setup_key,lifecycle_id,broker_server,symbol,session_name,session_date,
                             direction,reference_at_utc,reference_price,pip_size,
                             session_end_utc,status,started_at_utc
-                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """, (
-                        setup_key, broker_server, symbol, session_name, session_date,
+                        setup_key, lifecycle_id, broker_server, symbol, session_name, session_date,
                         direction, reference_at.isoformat(), str(reference), str(pip),
                         end_utc.isoformat(), "ACTIVE", evaluated.isoformat(),
                     ))
@@ -144,7 +145,8 @@ class ObservationStore:
                     ).fetchone()
                 else:
                     immutable = (
-                        row["broker_server"] == broker_server
+                        row["lifecycle_id"] == lifecycle_id
+                        and row["broker_server"] == broker_server
                         and row["symbol"] == symbol
                         and row["direction"] == direction
                         and row["reference_at_utc"] == reference_at.isoformat()
@@ -262,6 +264,29 @@ class ObservationStore:
                 db.rollback()
                 raise
 
+    def advance_existing(
+        self, *, lifecycle_id: str, broker_server: str, symbol: str,
+        evaluated_at_utc: datetime, candles: tuple[Candle, ...],
+    ) -> dict | None:
+        with closing(self._connect()) as db:
+            row = db.execute("""
+                SELECT * FROM setup_observations
+                WHERE lifecycle_id=? AND broker_server=? AND symbol=?
+                ORDER BY started_at_utc DESC LIMIT 1
+            """, (lifecycle_id, broker_server, symbol)).fetchone()
+        if row is None:
+            return None
+        return self.update(
+            setup_key=row["setup_key"], lifecycle_id=lifecycle_id,
+            broker_server=broker_server, symbol=symbol,
+            session_name=row["session_name"], session_date=row["session_date"],
+            direction=row["direction"],
+            reference_at_utc=datetime.fromisoformat(row["reference_at_utc"]),
+            reference_price=Decimal(row["reference_price"]),
+            pip_size=Decimal(row["pip_size"]),
+            evaluated_at_utc=evaluated_at_utc, candles=candles, eligible=False,
+        )
+
     @staticmethod
     def _waiting(setup_key):
         return {
@@ -279,6 +304,7 @@ class ObservationStore:
             return ObservationStore._waiting(setup_key)
         return {
             "status": row["status"], "setup_key": row["setup_key"],
+            "lifecycle_id": row["lifecycle_id"],
             "session": row["session_name"], "session_date": row["session_date"],
             "direction": row["direction"],
             "reference_price": row["reference_price"],
@@ -315,6 +341,18 @@ class SetupOutcomeTracker:
             raise TypeError("setup_assessment and session_eligibility must be dictionaries")
         pullback = setup_assessment.get("pullback")
         if setup_assessment.get("stage") != "PATTERN_CONFIRMED" or not isinstance(pullback, dict):
+            if lifecycle_id:
+                continued = self._store.advance_existing(
+                    lifecycle_id=lifecycle_id, broker_server=broker_server,
+                    symbol=symbol, evaluated_at_utc=evaluated, candles=m1_candles,
+                )
+                if continued is not None:
+                    continued.update({
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    })
+                    return continued
             return {
                 "status": "WAIT_SETUP", "reason_code": "PATTERN_NOT_CONFIRMED",
                 "observation_type": "PRICE_EXCURSION_ONLY",
@@ -342,7 +380,8 @@ class SetupOutcomeTracker:
         reference_at = datetime.fromisoformat(pullback["confirmed_at_utc"].replace("Z", "+00:00"))
         eligible = session_eligibility.get("status") == "RESEARCH_ELIGIBLE"
         result = self._store.update(
-            setup_key=setup_key, broker_server=broker_server, symbol=symbol,
+            setup_key=setup_key, lifecycle_id=lifecycle_id,
+            broker_server=broker_server, symbol=symbol,
             session_name=session_eligibility.get("session"),
             session_date=session_eligibility.get("session_date"),
             direction=direction, reference_at_utc=reference_at,

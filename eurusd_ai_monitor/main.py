@@ -523,7 +523,7 @@ def main():
                         broker_server=snapshot.broker_server,
                         symbol=snapshot.symbol,
                         setup_assessment=setup_assessment,
-                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else None),
+                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else price_action_result.lifecycle_id),
                     )
                 except Exception as exc:
                     session_eligibility = {
@@ -538,7 +538,7 @@ def main():
                         evaluated_at_utc=snapshot.timestamp_utc,
                         broker_server=snapshot.broker_server,
                         symbol=snapshot.symbol,
-                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else None),
+                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else price_action_result.lifecycle_id),
                         setup_assessment=setup_assessment,
                         session_eligibility=session_eligibility,
                         m1_candles=snapshot.m1_candles,

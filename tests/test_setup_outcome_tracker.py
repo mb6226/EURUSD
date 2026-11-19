@@ -57,6 +57,21 @@ class SetupOutcomeTrackerTests(unittest.TestCase):
         self.assertEqual(result["mae_pips"], "2")
         self.assertEqual(result["candles_processed"], 1)
 
+    def test_active_observation_continues_when_setup_stage_changes(self):
+        self.assess(BASE + timedelta(minutes=3),
+                    (self.retest, candle(2, "1.10040", "1.09980", "1.10020")))
+        changed = {"stage": "WAIT_CORRECTION_CONFIRMATION"}
+        result = self.tracker.assess(
+            evaluated_at_utc=BASE + timedelta(minutes=4), broker_server="Broker",
+            symbol="EURUSD", lifecycle_id="life-1", setup_assessment=changed,
+            session_eligibility={"status": "OUTSIDE_SESSION"},
+            m1_candles=(self.retest, candle(2, "1.10040", "1.09980", "1.10020"),
+                        candle(3, "1.10050", "1.09990", "1.10030")),
+        )
+        self.assertEqual(result["status"], "ACTIVE")
+        self.assertEqual(result["candles_processed"], 2)
+        self.assertEqual(result["mfe_pips"], "5")
+
     def test_reference_candle_itself_is_not_counted(self):
         result = self.assess(BASE + timedelta(minutes=2), (self.retest,))
         self.assertEqual(result["candles_processed"], 0)
