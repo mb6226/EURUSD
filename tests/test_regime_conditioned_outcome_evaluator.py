@@ -169,6 +169,34 @@ class RegimeConditionedOutcomeTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(before, after)
 
+    def test_existing_regime_context_schema_is_upgraded_with_m1_provenance(self):
+        legacy_path = Path(self.temp.name) / "legacy.sqlite3"
+        with closing(sqlite3.connect(legacy_path)) as db:
+            db.execute("""
+                CREATE TABLE observation_regime_context (
+                    setup_key TEXT PRIMARY KEY,
+                    context_status TEXT NOT NULL,
+                    regime TEXT NOT NULL,
+                    volatility_state TEXT NOT NULL,
+                    trend_direction TEXT NOT NULL,
+                    lower_timeframe_alignment TEXT NOT NULL,
+                    algorithm_version TEXT,
+                    evaluated_at_utc TEXT,
+                    m5_window_end_utc TEXT,
+                    m5_candle_ids_json TEXT NOT NULL DEFAULT '[]',
+                    features_json TEXT NOT NULL DEFAULT '{}',
+                    reason_codes_json TEXT NOT NULL DEFAULT '[]'
+                )
+            """)
+            db.commit()
+        ObservationStore(legacy_path)
+        with closing(sqlite3.connect(legacy_path)) as db:
+            columns = {row[1] for row in db.execute(
+                "PRAGMA table_info(observation_regime_context)"
+            ).fetchall()}
+        self.assertIn("m1_candle_ids_json", columns)
+        self.assertIn("m1_window_end_utc", columns)
+
     def test_missing_database_is_not_created(self):
         missing = Path(self.temp.name) / "missing.sqlite3"
         report = RegimeConditionedOutcomeEvaluator(missing).build_report(
