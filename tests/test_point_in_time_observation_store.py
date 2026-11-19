@@ -105,6 +105,15 @@ class PointInTimeObservationStoreTests(unittest.TestCase):
         self.assertEqual(second.observations_unchanged, 1)
         self.assertEqual(self.store.count_observations(), 1)
 
+    def test_same_payload_fetched_later_is_not_a_data_revision(self):
+        self.store.persist_fetch_result(result("101.2", stamp(2)))
+        summary = self.store.persist_fetch_result(result("101.2", stamp(4)))
+        self.assertEqual(summary.observations_unchanged, 1)
+        self.assertEqual(summary.observations_revised, 0)
+        self.assertEqual(self.store.count_observations(), 1)
+        rows = self.store.get_as_of("TEST_SOURCE", "TEST_PRODUCT", stamp(5))
+        self.assertEqual(rows[0]["retrieved_at_utc"], "2026-01-01T02:00:00.000000Z")
+
     def test_revision_counts_are_reported(self):
         self.store.persist_fetch_result(result("100.0", stamp(2)))
         summary = self.store.persist_fetch_result(result("101.0", stamp(4)))
