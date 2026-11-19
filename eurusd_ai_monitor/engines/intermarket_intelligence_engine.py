@@ -177,6 +177,8 @@ class IntermarketIntelligenceEngine:
                 continue
             published_at = _timestamp(published, "published_at_utc")
             retrieved_at = _timestamp(row.get("retrieved_at_utc"), "retrieved_at_utc")
+            if published_at > retrieved_at:
+                raise ValueError("intermarket publication timestamp cannot follow retrieval timestamp")
             if effective > cutoff or published_at > cutoff or retrieved_at > cutoff:
                 continue
             value = _decimal(row.get("value"), "intermarket value")
@@ -247,10 +249,7 @@ class IntermarketIntelligenceEngine:
             "aligned_return_count": len(common),
             "sample_start_utc": common[0].isoformat(),
             "sample_end_utc": common[-1].isoformat(),
-            "contemporaneous_correlation": self._correlation(
-                [pair[0] for pair in zip([eurusd_returns[at] for at in common], [driver_returns[at] for at in common])],
-                [pair[1] for pair in zip([eurusd_returns[at] for at in common], [driver_returns[at] for at in common])],
-            ),
+            "contemporaneous_correlation": contemporaneous,
             "driver_leads_one_period_correlation": self._correlation(
                 [pair[0] for pair in lead_pairs], [pair[1] for pair in lead_pairs]
             ) if len(lead_pairs) >= self._minimum - 1 else None,
