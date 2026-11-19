@@ -413,6 +413,8 @@ class TransitionResult:
                 raise ValueError("transition cannot occur after the last processed M5 close")
             if occurred < self.lifecycle.candidate_started_at_utc:
                 raise ValueError("transition cannot precede candidate creation")
+            if occurred < self.lifecycle.impulse.confirmed_at_utc:
+                raise ValueError("transition cannot precede impulse confirmation")
 
     def to_dict(self) -> dict[str, Any]:
         return {
