@@ -92,6 +92,21 @@ class LifecycleRecoveryManager:
         )
         return status
 
+    def mark_reconciliation(
+        self, broker_server: str, symbol: str, reason_code: str
+    ) -> RecoveryStatus:
+        """Persist a runtime-detected revision race as a durable fail-closed gate."""
+        watermark = self._lifecycle_store.get_revision_watermark(broker_server, symbol)
+        self._lifecycle_store.record_recovery_status(
+            broker_server=broker_server,
+            symbol=symbol,
+            status=RecoveryStatus.RECONCILIATION.value,
+            reason_code=reason_code,
+            revision_watermark=watermark,
+            checked_at_utc=datetime.now(timezone.utc),
+            details={"source": "runtime_revision_guard"},
+        )
+        return RecoveryStatus.RECONCILIATION
     def get_status(self, broker_server: str, symbol: str) -> RecoveryStatus:
         record = self._lifecycle_store.get_recovery_record(broker_server, symbol)
         if record is None:
