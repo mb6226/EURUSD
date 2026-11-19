@@ -9,6 +9,7 @@ from .exceptions import (
 )
 from .models import DecimalRange, FetchRequest, FetchResult, Observation
 from .macro_series import OfficialMacroSeriesAdapter
+from .intermarket import IntermarketSeriesAdapter
 
 __all__ = [
     "FetchAdapter",
@@ -21,4 +22,5 @@ __all__ = [
     "DecimalRange",
     "Observation",
     "OfficialMacroSeriesAdapter",
+    "IntermarketSeriesAdapter",
 ]
