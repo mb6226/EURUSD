@@ -90,7 +90,17 @@ class NewsEngine:
         finally: self.lock.release()
     def build_context(self,now_utc,lookback_hours=72,limit=15):
         now=now_utc.astimezone(timezone.utc); items=self.store.list_recent(now,lookback_hours,limit)
-        states=self.store.list_source_states(); stale=[x["source_id"] for x in states if x["status"]!="ACTIVE"]
+        stored={x["source_id"]:x for x in self.store.list_source_states()}
+        states=[]
+        for source in self.sources:
+            if not source.get("enabled",False): continue
+            state=dict(stored.get(source["source_id"],{"source_id":source["source_id"],"status":"NOT_CONNECTED","last_success_at_utc":None,"last_error":None,"last_item_count":0}))
+            success=state.get("last_success_at_utc")
+            stale_after=max(1800,source["refresh_seconds"]*3)
+            if state["status"]=="ACTIVE" and (not success or (now-datetime.fromisoformat(success)).total_seconds()>stale_after):
+                state["status"]="STALE"
+            states.append(state)
+        stale=[x["source_id"] for x in states if x["status"]!="ACTIVE"]
         return {"status":"DEGRADED" if stale else ("ACTIVE" if states else "NOT_CONFIGURED"),"evaluated_at_utc":now.isoformat(),
         "lookback_hours":lookback_hours,"source_states":states,"stale_sources":stale,"article_count":len(items),
         "articles":[x.to_dict() for x in items],"interpretation":"HEADLINES_AND_SOURCE_CONTEXT_ONLY","decision_authority":"CONTEXT_ONLY","trade_authority":"NONE"}

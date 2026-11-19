@@ -28,7 +28,11 @@ class NewsItem:
             v=getattr(self,key)
             if v.tzinfo is None or v.utcoffset() is None: raise ValueError(f"{key} must be timezone-aware")
             object.__setattr__(self,key,v.astimezone(timezone.utc))
-        object.__setattr__(self,"currencies",tuple(dict.fromkeys(x.upper() for x in self.currencies)))
+        for key in ("categories","currencies","topics"):
+            values=tuple(getattr(self,key))
+            if any(not isinstance(x,str) or not x.strip() for x in values): raise ValueError(f"{key} must contain non-empty strings")
+            if key=="currencies": values=tuple(x.upper() for x in values)
+            object.__setattr__(self,key,tuple(dict.fromkeys(values)))
 
     def to_dict(self):
         return {"item_id":self.item_id,"source_id":self.source_id,"source_name":self.source_name,
