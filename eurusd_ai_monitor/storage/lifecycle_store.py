@@ -62,6 +62,21 @@ class LifecycleSaveResult:
     event_sequence: int | None = None
 
 
+
+@dataclass(frozen=True)
+class StoredLifecycleRecord:
+    lifecycle: CorrectionLifecycle
+    state_version: int
+    record_version: int
+    revision_watermark: int
+
+
+@dataclass(frozen=True)
+class LifecycleStreamState:
+    active_record: StoredLifecycleRecord | None
+    revision_watermark: int
+
+
 @dataclass(frozen=True)
 class LifecycleEvent:
     event_id: str
@@ -470,6 +485,80 @@ class LifecycleStore:
             raise LifecycleIntegrityError(
                 f"corrupt lifecycle snapshot for {lifecycle_id}"
             ) from exc
+
+    def load_stream_state(self, broker_server: str, symbol: str) -> LifecycleStreamState:
+        """Atomically load the active lifecycle record and current M5 revision watermark."""
+        _validate_identifier(broker_server, "broker_server")
+        _validate_identifier(symbol, "symbol")
+        with closing(self._market_data_store._connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT lifecycle_id, state, broker_server, symbol, state_version,
+                       record_version, algorithm_version, parameter_version,
+                       last_processed_m5_utc, revision_watermark, snapshot_json
+                FROM pa_lifecycle_state
+                WHERE broker_server = ? AND symbol = ?
+                ORDER BY updated_at_utc DESC
+                """,
+                (broker_server, symbol),
+            ).fetchall()
+            watermark = self._watermark_on_connection(
+                connection, broker_server, symbol
+            )
+
+        active: list[StoredLifecycleRecord] = []
+        for row in rows:
+            try:
+                lifecycle = CorrectionLifecycle.from_dict(json.loads(row["snapshot_json"]))
+                if (
+                    lifecycle.lifecycle_id != row["lifecycle_id"]
+                    or lifecycle.state.value != row["state"]
+                    or lifecycle.broker_server != row["broker_server"]
+                    or lifecycle.symbol != row["symbol"]
+                    or lifecycle.state_version != int(row["state_version"])
+                    or lifecycle.algorithm_version != row["algorithm_version"]
+                    or lifecycle.parameter_version != row["parameter_version"]
+                    or _timestamp_to_db(lifecycle.last_processed_m5_utc)
+                    != row["last_processed_m5_utc"]
+                ):
+                    raise LifecycleIntegrityError(
+                        "snapshot fields differ from indexed lifecycle row"
+                    )
+                record_version = int(row["record_version"])
+                indexed_watermark = int(row["revision_watermark"])
+                if record_version <= 0 or indexed_watermark < 0:
+                    raise LifecycleIntegrityError("invalid indexed lifecycle versions")
+            except Exception as exc:
+                if isinstance(exc, LifecycleIntegrityError):
+                    raise
+                raise LifecycleIntegrityError(
+                    f"corrupt lifecycle snapshot for {row['lifecycle_id']}"
+                ) from exc
+
+            if lifecycle.state.value in self._ACTIVE_STATES:
+                active.append(
+                    StoredLifecycleRecord(
+                        lifecycle=lifecycle,
+                        state_version=int(row["state_version"]),
+                        record_version=record_version,
+                        revision_watermark=indexed_watermark,
+                    )
+                )
+
+        if len(active) > 1:
+            raise LifecycleIntegrityError(
+                "multiple active lifecycles exist for one broker/symbol stream"
+            )
+        return LifecycleStreamState(
+            active_record=active[0] if active else None,
+            revision_watermark=watermark,
+        )
+
+    def load_active_record(
+        self, broker_server: str, symbol: str
+    ) -> StoredLifecycleRecord | None:
+        """Return the active snapshot together with its optimistic versions."""
+        return self.load_stream_state(broker_server, symbol).active_record
 
     def load_active(self, broker_server: str, symbol: str) -> CorrectionLifecycle | None:
         _validate_identifier(broker_server, "broker_server")
