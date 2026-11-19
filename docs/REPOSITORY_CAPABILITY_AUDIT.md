@@ -85,3 +85,12 @@ Phase 24 is merged at `f2438f721385df09123f310ee61c9f0465a14737`. Phase 25 close
 This is a contract correction, **not live integration**. The current monitoring loop in `eurusd_ai_monitor/main.py` still constructs research sources from Fusion, market regime, Price Action, setup/session eligibility, and historical outcome reports. It does not invoke the quantitative, macro-fundamental, policy-rate, intermarket, positioning, or liquidity specialists as live cycle participants. Those remain tested research foundations with manual/explicit inputs where applicable. No source is promoted to available merely because its engine exists.
 
 The next priority is a bounded central-integration slice: map actual per-cycle producer availability, define source applicability/freshness and missing-state behavior, then connect only specialists whose inputs and provenance can be supplied without hidden fetching or fabricated timestamps. Preserve alert-only/WAIT behavior and all existing authority boundaries.
+
+
+## Post-Phase 26 runtime integration
+
+Phase 26 adds the first live multi-domain runtime vertical slice. The main monitoring loop now invokes the Phase 18 quantitative market-statistics engine and Phase 24 liquidity/microstructure engine on the current `MarketSnapshot`, then passes both reports through the Phase 25 canonical research source envelope and publishes them in the cycle payload. Each specialist is exception-isolated and fails closed independently.
+
+This does **not** imply full liquidity measurement: per-candle spread remains unknown because the current tick spread is not historical per-candle evidence and raw broker `Candle.spread` is not normalized. The engine still reports available tick-activity and candle-range proxies when its sample/freshness requirements are met, with incomplete status where spread observations are absent.
+
+Macro fundamentals, policy-rate differential, intermarket, and positioning remain explicit missing sources in the live research manifest. Their specialist inputs currently come from manually ingested point-in-time observation sets, and no validated runtime query/selection contract is present. Phase 26 adds no automatic fetching, no Fusion directional votes, no RAG mutation, no risk changes, and no execution authority. WAIT/alert-only behavior is preserved.
