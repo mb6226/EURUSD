@@ -95,6 +95,7 @@ class RegimeConditionedOutcomeTests(unittest.TestCase):
         self.assertEqual(report["usable_regime_conditioned_observations"], 3)
         keys = {(g["dimension"], tuple(g["segments"])) for g in report["groups"]}
         self.assertIn(("REGIME", ("TRENDING",)), keys)
+        self.assertIn(("ALGORITHM_VERSION_REGIME", ("market-regime-m5-m1-v1", "TRENDING")), keys)
         self.assertIn(("VOLATILITY", ("HIGH",)), keys)
         self.assertIn(("REGIME_VOLATILITY", ("RANGING", "HIGH")), keys)
         self.assertIn(("SESSION_DIRECTION_REGIME", ("LONDON", "UP", "TRENDING")), keys)

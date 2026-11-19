@@ -24,7 +24,8 @@ Descriptive MFE/MAE groups are provided by:
 - session × regime;
 - direction × regime;
 - session × direction × regime;
-- M1 alignment.
+- M1 alignment;
+- algorithm-version × regime and algorithm-version × regime × volatility, so cohorts from different regime definitions are not silently pooled.
 
 Each group includes sample size, sample-quality label, and mean, nearest-rank median, p25, p75, minimum, and maximum MFE/MAE. Minimum sample size is a reporting convention, not a significance test.
 
