@@ -44,8 +44,11 @@ class EvidenceLineageEngineTests(unittest.TestCase):
             sources={} if sources is None else sources,
         )
 
-    def test_empty_sources_are_traceable_and_authority_is_restricted(self):
-        result = self.audit()
+    def test_missing_sources_are_partial_and_authority_is_restricted(self):
+        result = self.audit({name: {} for name in (
+            "technical_analysis", "fusion_assessment", "market_regime_intelligence",
+            "price_action_lifecycle", "setup_assessment",
+        )})
         self.assertEqual(result["status"], "TRACEABLE")
         self.assertEqual(result["inventory"]["total_candles"], 2)
         self.assertEqual(result["trade_authority"], "NONE")
@@ -151,7 +154,10 @@ class EvidenceLineageEngineTests(unittest.TestCase):
                          second["inventory"]["inventory_sha256"])
 
     def test_orphaned_candles_are_reported_not_failed(self):
-        result = self.audit()
+        result = self.audit({name: {} for name in (
+            "technical_analysis", "fusion_assessment", "market_regime_intelligence",
+            "price_action_lifecycle", "setup_assessment",
+        )})
         self.assertEqual(result["status"], "TRACEABLE")
         self.assertEqual(result["reference_coverage"]["orphaned_inventory_count"], 2)
 
@@ -173,7 +179,11 @@ class EvidenceLineageRuntimeTests(unittest.TestCase):
         inventory = build_candle_inventory((candle(),), evaluated_at_utc=NOW)
         result = build_evidence_lineage_payload(
             engine, evaluated_at_utc=NOW, broker_server="Broker-Demo",
-            symbol="EURUSD", candle_inventory=inventory, sources={},
+            symbol="EURUSD", candle_inventory=inventory,
+            sources={name: {} for name in (
+                "technical_analysis", "fusion_assessment", "market_regime_intelligence",
+                "price_action_lifecycle", "setup_assessment",
+            )},
         )
         self.assertEqual(result["status"], "TRACEABLE")
 
