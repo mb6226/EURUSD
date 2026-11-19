@@ -108,12 +108,15 @@ class MarketRegimeEngineTests(unittest.TestCase):
 
     def test_provenance_and_output_are_deterministic(self):
         m5 = make_candles("M5", 100, start=BASE - timedelta(minutes=500))
-        snap = make_snapshot(m5=m5)
+        # Include a closed M1 window so the provenance timestamp is available.
+        m1 = make_candles("M1", 20, start=BASE - timedelta(minutes=20))
+        snap = make_snapshot(m5=m5, m1=m1)
         one = self.engine.assess(snap, make_structure("UP"))
         two = self.engine.assess(snap, make_structure("UP"))
         self.assertEqual(one, two)
         self.assertEqual(len(one["provenance"]["m5_candle_ids"]), 20)
         self.assertTrue(one["provenance"]["m1_is_context_only"])
+        self.assertEqual(one["provenance"]["m1_window_end_utc"], BASE.isoformat())
 
     def test_threshold_contract_rejects_overlapping_efficiency_bands(self):
         with self.assertRaises(ValueError):

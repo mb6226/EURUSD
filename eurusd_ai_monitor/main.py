@@ -39,6 +39,9 @@ from eurusd_ai_monitor.engines.setup_outcome_tracker import (
 from eurusd_ai_monitor.engines.statistical_outcome_evaluator import (
     StatisticalOutcomeEvaluator,
 )
+from eurusd_ai_monitor.engines.regime_conditioned_outcome_evaluator import (
+    RegimeConditionedOutcomeEvaluator,
+)
 from eurusd_ai_monitor.engines.market_regime_engine import MarketRegimeEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
@@ -397,6 +400,10 @@ def main():
         observation_db_path,
         minimum_group_samples=int(config.get("statistics_minimum_group_samples", 30)),
     )
+    regime_conditioned_outcome_evaluator = RegimeConditionedOutcomeEvaluator(
+        observation_db_path,
+        minimum_group_samples=int(config.get("statistics_minimum_group_samples", 30)),
+    )
     market_regime_engine = MarketRegimeEngine(pip_size=strategy_config.pip_size)
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
@@ -543,37 +550,6 @@ def main():
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     }
-                try:
-                    setup_outcome = setup_outcome_tracker.assess(
-                        evaluated_at_utc=snapshot.timestamp_utc,
-                        broker_server=snapshot.broker_server,
-                        symbol=snapshot.symbol,
-                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else price_action_result.lifecycle_id),
-                        setup_assessment=setup_assessment,
-                        session_eligibility=session_eligibility,
-                        m1_candles=snapshot.m1_candles,
-                    )
-                except Exception as exc:
-                    setup_outcome = {
-                        "status": "BLOCKED",
-                        "reason_code": f"SETUP_OUTCOME_ERROR:{type(exc).__name__}",
-                        "observation_type": "PRICE_EXCURSION_ONLY",
-                        "trade_authority": "NONE",
-                        "order_execution": "DISABLED",
-                    }
-                try:
-                    statistical_outcome_report = statistical_outcome_evaluator.build_report(
-                        evaluated_at_utc=snapshot.timestamp_utc,
-                    )
-                except Exception as exc:
-                    statistical_outcome_report = {
-                        "status": "DEGRADED",
-                        "reason_code": f"STATISTICAL_EVALUATION_ERROR:{type(exc).__name__}",
-                        "report_type": "DESCRIPTIVE_PRICE_EXCURSION_STATISTICS",
-                        "decision_authority": "ASSESSMENT_ONLY",
-                        "trade_authority": "NONE",
-                        "order_execution": "DISABLED",
-                    }
                 structures = {}
                 screenshots = {}
                 technical_analysis = None
@@ -612,6 +588,51 @@ def main():
                         "status": "DEGRADED",
                         "regime": "UNKNOWN",
                         "reason_codes": [f"MARKET_REGIME_ERROR:{type(exc).__name__}"],
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
+                try:
+                    setup_outcome = setup_outcome_tracker.assess(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                        broker_server=snapshot.broker_server,
+                        symbol=snapshot.symbol,
+                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else price_action_result.lifecycle_id),
+                        setup_assessment=setup_assessment,
+                        session_eligibility=session_eligibility,
+                        m1_candles=snapshot.m1_candles,
+                        regime_context=market_regime_report,
+                    )
+                except Exception as exc:
+                    setup_outcome = {
+                        "status": "BLOCKED",
+                        "reason_code": f"SETUP_OUTCOME_ERROR:{type(exc).__name__}",
+                        "observation_type": "PRICE_EXCURSION_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
+                try:
+                    statistical_outcome_report = statistical_outcome_evaluator.build_report(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                    )
+                except Exception as exc:
+                    statistical_outcome_report = {
+                        "status": "DEGRADED",
+                        "reason_code": f"STATISTICAL_EVALUATION_ERROR:{type(exc).__name__}",
+                        "report_type": "DESCRIPTIVE_PRICE_EXCURSION_STATISTICS",
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
+                try:
+                    regime_conditioned_outcome_report = regime_conditioned_outcome_evaluator.build_report(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                    )
+                except Exception as exc:
+                    regime_conditioned_outcome_report = {
+                        "status": "DEGRADED",
+                        "reason_code": f"REGIME_CONDITIONED_EVALUATION_ERROR:{type(exc).__name__}",
+                        "report_type": "REGIME_CONDITIONED_PRICE_EXCURSION_STATISTICS",
                         "decision_authority": "ASSESSMENT_ONLY",
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
@@ -679,6 +700,7 @@ def main():
                     "session_eligibility": session_eligibility,
                     "setup_outcome_observation": setup_outcome,
                     "statistical_outcome_evaluation": statistical_outcome_report,
+                    "regime_conditioned_outcome_evaluation": regime_conditioned_outcome_report,
                     "market_regime_intelligence": market_regime_report,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
