@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -174,7 +175,7 @@ class LifecycleStore:
         event_id = self._event_id(payload) if payload is not None else None
         event_payload_json = _canonical_json(payload) if payload is not None else None
 
-        with self._market_data_store._connect() as connection:
+        with closing(self._market_data_store._connect()) as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
                 if event_id is not None:
@@ -450,13 +451,20 @@ class LifecycleStore:
         _validate_identifier(lifecycle_id, "lifecycle_id")
         with self._market_data_store._connect() as connection:
             row = connection.execute(
-                "SELECT snapshot_json FROM pa_lifecycle_state WHERE lifecycle_id = ?",
+                "SELECT state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state WHERE lifecycle_id = ?",
                 (lifecycle_id,),
             ).fetchone()
         if row is None:
             return None
         try:
-            return CorrectionLifecycle.from_dict(json.loads(row["snapshot_json"]))
+            lifecycle = CorrectionLifecycle.from_dict(json.loads(row["snapshot_json"]))
+            if (
+                lifecycle.state.value != row["state"]
+                or lifecycle.broker_server != row["broker_server"]
+                or lifecycle.symbol != row["symbol"]
+            ):
+                raise LifecycleIntegrityError("snapshot identity/state differs from indexed row")
+            return lifecycle
         except Exception as exc:
             raise LifecycleIntegrityError(
                 f"corrupt lifecycle snapshot for {lifecycle_id}"
@@ -469,7 +477,7 @@ class LifecycleStore:
         with self._market_data_store._connect() as connection:
             rows = connection.execute(
                 f"""
-                SELECT lifecycle_id, snapshot_json FROM pa_lifecycle_state
+                SELECT lifecycle_id, state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state
                 WHERE broker_server = ? AND symbol = ?
                   AND state IN ({placeholders})
                 ORDER BY updated_at_utc DESC
@@ -483,7 +491,14 @@ class LifecycleStore:
         if not rows:
             return None
         try:
-            return CorrectionLifecycle.from_dict(json.loads(rows[0]["snapshot_json"]))
+            lifecycle = CorrectionLifecycle.from_dict(json.loads(rows[0]["snapshot_json"]))
+            if (
+                lifecycle.state.value != rows[0]["state"]
+                or lifecycle.broker_server != rows[0]["broker_server"]
+                or lifecycle.symbol != rows[0]["symbol"]
+            ):
+                raise LifecycleIntegrityError("active snapshot identity/state differs from indexed row")
+            return lifecycle
         except Exception as exc:
             raise LifecycleIntegrityError(
                 f"corrupt active lifecycle snapshot for {rows[0]['lifecycle_id']}"
