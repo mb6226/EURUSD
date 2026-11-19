@@ -22,11 +22,13 @@ from eurusd_ai_monitor.engines.price_action_coordinator import PriceActionCoordi
 from eurusd_ai_monitor.engines.price_action_runtime import PriceActionRuntime
 from eurusd_ai_monitor.engines.lifecycle_recovery_manager import LifecycleRecoveryManager
 from eurusd_ai_monitor.engines.calendar_engine import MacroCalendarEngine
+from eurusd_ai_monitor.engines.news_engine import NewsEngine
 from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
 from eurusd_ai_monitor.storage.macro_calendar_store import MacroCalendarStore
+from eurusd_ai_monitor.storage.news_store import NewsStore
 from eurusd_ai_monitor.storage.mt5_market_adapter import MT5MarketDataAdapter
 from eurusd_ai_monitor.alerts.signal_manager import SignalManager
 
@@ -231,6 +233,9 @@ def main():
         ROOT / "calendar_sources.json",
     )
     calendar_refresh_lock = Lock()
+    news_store = NewsStore()
+    news_engine = NewsEngine(news_store)
+    news_refresh_lock = Lock()
 
     def start_calendar_refresh() -> None:
         if not calendar_refresh_lock.acquire(blocking=False):
@@ -246,6 +251,18 @@ def main():
 
         Thread(target=refresh_worker, name="macro-calendar-refresh", daemon=True).start()
 
+    def start_news_refresh() -> None:
+        if not news_refresh_lock.acquire(blocking=False):
+            return
+        def refresh_worker() -> None:
+            try:
+                news_engine.refresh_due()
+            except Exception as exc:
+                print(f"[NEWS] {type(exc).__name__}: {exc}")
+            finally:
+                news_refresh_lock.release()
+        Thread(target=refresh_worker, name="news-refresh", daemon=True).start()
+
     connector.connect()
     print("[MONITOR] Alert-only mode. No order functions are present.")
     print("[MONITOR] Market context is built from closed candles in SQLite.")
@@ -258,8 +275,24 @@ def main():
                     timeframes=tuple(config["timeframes"]),
                     count=config["bars_to_fetch"],
                 )
+                start_calendar_refresh()
+                start_news_refresh()
                 try:
-                    start_calendar_refresh()
+                    news_payload = news_engine.build_context(snapshot.timestamp_utc)
+                except Exception as exc:
+                    news_payload = {
+                        "status": "UNAVAILABLE",
+                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "source_states": [],
+                        "stale_sources": ["NEWS_CONTEXT_UNAVAILABLE"],
+                        "article_count": 0,
+                        "articles": [],
+                        "reason_code": "NEWS_CONTEXT_READ_FAILED",
+                        "reason": f"{type(exc).__name__}: {exc}",
+                        "decision_authority": "CONTEXT_ONLY",
+                        "trade_authority": "NONE",
+                    }
+                try:
                     macro_calendar_payload = macro_calendar_engine.build_context(
                         now_utc=snapshot.timestamp_utc,
                         horizon_hours=int(config.get("calendar_horizon_hours", 72)),
@@ -360,6 +393,7 @@ def main():
                     "market_structure": structures,
                     "price_action_lifecycle": price_action_payload,
                     "macro_calendar": macro_calendar_payload,
+                    "news_intelligence": news_payload,
                     "technical_analysis": (
                         technical_analysis
                         if technical_analysis is not None
