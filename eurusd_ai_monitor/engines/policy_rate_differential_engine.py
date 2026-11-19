@@ -118,7 +118,7 @@ class PolicyRateDifferentialEngine:
                 "A positive spread does not by itself imply EURUSD direction or timing.",
                 "No forecast, signal, strategy, risk instruction, or execution authority is produced.",
             ],
-            "provenance": self._provenance(ecb, fed),
+            "provenance": self._provenance(ecb, fed, cutoff),
         }
 
     @staticmethod
