@@ -71,11 +71,13 @@ class CorrectionDetectorTests(unittest.TestCase):
         self.impulse = self.impulse_detector.detect(structure, self.config.pip_size)
 
     def test_creates_candidate_on_first_closed_candle_reaching_threshold(self):
+        first_correction = candle(13, "1.10800", "1.10650")
+        candles = self.candles + (first_correction,)
         lifecycle = self.detector.detect_candidate(
             self.impulse,
             TrendDirection.UP,
-            self.candles,
-            self.candles[-1].candle_open_time_utc + timedelta(minutes=5),
+            candles,
+            candles[-1].candle_open_time_utc + timedelta(minutes=5),
             Decimal("5"),
             Decimal("0.80"),
         )
@@ -83,15 +85,16 @@ class CorrectionDetectorTests(unittest.TestCase):
         self.assertIsNotNone(lifecycle)
         self.assertEqual(lifecycle.state, LifecycleState.CANDIDATE)
         self.assertEqual(lifecycle.age_bars, 1)
-        self.assertEqual(lifecycle.candidate_start_evidence.candle, self.candles[-1])
-        self.assertEqual(lifecycle.last_processed_m5_utc, self.candles[-1].candle_open_time_utc)
+        self.assertEqual(lifecycle.candidate_start_evidence.candle, first_correction)
+        self.assertEqual(lifecycle.last_processed_m5_utc, first_correction.candle_open_time_utc)
         self.assertEqual(lifecycle.depth_pips, Decimal("50"))
         self.assertEqual(lifecycle.retracement_ratio, Decimal("0.625"))
         self.assertEqual(lifecycle.warnings, ())
 
     def test_deep_correction_is_warning_not_rejection(self):
         deep = self.candles + (
-            candle(13, "1.10800", "1.10000"),
+            candle(13, "1.10900", "1.10650"),
+            candle(14, "1.10800", "1.10000"),
         )
         lifecycle = self.detector.detect_candidate(
             self.impulse,
@@ -108,7 +111,7 @@ class CorrectionDetectorTests(unittest.TestCase):
 
     def test_returns_none_when_threshold_is_not_reached(self):
         shallow = tuple(
-            candle(i, "1.11200", "1.11100")
+            candle(i, "1.11200", "1.11120")
             for i in range(13, 16)
         )
         lifecycle = self.detector.detect_candidate(
