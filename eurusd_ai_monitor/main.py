@@ -36,6 +36,9 @@ from eurusd_ai_monitor.engines.session_eligibility_engine import (
 from eurusd_ai_monitor.engines.setup_outcome_tracker import (
     ObservationStore, SetupOutcomeTracker,
 )
+from eurusd_ai_monitor.engines.statistical_outcome_evaluator import (
+    StatisticalOutcomeEvaluator,
+)
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -384,9 +387,14 @@ def main():
         take_profit_pips=Decimal(str(risk_config["take_profit_pips"])),
         max_daily_risk_pips=Decimal(str(risk_config["max_daily_risk_pips"])),
     )
+    observation_db_path = data_dir / "setup_observations.sqlite3"
     setup_outcome_tracker = SetupOutcomeTracker(
-        ObservationStore(data_dir / "setup_observations.sqlite3"),
+        ObservationStore(observation_db_path),
         pip_size=strategy_config.pip_size,
+    )
+    statistical_outcome_evaluator = StatisticalOutcomeEvaluator(
+        observation_db_path,
+        minimum_group_samples=int(config.get("statistics_minimum_group_samples", 30)),
     )
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
@@ -551,6 +559,19 @@ def main():
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     }
+                try:
+                    statistical_outcome_report = statistical_outcome_evaluator.build_report(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                    )
+                except Exception as exc:
+                    statistical_outcome_report = {
+                        "status": "DEGRADED",
+                        "reason_code": f"STATISTICAL_EVALUATION_ERROR:{type(exc).__name__}",
+                        "report_type": "DESCRIPTIVE_PRICE_EXCURSION_STATISTICS",
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
                 structures = {}
                 screenshots = {}
                 technical_analysis = None
@@ -628,6 +649,7 @@ def main():
                     "setup_assessment": setup_assessment,
                     "session_eligibility": session_eligibility,
                     "setup_outcome_observation": setup_outcome,
+                    "statistical_outcome_evaluation": statistical_outcome_report,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
                     "technical_analysis": (
