@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from eurusd_ai_monitor.engines.macro_fundamentals_engine import MacroFundamentalsEngine
+from eurusd_ai_monitor.engines.fundamental_engine import MacroFundamentalsEngine
 
 UTC = timezone.utc
 AS_OF = datetime(2026,11,19,12,tzinfo=UTC)
