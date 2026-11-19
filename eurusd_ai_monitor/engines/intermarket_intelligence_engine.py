@@ -16,7 +16,7 @@ DRIVERS = {
     },
     "DE_10Y_GOVERNMENT_YIELD": {
         "source_id": "ECB_INTERMARKET", "unit": "percent_per_annum",
-        "change_method": "YIELD_CHANGE_BP", "max_age_days": 45,
+        "change_method": "YIELD_CHANGE_BP", "max_age_days": 5,
     },
     "USD_BROAD_TRADE_WEIGHTED_INDEX": {
         "source_id": "FRED_INTERMARKET", "unit": "index_points",
