@@ -258,7 +258,32 @@ class LifecycleStoreTests(unittest.TestCase):
         with self.assertRaises(LifecycleRevisionConflict):
             self.save_created()
 
-    def test_terminal_lifecycle_is_not_loaded_as_active(self):
+    def test_valid_terminal_lifecycle_is_not_loaded_as_active(self):
+        self.save_created()
+        expired = replace(
+            self.lifecycle,
+            state=LifecycleState.EXPIRED,
+            state_version=self.lifecycle.state_version + 1,
+        )
+        transition = TransitionResult(
+            transition_type=TransitionType.EXPIRED,
+            previous_state=LifecycleState.CANDIDATE,
+            current_state=LifecycleState.EXPIRED,
+            lifecycle=expired,
+            occurred_at_utc=expired.last_processed_m5_utc + timedelta(minutes=5),
+            reason_codes=("LIFECYCLE_EXPIRED",),
+            evidence_refs=(),
+        )
+        self.store.save_transition(
+            transition,
+            expected_record_version=1,
+            revision_watermark=0,
+            created_at_utc=self.created_at + timedelta(minutes=1),
+        )
+        self.assertIsNone(self.store.load_active(BROKER, SYMBOL))
+        self.assertEqual(self.store.load_by_id(self.lifecycle.lifecycle_id), expired)
+
+    def test_load_active_rejects_indexed_state_snapshot_mismatch(self):
         self.save_created()
         with closing(sqlite3.connect(self.db_path)) as db:
             db.execute(
@@ -266,7 +291,8 @@ class LifecycleStoreTests(unittest.TestCase):
                 (self.lifecycle.lifecycle_id,),
             )
             db.commit()
-        self.assertIsNone(self.store.load_active(BROKER, SYMBOL))
+        with self.assertRaises(LifecycleIntegrityError):
+            self.store.load_active(BROKER, SYMBOL)
 
 
 if __name__ == "__main__":
