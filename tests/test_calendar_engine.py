@@ -55,6 +55,7 @@ class CalendarParserTests(unittest.TestCase):
         cpi = records[0]
         self.assertEqual(cpi["scheduled_at_utc"], datetime(2026, 11, 20, 13, 30, tzinfo=timezone.utc))
         self.assertEqual(cpi["scheduled_date"].isoformat(), "2026-11-20")
+        self.assertEqual(cpi["source_timezone"], "America/New_York")
         self.assertIn("Official schedule", cpi["description"])
         self.assertIsNone(records[1]["scheduled_at_utc"])
         self.assertEqual(records[1]["status"], "CANCELLED")
