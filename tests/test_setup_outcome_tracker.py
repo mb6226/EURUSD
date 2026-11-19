@@ -121,6 +121,33 @@ class SetupOutcomeTrackerTests(unittest.TestCase):
         self.assertEqual(result["status"], "COMPLETED")
         self.assertEqual(result["session_end_utc"], "2026-11-19T17:00:00+00:00")
 
+    def test_completed_observation_still_detects_late_candle_revision(self):
+        original = candle(2, "1.10040", "1.09980", "1.10020")
+        self.assess(datetime(2026, 11, 19, 12, 0, tzinfo=timezone.utc),
+                    (self.retest, original))
+        revised = candle(2, "1.10070", "1.09980", "1.10020")
+        result = self.assess(datetime(2026, 11, 19, 12, 1, tzinfo=timezone.utc),
+                             (self.retest, revised),
+                             session={"status": "OUTSIDE_SESSION"})
+        self.assertEqual(result["status"], "DATA_CONFLICT")
+
+    def test_bearish_excursions_are_mirrored(self):
+        retest = candle(1, "1.10020", "1.09990", "1.10000")
+        retest_id = f"Broker|EURUSD|M1|{retest.candle_open_time_utc.isoformat().replace('+00:00', 'Z')}"
+        assessment = {
+            "stage": "PATTERN_CONFIRMED", "trend_direction": "DOWN",
+            "pullback": {"retest_candle_id": retest_id,
+                         "confirmed_at_utc": (BASE + timedelta(minutes=2)).isoformat()},
+        }
+        result = self.tracker.assess(
+            evaluated_at_utc=BASE + timedelta(minutes=3), broker_server="Broker",
+            symbol="EURUSD", lifecycle_id="life-short", setup_assessment=assessment,
+            session_eligibility=self.eligible,
+            m1_candles=(retest, candle(2, "1.10030", "1.09960", "1.09980")),
+        )
+        self.assertEqual(result["mfe_pips"], "4")
+        self.assertEqual(result["mae_pips"], "3")
+
     def test_never_emits_trade_or_order_authority(self):
         result = self.assess(BASE + timedelta(minutes=3),
                              (self.retest, candle(2, "1.10040", "1.09980", "1.10020")))

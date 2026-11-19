@@ -165,6 +165,26 @@ class ObservationStore:
                     "SELECT * FROM setup_observations WHERE setup_key=?", (setup_key,)
                 ).fetchone()
                 if row["status"] != "ACTIVE":
+                    # Re-check immutable evidence even after session completion. A
+                    # later market-data revision must remain visible to research.
+                    for candle in candles:
+                        if (candle.broker_server != broker_server or candle.symbol != symbol
+                                or candle.timeframe != "M1"):
+                            continue
+                        opened_text = candle.candle_open_time_utc.isoformat()
+                        existing = db.execute("""
+                            SELECT open_price,high_price,low_price,close_price
+                            FROM observation_candles WHERE setup_key=? AND candle_open_utc=?
+                        """, (setup_key, opened_text)).fetchone()
+                        values = (str(candle.open), str(candle.high), str(candle.low), str(candle.close))
+                        if existing is not None and tuple(existing) != values:
+                            db.execute("""
+                                UPDATE setup_observations
+                                SET status='DATA_CONFLICT',
+                                    conflict_reason='PROCESSED_CANDLE_OHLC_REVISED'
+                                WHERE setup_key=?
+                            """, (setup_key,))
+                            break
                     db.commit()
                     return self._read(db, setup_key)
 
