@@ -77,7 +77,7 @@ def make_lifecycle(state=LifecycleState.CONFIRMED):
     candidate = evidence(5, "1.1090", "1.1070", EvidenceRole.CORRECTION, 5)
     extreme = evidence(12, "1.1080", "1.1070", EvidenceRole.CORRECTION, 5)
     pivots = tuple(
-        evidence(index, high, low, EvidenceRole.TREND_PIVOT, 10)
+        evidence(index, high, low, EvidenceRole.TREND_PIVOT, 15)
         for index, high, low in (
             (6, "1.1090", "1.1080"),
             (8, "1.1085", "1.1075"),
