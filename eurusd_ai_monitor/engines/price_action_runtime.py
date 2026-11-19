@@ -122,14 +122,11 @@ class PriceActionRuntime:
 
     def __init__(
         self,
-        technical_engine: TechnicalEngine,
         coordinator: PriceActionCoordinator,
         lifecycle_store: LifecycleStore,
         config: StrategyConfig,
         recovery_gate: RecoveryGate,
     ) -> None:
-        if not isinstance(technical_engine, TechnicalEngine):
-            raise TypeError("technical_engine must be a TechnicalEngine")
         if not isinstance(coordinator, PriceActionCoordinator):
             raise TypeError("coordinator must be a PriceActionCoordinator")
         if not isinstance(lifecycle_store, LifecycleStore):
@@ -138,7 +135,7 @@ class PriceActionRuntime:
             raise TypeError("config must be a StrategyConfig")
         if not callable(getattr(recovery_gate, "get_status", None)):
             raise TypeError("recovery_gate must provide get_status(broker_server, symbol)")
-        self._technical_engine = technical_engine
+        self._technical_engine = TechnicalEngine(config)
         self._coordinator = coordinator
         self._lifecycle_store = lifecycle_store
         self._config = config
