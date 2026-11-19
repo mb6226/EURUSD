@@ -58,6 +58,12 @@ from source_registry.observation_store import (
     DEFAULT_OBSERVATION_DB, PointInTimeObservationStore,
 )
 from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
+from eurusd_ai_monitor.engines.central_scenario_intelligence_engine import (
+    CentralScenarioIntelligenceEngine,
+)
+from eurusd_ai_monitor.engines.central_scenario_runtime import (
+    build_central_scenario_payload,
+)
 from eurusd_ai_monitor.engines.research_intelligence_runtime import build_research_intelligence_payload
 from eurusd_ai_monitor.engines.research_intelligence_sources import build_research_intelligence_sources
 from eurusd_ai_monitor.engines.evidence_lineage_engine import (
@@ -462,6 +468,9 @@ def main():
     research_intelligence_engine = ResearchIntelligenceEngine(
         max_current_age_seconds=int(config.get("research_intelligence_max_age_seconds", 300)),
     )
+    central_scenario_intelligence_engine = CentralScenarioIntelligenceEngine(
+        max_report_age_seconds=int(config.get("research_intelligence_max_age_seconds", 300)),
+    )
     evidence_lineage_engine = EvidenceLineageEngine()
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
@@ -786,6 +795,24 @@ def main():
                     symbol=snapshot.symbol,
                     sources=research_sources,
                 )
+                central_scenario_intelligence = build_central_scenario_payload(
+                    central_scenario_intelligence_engine,
+                    evaluated_at_utc=snapshot.timestamp_utc,
+                    broker_server=snapshot.broker_server,
+                    symbol=snapshot.symbol,
+                    technical_analysis=technical_analysis,
+                    price_action_lifecycle=price_action_payload,
+                    market_regime_intelligence=market_regime_report,
+                    fusion_assessment=fusion_payload,
+                    specialist_reports=live_specialist_reports,
+                    macro_calendar=macro_calendar_payload,
+                    news_intelligence=news_payload,
+                    setup_assessment=setup_assessment,
+                    session_eligibility=session_eligibility,
+                    setup_outcome_observation=setup_outcome,
+                    statistical_outcome_evaluation=statistical_outcome_report,
+                    regime_conditioned_outcome_evaluation=regime_conditioned_outcome_report,
+                )
                 evidence_lineage = build_evidence_lineage_payload(
                     evidence_lineage_engine,
                     evaluated_at_utc=snapshot.timestamp_utc,
@@ -803,6 +830,7 @@ def main():
                 payload = {
                     "fusion_assessment": fusion_payload,
                     "research_intelligence": research_intelligence,
+                    "central_scenario_intelligence": central_scenario_intelligence,
                     "evidence_lineage": evidence_lineage,
                     "symbol": snapshot.symbol,
                     "tick": tick,
