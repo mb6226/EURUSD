@@ -92,6 +92,8 @@ class SetupOutcomeTrackerTests(unittest.TestCase):
 
     def test_observation_completes_at_london_session_end(self):
         bars = (self.retest, candle(2, "1.10040", "1.09980", "1.10020"))
+        started = self.assess(BASE + timedelta(minutes=3), bars)
+        self.assertEqual(started["status"], "ACTIVE")
         result = self.assess(datetime(2026, 11, 19, 12, 0, tzinfo=timezone.utc), bars,
                              session={"status": "OUTSIDE_SESSION"})
         self.assertEqual(result["status"], "COMPLETED")
