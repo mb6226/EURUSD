@@ -136,7 +136,8 @@ class PointInTimeObservationStore:
     def __init__(self, db_path: str | Path = DEFAULT_OBSERVATION_DB) -> None:
         self.db_path = Path(db_path).resolve()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.db_path, timeout=30) as connection:
+        connection = sqlite3.connect(self.db_path, timeout=30)
+        try:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
             if version not in (0, SCHEMA_VERSION):
                 raise RuntimeError(
@@ -146,6 +147,8 @@ class PointInTimeObservationStore:
             connection.executescript(_SCHEMA)
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.commit()
+        finally:
+            connection.close()
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.db_path, timeout=30)
