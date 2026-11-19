@@ -17,6 +17,9 @@ The calendar is context-only:
 | BLS | Official iCalendar feed | U.S. labor, CPI, PPI and other BLS releases | `TZID` is honored; floating local times use `America/New_York` |
 | BEA | Official machine-readable JSON | GDP, Personal Income and Outlays, trade and other BEA releases | Offset-aware timestamps are converted to UTC; naive timestamps are rejected |
 | ECB | Official Governing Council calendar | EUR Governing Council and monetary-policy meeting dates | Date-only events remain date-only; the engine does not invent a time |
+| Federal Reserve | Official FOMC meeting calendar | USD policy-decision and strategy-meeting dates | The second meeting day is recorded as a date-only event; future meetings are marked tentative |
+
+FOMC dates are represented on the second day of each two-day meeting; the official calendar does not provide a release time. Future FOMC dates are marked tentative until confirmed. Strategy-only meetings are labeled separately and are not mislabeled as rate decisions.
 
 Canonical source URLs are held in `calendar_sources.json`. Refresh cadence and stale thresholds are source-specific and configurable. The built-in transport uses Python's standard library, HTTPS, a bounded response size and a finite timeout. No paid API or additional runtime dependency is required.
 
