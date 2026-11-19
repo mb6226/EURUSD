@@ -61,6 +61,10 @@
           "satellite account",
           "state",
           "county"
+        ],
+        "EXCLUDE_HIGH": [
+          "by state",
+          "by county"
         ]
       }
     },
@@ -82,11 +86,12 @@
           "monetary policy meeting",
           "followed by press conference"
         ],
-        "MEDIUM": [
-          "governing council"
-        ],
+        "MEDIUM": [],
         "LOW": [
           "general council",
+          "non-monetary policy meeting"
+        ],
+        "EXCLUDE_HIGH": [
           "non-monetary policy meeting"
         ]
       }
