@@ -106,3 +106,10 @@ Phase 28 introduces a deterministic CentralScenarioIntelligenceEngine in the liv
 This is deliberately not a weighted majority vote. The three price-derived inputs share underlying broker price data and are treated as correlated consistency checks. Context-only domains do not cast directional votes. Conflicting direction or trend-versus-range evidence remains unresolved. The engine emits no numeric probability or calibrated confidence and has no trade authority.
 
 Phase 28 is a first vertical slice, not the full Gate 3 exit. Phase 29 adds read-only replay of archived central scenario reports against later closed candles, with explicit horizons, classification accuracy, confusion matrices, archive ingestion and conservative revision-leakage exclusions. It does not reconstruct historical specialist state or calibrate probabilities. Calibrated uncertainty, demonstrated source-reliability weighting, causal cross-domain models, full as-of candle-version reconstruction, applicability learning and broader provider coverage remain future gaps.
+
+
+## Phase 30 — Historical dataset integrity and walk-forward partitions
+
+Phase 30 adds a read-only audit of the existing M1/M5 candle archive: expected wall-clock bar slots, observed closed bars, coverage, missing intervals, timestamp integrity, revision watermark/completeness and revised-candle counts. It also provides deterministic chronological train/validation/test partitioning with a forward-horizon embargo at partition boundaries. This is a single chronological holdout, not repeated rolling folds.
+
+The audit does not distinguish FX market closures from data outages, does not mutate/backfill the store, and cannot reconstruct complete first-seen candle versions. Scenario archive coverage and point-in-time provenance of all multi-domain specialist inputs remain separate requirements. Full as-of reconstruction, scenario archive manifests, rolling-origin folds, regime-stratified evaluation and calibrated uncertainty remain future gaps.
