@@ -25,7 +25,10 @@ class QuantitativeThresholds:
                 raise ValueError(f"{name} must be an integer >= 2")
         if self.minimum_bars > self.lookback_bars:
             raise ValueError("minimum_bars cannot exceed lookback_bars")
-        pip = self.pip_size if isinstance(self.pip_size, Decimal) else Decimal(str(self.pip_size))
+        try:
+            pip = self.pip_size if isinstance(self.pip_size, Decimal) else Decimal(str(self.pip_size))
+        except (InvalidOperation, ValueError) as exc:
+            raise ValueError("pip_size must be a finite positive decimal") from exc
         if not pip.is_finite() or pip <= 0:
             raise ValueError("pip_size must be finite and positive")
         object.__setattr__(self, "pip_size", pip)
@@ -39,6 +42,8 @@ class QuantitativeMarketStatisticsEngine:
     """
 
     def __init__(self, thresholds: QuantitativeThresholds | None = None) -> None:
+        if thresholds is not None and not isinstance(thresholds, QuantitativeThresholds):
+            raise TypeError("thresholds must be QuantitativeThresholds or None")
         self._thresholds = thresholds or QuantitativeThresholds()
 
     def assess(self, snapshot: MarketSnapshot) -> dict[str, Any]:
@@ -198,7 +203,7 @@ class QuantitativeMarketStatisticsEngine:
     @staticmethod
     def _number(value: Decimal) -> str:
         if not value.is_finite():
-            raise InvalidOperation("statistic must be finite")
+            raise ValueError("statistic must be finite")
         return format(value.normalize(), "f")
 
     @staticmethod
