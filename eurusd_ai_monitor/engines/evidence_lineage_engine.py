@@ -133,6 +133,9 @@ class EvidenceLineageEngine:
                 continue
             references, evidence_objects = self._collect(payload)
             unique = sorted(references)
+            raw_source_status = str(payload.get("status", "")).upper()
+            unavailable = raw_source_status in {"UNAVAILABLE", "SKIPPED", "NOT_CONNECTED", "NOT_CONFIGURED"}
+            source_degraded = raw_source_status == "DEGRADED"
             all_references.update(unique)
             missing = [item for item in unique if item not in index]
             all_missing.extend((source, item) for item in missing)
@@ -144,6 +147,8 @@ class EvidenceLineageEngine:
                 evidence_objects, index, evaluated
             )
             errors = []
+            if source_degraded:
+                errors.append("SPECIALIST_SOURCE_DEGRADED")
             if missing:
                 errors.append("REFERENCED_CANDLE_NOT_IN_SNAPSHOT")
             if invalid_timeframes:
@@ -152,7 +157,10 @@ class EvidenceLineageEngine:
                 errors.extend(invalid_confirmations)
             manifests.append({
                 "source": source,
-                "status": "DEGRADED" if errors else ("TRACEABLE" if unique else "NO_REFERENCES"),
+                "status": "DEGRADED" if errors else (
+                    "SOURCE_UNAVAILABLE" if unavailable else
+                    ("TRACEABLE" if unique else "NO_REFERENCES")
+                ),
                 "reference_count": len(unique),
                 "resolved_count": len([item for item in unique if item in index]),
                 "missing_candle_ids": missing,
@@ -229,8 +237,10 @@ class EvidenceLineageEngine:
                     if isinstance(value.get("candle"), Mapping):
                         evidence_objects.append(value)
                 for key, child in value.items():
+                    if key.endswith("_candle_id") and isinstance(child, str) and child:
+                        references.add(child)
                     if key.endswith("_candle_ids") or key in {
-                        "evidence_candle_ids", "supporting_candle_ids"
+                        "evidence_candle_ids", "supporting_candle_ids", "evidence_ids"
                     }:
                         if isinstance(child, (list, tuple)):
                             references.update(
