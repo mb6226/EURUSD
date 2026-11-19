@@ -130,7 +130,6 @@ def _technical_structure_payload(structure) -> dict:
     }
 
 
-
 def _price_action_runtime_payload(result, recovery_details: dict) -> dict:
     structure = result.technical_structure
     transition = result.transition
