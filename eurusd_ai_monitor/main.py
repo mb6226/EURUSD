@@ -39,6 +39,7 @@ from eurusd_ai_monitor.engines.setup_outcome_tracker import (
 from eurusd_ai_monitor.engines.statistical_outcome_evaluator import (
     StatisticalOutcomeEvaluator,
 )
+from eurusd_ai_monitor.engines.market_regime_engine import MarketRegimeEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -396,6 +397,7 @@ def main():
         observation_db_path,
         minimum_group_samples=int(config.get("statistics_minimum_group_samples", 30)),
     )
+    market_regime_engine = MarketRegimeEngine(pip_size=strategy_config.pip_size)
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -572,15 +574,38 @@ def main():
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     }
+                try:
+                    if technical_structure is None:
+                        market_regime_report = {
+                            "status": "DEGRADED",
+                            "regime": "UNKNOWN",
+                            "reason_codes": ["TECHNICAL_STRUCTURE_UNAVAILABLE"],
+                            "decision_authority": "ASSESSMENT_ONLY",
+                            "trade_authority": "NONE",
+                            "order_execution": "DISABLED",
+                        }
+                    else:
+                        market_regime_report = market_regime_engine.assess(
+                            snapshot, technical_structure
+                        )
+                except Exception as exc:
+                    market_regime_report = {
+                        "status": "DEGRADED",
+                        "regime": "UNKNOWN",
+                        "reason_codes": [f"MARKET_REGIME_ERROR:{type(exc).__name__}"],
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
                 structures = {}
                 screenshots = {}
                 technical_analysis = None
+                technical_structure = None
                 technical_error = None
                 if snapshot.quality.is_valid:
                     try:
-                        technical_analysis = _technical_structure_payload(
-                            technical_engine.analyze_snapshot(snapshot)
-                        )
+                        technical_structure = technical_engine.analyze_snapshot(snapshot)
+                        technical_analysis = _technical_structure_payload(technical_structure)
                     except Exception as exc:
                         technical_error = (
                             f"TechnicalEngine failed: {type(exc).__name__}: {exc}"
@@ -650,6 +675,7 @@ def main():
                     "session_eligibility": session_eligibility,
                     "setup_outcome_observation": setup_outcome,
                     "statistical_outcome_evaluation": statistical_outcome_report,
+                    "market_regime_intelligence": market_regime_report,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
                     "technical_analysis": (
