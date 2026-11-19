@@ -130,7 +130,7 @@ class ResearchIntelligenceEngine:
                     partial = True
             else:
                 historical_states[name] = self._compact_state(name, payload, source_status)
-                if source_status in {"MISSING", "BLOCKED", "UNAVAILABLE", "INSUFFICIENT_DATA", "DEGRADED", "STALE_REPORT"}:
+                if source_status in {"MISSING", "BLOCKED", "UNAVAILABLE", "DEGRADED", "STALE_REPORT"}:
                     partial = True
 
             reasons.extend(str(code) for code in reason_codes if code)
