@@ -195,6 +195,66 @@ def parse_ecb_meeting_calendar_html(contents: str) -> list[dict]:
     return records
 
 
+def parse_fomc_calendar_html(contents: str, as_of_date=None) -> list[dict]:
+    """Extract second-day FOMC decision dates from the official year-section calendar."""
+    if not isinstance(contents, str) or not contents.strip():
+        raise CalendarSourceError("Federal Reserve FOMC calendar response is empty")
+    parser = _TextExtractor()
+    parser.feed(contents)
+    text = re.sub(r"\s+", " ", " ".join(parser.parts)).strip()
+    sections = list(re.finditer(r"\b(20\d{2})\s+FOMC Meetings\b", text, re.IGNORECASE))
+    if not sections:
+        raise CalendarSourceError("Federal Reserve FOMC year sections were not found")
+    months = {
+        "january": 1, "february": 2, "march": 3, "april": 4,
+        "may": 5, "june": 6, "july": 7, "august": 8,
+        "september": 9, "october": 10, "november": 11, "december": 12,
+    }
+    meeting_pattern = re.compile(
+        r"\b(" + "|".join(months) + r")\s+(\d{1,2})\s*[-–]\s*(\d{1,2})(\*)?",
+        re.IGNORECASE,
+    )
+    today = as_of_date or datetime.now(timezone.utc).date()
+    records = []
+    for section_index, section in enumerate(sections):
+        section_end = sections[section_index + 1].start() if section_index + 1 < len(sections) else len(text)
+        year = int(section.group(1))
+        body = text[section.end():section_end]
+        meetings = list(meeting_pattern.finditer(body))
+        for meeting_index, match in enumerate(meetings):
+            month = months[match.group(1).casefold()]
+            decision_day = int(match.group(3))
+            try:
+                scheduled_date = date(year, month, decision_day)
+            except ValueError as exc:
+                raise CalendarSourceError("invalid date in Federal Reserve FOMC calendar") from exc
+            detail_end = meetings[meeting_index + 1].start() if meeting_index + 1 < len(meetings) else len(body)
+            detail = body[match.end():detail_end]
+            strategy_only = bool(re.search(r"Monetary Policy Strategy Meeting", detail, re.IGNORECASE))
+            title = (
+                "FOMC monetary policy strategy meeting (no policy decision expected)"
+                if strategy_only else "FOMC policy decision (meeting day 2)"
+            )
+            status = "TENTATIVE" if scheduled_date >= today else "CONFIRMED"
+            records.append({
+                "source_event_id": f"FOMC|{scheduled_date.isoformat()}",
+                "title": title,
+                "description": (
+                    "Official FOMC calendar lists a two-day meeting. The event is dated on day 2; "
+                    "the calendar does not provide a release time. Future dates are tentative."
+                ),
+                "scheduled_date": scheduled_date,
+                "scheduled_at_utc": None,
+                "status": status,
+                "url": "",
+                "source_updated_at_utc": None,
+                "reference_period": None,
+            })
+    if not records:
+        raise CalendarSourceError("Federal Reserve FOMC calendar contains no meeting date ranges")
+    return records
+
+
 def _impact(title: str, rules: dict[str, list[str]]) -> tuple[MacroImpact, str]:
     normalized = title.casefold()
     for level in ("HIGH", "MEDIUM", "LOW"):
@@ -279,7 +339,7 @@ class MacroCalendarEngine:
             if not isinstance(source_id, str) or not source_id.strip() or source_id in seen:
                 raise CalendarSourceError("calendar source ids must be unique non-empty strings")
             seen.add(source_id)
-            if source["format"] not in {"ICS", "BEA_JSON", "ECB_HTML"}:
+            if source["format"] not in {"ICS", "BEA_JSON", "ECB_HTML", "FED_HTML"}:
                 raise CalendarSourceError(f"unsupported calendar format for {source_id}")
             if not isinstance(source["url"], str) or not source["url"].startswith("https://"):
                 raise CalendarSourceError("calendar source URL must use HTTPS")
@@ -333,6 +393,10 @@ class MacroCalendarEngine:
             return parse_bea_release_dates(raw)
         if source["format"] == "ECB_HTML":
             return parse_ecb_meeting_calendar_html(raw)
+        if source["format"] == "FED_HTML":
+            return parse_fomc_calendar_html(
+                raw, as_of_date=self.clock().astimezone(timezone.utc).date()
+            )
         raise CalendarSourceError("unsupported source format")
 
     def _to_event(self, source: dict, record: dict, retrieved_at: datetime) -> MacroEvent:
