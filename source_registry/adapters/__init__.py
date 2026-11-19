@@ -10,6 +10,7 @@ from .exceptions import (
 from .models import DecimalRange, FetchRequest, FetchResult, Observation
 from .macro_series import OfficialMacroSeriesAdapter
 from .intermarket import IntermarketSeriesAdapter
+from .cftc_positioning import CFTCPositioningAdapter
 
 __all__ = [
     "FetchAdapter",
@@ -23,4 +24,5 @@ __all__ = [
     "Observation",
     "OfficialMacroSeriesAdapter",
     "IntermarketSeriesAdapter",
+    "CFTCPositioningAdapter",
 ]
