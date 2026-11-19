@@ -116,8 +116,6 @@ class LiquidityMicrostructureEngine:
             spread_raw = sample.get("spread_pips")
             spread = None if spread_raw is None else _decimal(
                 spread_raw, "spread_pips")
-            if spread is not None and spread <= 0:
-                raise ValueError("spread_pips must be positive when supplied")
             candle_range = (candle.high - candle.low) / pip_size
             body = abs(candle.close - candle.open) / pip_size
             grouped[candle.timeframe].append({
