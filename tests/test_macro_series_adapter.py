@@ -90,6 +90,20 @@ class MacroSeriesAdapterTests(unittest.TestCase):
             with self.subTest(period=period,value=value), self.assertRaises(FetchValidationError):
                 adapter.fetch(self.request())
 
+    def test_source_record_identity_is_stable_across_provider_revision_ids(self):
+        first = self.adapter(records=[{
+            "reference_period":"2026-10","value":"330",
+            "published_at_utc":"2026-11-12T13:30:00Z","source_record_id":"provider-v1",
+        }]).fetch(self.request())
+        revised = self.adapter(records=[{
+            "reference_period":"2026-10","value":"331",
+            "published_at_utc":"2026-11-12T13:30:00Z","source_record_id":"provider-v2",
+        }]).fetch(self.request())
+        self.assertEqual(
+            first.observations[0].source_record_id,
+            revised.observations[0].source_record_id,
+        )
+
     def test_empty_full_history_is_rejected_but_empty_incremental_is_allowed(self):
         adapter = self.adapter(records=[])
         with self.assertRaises(FetchValidationError):
