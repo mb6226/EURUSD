@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 import tempfile
 import unittest
 from datetime import date, datetime, timezone
@@ -83,7 +84,7 @@ class MacroCalendarStoreTests(unittest.TestCase):
     def test_revision_table_is_append_only(self):
         self.store.upsert_events([event()], NOW)
         self.store.upsert_events([event(title="Changed title")], NOW)
-        with self.store._connect() as connection:
+        with closing(self.store._connect()) as connection:
             with self.assertRaises(sqlite3.IntegrityError):
                 connection.execute("DELETE FROM macro_event_revisions")
 
