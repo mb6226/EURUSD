@@ -275,22 +275,29 @@ def main():
                     timeframes=tuple(config["timeframes"]),
                     count=config["bars_to_fetch"],
                 )
+                start_calendar_refresh()
+                start_news_refresh()
                 try:
-                    start_calendar_refresh()
-                    start_news_refresh()
                     news_payload = news_engine.build_context(snapshot.timestamp_utc)
+                except Exception as exc:
+                    news_payload = {
+                        "status": "UNAVAILABLE",
+                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "source_states": [],
+                        "stale_sources": ["NEWS_CONTEXT_UNAVAILABLE"],
+                        "article_count": 0,
+                        "articles": [],
+                        "reason_code": "NEWS_CONTEXT_READ_FAILED",
+                        "reason": f"{type(exc).__name__}: {exc}",
+                        "decision_authority": "CONTEXT_ONLY",
+                        "trade_authority": "NONE",
+                    }
+                try:
                     macro_calendar_payload = macro_calendar_engine.build_context(
                         now_utc=snapshot.timestamp_utc,
                         horizon_hours=int(config.get("calendar_horizon_hours", 72)),
                     )
                 except Exception as exc:
-                    news_payload = {
-                        "status": "UNAVAILABLE", "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
-                        "source_states": [], "stale_sources": ["NEWS_CONTEXT_UNAVAILABLE"],
-                        "article_count": 0, "articles": [], "reason_code": "NEWS_CONTEXT_READ_FAILED",
-                        "reason": f"{type(exc).__name__}: {exc}",
-                        "decision_authority": "CONTEXT_ONLY", "trade_authority": "NONE",
-                    }
                     macro_calendar_payload = {
                         "status": "UNAVAILABLE",
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
