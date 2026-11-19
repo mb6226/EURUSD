@@ -456,7 +456,7 @@ class SetupOutcomeTracker:
             result.setdefault("evaluated_at_utc", evaluated.isoformat())
             result.setdefault("broker_server", broker_server)
             result.setdefault("symbol", symbol)
-            return finalize(result)
+            return result
 
         pullback = setup_assessment.get("pullback")
         if setup_assessment.get("stage") != "PATTERN_CONFIRMED" or not isinstance(pullback, dict):
@@ -513,4 +513,4 @@ class SetupOutcomeTracker:
             "trade_authority": "NONE",
             "order_execution": "DISABLED",
         })
-        return result
+        return finalize(result)
