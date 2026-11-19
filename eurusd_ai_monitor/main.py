@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from datetime import datetime, timezone
 from threading import Lock, Thread
 from pathlib import Path
 
@@ -17,6 +18,9 @@ from eurusd_ai_monitor.engines.mt5_engine import MT5Connector
 from eurusd_ai_monitor.engines.price_action_engine import summarize_structure
 from eurusd_ai_monitor.engines.vision_engine import inspect_screenshot
 from eurusd_ai_monitor.engines.decision_engine import evaluate
+from eurusd_ai_monitor.engines.fusion_engine import (
+    EvidenceDirection, EvidenceStatus, FusionEngine, SpecialistEvidence,
+)
 from eurusd_ai_monitor.engines.market_context_builder import MarketContextBuilder
 from eurusd_ai_monitor.engines.price_action_coordinator import PriceActionCoordinator
 from eurusd_ai_monitor.engines.price_action_runtime import PriceActionRuntime
@@ -201,6 +205,151 @@ def _price_action_runtime_payload(result, recovery_details: dict) -> dict:
     }
 
 
+def _fusion_evidence(
+    specialist: str,
+    payload: dict,
+    *,
+    direction: EvidenceDirection = EvidenceDirection.NEUTRAL,
+    evidence_ids: tuple[str, ...] = (),
+    context_flags: tuple[str, ...] = (),
+) -> SpecialistEvidence:
+    raw_status = str(payload.get("status", "UNAVAILABLE")).upper()
+    status_map = {
+        "ANALYZED": EvidenceStatus.AVAILABLE,
+        "AVAILABLE": EvidenceStatus.AVAILABLE,
+        "ACTIVE": EvidenceStatus.AVAILABLE,
+        "DEGRADED": EvidenceStatus.DEGRADED,
+        "STALE": EvidenceStatus.DEGRADED,
+        "UNAVAILABLE": EvidenceStatus.UNAVAILABLE,
+        "NOT_CONFIGURED": EvidenceStatus.UNAVAILABLE,
+        "NOT_CONNECTED": EvidenceStatus.UNAVAILABLE,
+        "FAILED": EvidenceStatus.UNAVAILABLE,
+    }
+    status = status_map.get(raw_status, EvidenceStatus.UNAVAILABLE)
+    raw_time = payload.get("evaluated_at_utc")
+    if not raw_time:
+        status = EvidenceStatus.UNAVAILABLE
+        raw_time = datetime(1970, 1, 1, tzinfo=timezone.utc).isoformat()
+    evaluated_at = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+    sources = payload.get("source_states", ())
+    if isinstance(sources, dict):
+        source_ids = tuple(sorted(sources))
+    elif isinstance(sources, list):
+        source_ids = tuple(sorted(
+            str(item.get("source_id")) for item in sources
+            if isinstance(item, dict) and item.get("source_id")
+        ))
+    else:
+        source_ids = ()
+    if not source_ids and payload.get("source_id"):
+        source_ids = (str(payload["source_id"]),)
+    raw_reasons = payload.get("reason_codes", ())
+    if not raw_reasons and payload.get("reason_code"):
+        raw_reasons = (payload["reason_code"],)
+    reasons = tuple(str(value) for value in raw_reasons if value)
+    normalized_direction = (
+        direction if specialist in {"macro_calendar", "news"}
+        else (direction if status is EvidenceStatus.AVAILABLE else EvidenceDirection.UNKNOWN)
+    )
+    return SpecialistEvidence(
+        specialist=specialist,
+        status=status,
+        direction=normalized_direction,
+        evaluated_at_utc=evaluated_at,
+        source_ids=source_ids,
+        evidence_ids=evidence_ids,
+        reason_codes=reasons,
+        context_flags=context_flags,
+    )
+
+
+def _build_fusion_assessment(
+    fusion_engine: FusionEngine,
+    snapshot,
+    technical_analysis: dict | None,
+    technical_error: str | None,
+    price_action_payload: dict,
+    macro_calendar_payload: dict,
+    news_payload: dict,
+):
+    technical_payload = technical_analysis or {
+        "status": "UNAVAILABLE",
+        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+        "reason_codes": ("TECHNICAL_ANALYSIS_UNAVAILABLE",),
+    }
+    technical_payload.setdefault("source_id", snapshot.broker_server)
+    trend = technical_payload.get("trend", {})
+    trend_direction = trend.get("direction", "UNKNOWN") if isinstance(trend, dict) else "UNKNOWN"
+    technical_vote = {
+        "UP": EvidenceDirection.UP,
+        "DOWN": EvidenceDirection.DOWN,
+        "RANGE": EvidenceDirection.NEUTRAL,
+        "UNKNOWN": EvidenceDirection.NEUTRAL,
+    }.get(trend_direction, EvidenceDirection.NEUTRAL)
+    if technical_error:
+        technical_payload = dict(technical_payload)
+        technical_payload["status"] = "UNAVAILABLE"
+        technical_payload["reason_codes"] = ("TECHNICAL_ANALYSIS_FAILED",)
+
+    lifecycle = price_action_payload.get("lifecycle_snapshot") or {}
+    lifecycle_state = lifecycle.get("state")
+    lifecycle_direction = lifecycle.get("trend_direction")
+    if (
+        price_action_payload.get("status") == "PROCESSED"
+        and lifecycle_state in {"CONFIRMED", "DEEPENING"}
+    ):
+        pa_status = "AVAILABLE"
+        pa_direction = {
+            "UP": EvidenceDirection.UP,
+            "DOWN": EvidenceDirection.DOWN,
+        }.get(lifecycle_direction, EvidenceDirection.UNKNOWN)
+    else:
+        pa_status = "UNAVAILABLE"
+        pa_direction = EvidenceDirection.UNKNOWN
+    pa_payload = {
+        "status": pa_status,
+        "source_id": price_action_payload.get("broker_server", snapshot.broker_server),
+        "evaluated_at_utc": price_action_payload.get(
+            "evaluated_at_utc", snapshot.timestamp_utc.isoformat()
+        ),
+        "reason_codes": list(price_action_payload.get("reason_codes", ())),
+    }
+    pa_evidence_ids = tuple(
+        str(value) for value in lifecycle.get("evidence_candle_ids", ()) if value
+    )
+
+    high_impact = int(macro_calendar_payload.get("high_impact_count", 0) or 0)
+    macro_flags = ("HIGH_IMPACT_EVENT_IN_HORIZON",) if high_impact > 0 else ()
+    news_count = int(news_payload.get("article_count", 0) or 0)
+    news_flags = ("OFFICIAL_NEWS_ITEMS_PRESENT",) if news_count > 0 else ()
+    technical_evidence_ids = tuple(
+        str(item.get("candle_id"))
+        for key in ("swing_highs", "swing_lows")
+        for item in (trend.get(key, []) or [])
+        if isinstance(item, dict) and item.get("candle_id")
+    )
+
+    evidence = (
+        _fusion_evidence(
+            "technical", technical_payload, direction=technical_vote,
+            evidence_ids=technical_evidence_ids,
+        ),
+        _fusion_evidence(
+            "price_action", pa_payload, direction=pa_direction,
+            evidence_ids=pa_evidence_ids,
+        ),
+        _fusion_evidence(
+            "macro_calendar", macro_calendar_payload,
+            context_flags=macro_flags,
+        ),
+        _fusion_evidence(
+            "news", news_payload,
+            context_flags=news_flags,
+        ),
+    )
+    return fusion_engine.assess(snapshot.timestamp_utc, evidence)
+
+
 def main():
     config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
     data_dir = ROOT / "data" / "market"
@@ -218,6 +367,7 @@ def main():
     signals = SignalManager(ROOT / "logs")
     strategy_config = load_strategy_config()
     technical_engine = TechnicalEngine(strategy_config)
+    fusion_engine = FusionEngine(max_evidence_age_seconds=300)
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -387,7 +537,17 @@ def main():
                         tick,
                         screenshots,
                     )
+                fusion_assessment = _build_fusion_assessment(
+                    fusion_engine,
+                    snapshot,
+                    technical_analysis,
+                    technical_error,
+                    price_action_payload,
+                    macro_calendar_payload,
+                    news_payload,
+                )
                 payload = {
+                    "fusion_assessment": fusion_assessment.to_dict(),
                     "symbol": snapshot.symbol,
                     "tick": tick,
                     "market_structure": structures,

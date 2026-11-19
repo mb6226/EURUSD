@@ -9,6 +9,7 @@ Alert-only starter for MetaTrader 5 + Python. It monitors EURUSD on M1 and M5.
 - Chart screenshot exporter EA: included; attach it to one EURUSD M1 chart and one EURUSD M5 chart.
 - Actual vision-model interpretation: NOT YET CONNECTED.
 - Technical structure and the persisted Price Action lifecycle are implemented with fail-closed recovery.
+- Phase 6 Evidence Fusion is integrated as an assessment-only diagnostic; the legacy decision path remains unchanged and WAIT-only.
 - Macro calendar ingestion is implemented for official BLS, BEA, ECB, and Federal Reserve schedule sources; it is context-only and has no trade authority.
 - Official-source News Intelligence is implemented as context-only RSS/Atom ingestion; general fundamental analysis, statistical research, and learning modules remain scaffolds.
 - User's full Trend → Correction → Rejection → Pullback rules: NOT YET CODED.
@@ -61,4 +62,5 @@ The knowledge folders remain placeholders. The macro calendar uses its own SQLit
 3. Validate official macro-calendar source freshness and feed compatibility during local operation.
 4. Expand reviewed news coverage and implement the remaining fundamental intelligence layer with official, provenance-preserving sources.
 5. Connect a vision provider only after its structured evidence contract is reviewed.
-6. Complete decision fusion, outcome tracking, replay/backtests and forward testing in alert-only mode.
+6. Implement the validated Trend → Correction → Rejection → Pullback → Entry decision contract; Phase 6 fusion is not a tradable strategy.
+7. Complete outcome tracking, replay/backtests and forward testing in alert-only mode.
