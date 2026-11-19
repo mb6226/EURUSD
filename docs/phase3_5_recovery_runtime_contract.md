@@ -24,7 +24,7 @@ Recovery statuses:
 - `RECONCILIATION`: an M5 candle revision has occurred since the active lifecycle checkpoint. Processing is blocked until a separately approved replay/reconciliation workflow exists.
 - `QUARANTINED`: stored snapshots, event history, versions, or evidence provenance failed integrity checks. Processing is blocked.
 
-A missing recovery record is treated as `RECONCILIATION`, never as NORMAL.
+A missing recovery record is treated as `RECONCILIATION`, never as NORMAL. Once a stream enters `RECONCILIATION` or `QUARANTINED`, that status remains sticky across restarts; a later startup check cannot silently clear it. Clearing either state requires an explicit, reviewed recovery workflow.
 
 ## Runtime integration
 
@@ -46,5 +46,6 @@ If a revision is detected during startup or races with runtime persistence, the 
 - Parameter-version mismatch quarantines the stream.
 - Missing evidence candle quarantines the stream.
 - Missing startup recovery state fails closed.
+- Existing reconciliation state remains sticky across restarts.
 
 The test suite must be run locally against the branch before merge. This repository has no configured CI workflow, and this phase does not claim a live MT5 runtime test.
