@@ -103,7 +103,11 @@ class EvidenceLineageEngine:
             if item.get("broker_server") != broker_server or item.get("symbol") != symbol:
                 inventory_errors.append("INVENTORY_IDENTITY_MISMATCH")
                 continue
-            if closed <= opened or closed > evaluated:
+            expected_close = opened + timedelta(seconds={"M1": 60, "M5": 300}[timeframe])
+            if closed != expected_close:
+                inventory_errors.append("INVENTORY_CANDLE_INTERVAL_MISMATCH")
+                continue
+            if closed > evaluated:
                 inventory_errors.append("INVENTORY_CANDLE_NOT_CLOSED_AT_CYCLE")
                 continue
             expected_id = candle_evidence_id(
@@ -204,7 +208,7 @@ class EvidenceLineageEngine:
             "reference_coverage": {
                 "unique_references": total_refs,
                 "resolved_references": resolved_refs,
-                "missing_references": len(all_missing),
+                "missing_references": len({item for _, item in all_missing}),
                 "coverage_ratio": (
                     format(resolved_refs / total_refs, ".6f") if total_refs else "1.000000"
                 ),
