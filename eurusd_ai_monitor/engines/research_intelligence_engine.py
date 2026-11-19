@@ -90,6 +90,13 @@ class ResearchIntelligenceEngine:
             else:
                 reason_codes = list(payload.get("reason_codes", ()))
                 source_status = self._source_status(name, payload)
+                source_broker = entry.get("broker_server")
+                source_symbol = entry.get("symbol")
+                if ((source_broker is not None and source_broker != broker_server)
+                        or (source_symbol is not None and source_symbol != symbol)):
+                    source_status = "IDENTITY_MISMATCH"
+                    reason_codes.append(f"{name.upper()}_IDENTITY_MISMATCH")
+                    degraded = True
 
             raw_time = entry.get("evaluated_at_utc")
             try:
@@ -193,7 +200,13 @@ class ResearchIntelligenceEngine:
             stage = str(payload.get("stage", "UNKNOWN")).upper()
             return "BLOCKED" if stage == "BLOCKED" else "AVAILABLE"
         if name == "session_eligibility":
-            return "BLOCKED" if raw == "BLOCKED" else "AVAILABLE"
+            if raw in {"BLOCKED", "OUTSIDE_SESSION"}:
+                return "BLOCKED"
+            if raw in {"WAIT_SETUP", "WAITING_FOR_SETUP"}:
+                return "INCOMPLETE"
+            return "AVAILABLE"
+        if name == "market_regime_intelligence" and str(payload.get("regime", "")).upper() == "UNKNOWN":
+            return "INCOMPLETE"
         if name == "setup_outcome_observation":
             return "AVAILABLE" if raw in {
                 "ACTIVE", "COMPLETED", "WAITING_FOR_SESSION_ELIGIBILITY", "RESEARCH_ELIGIBLE"
