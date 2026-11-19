@@ -203,6 +203,16 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
             "UNRECONCILED_M5_CANDLE_REVISION",
         )
 
+    def test_reconciliation_status_is_sticky_across_startup_checks(self):
+        self.manager.mark_reconciliation(
+            BROKER, SYMBOL, "MANUAL_REVIEW_REQUIRED"
+        )
+        status = self.manager.recover_stream(BROKER, SYMBOL, self.config)
+        self.assertEqual(status, RecoveryStatus.RECONCILIATION)
+        self.assertEqual(
+            self.store.get_recovery_record(BROKER, SYMBOL)["reason_code"],
+            "MANUAL_REVIEW_REQUIRED",
+        )
     def test_missing_startup_record_fails_closed(self):
         self.assertEqual(
             self.manager.get_status(BROKER, SYMBOL),
