@@ -1,9 +1,14 @@
 import unittest
+import tempfile
+from pathlib import Path
 from datetime import datetime,timedelta,timezone
 from source_registry.adapters.cftc_positioning import CFTCPositioningAdapter,SOURCE_ID
 from source_registry.adapters.models import FetchRequest
 from source_registry.adapters.exceptions import FetchValidationError
 from eurusd_ai_monitor.engines.positioning_sentiment_intelligence_engine import PositioningSentimentIntelligenceEngine
+from source_registry.ingestion import SourceObservationIngestion
+from source_registry.observation_store import PointInTimeObservationStore
+from source_registry.registry_loader import load_registry
 UTC=timezone.utc
 def make_row(i=0,**changes):
  d=datetime(2026,1,6,tzinfo=UTC)+timedelta(days=7*i)
@@ -31,4 +36,22 @@ class CFTCPositioningTests(unittest.TestCase):
   row={"source_id":SOURCE_ID,"product_id":p,"effective_at_utc":o.effective_at_utc.isoformat(),"published_at_utc":o.published_at_utc.isoformat(),"retrieved_at_utc":datetime(2026,12,3,tzinfo=UTC).isoformat(),"value":str(o.value)}
   report=PositioningSentimentIntelligenceEngine().assess(as_of_utc=datetime(2026,12,1,tzinfo=UTC),observations={p:[row]})
   self.assertEqual(report["groups"]["DEALER"]["status"],"UNAVAILABLE")
+
+ def test_end_to_end_manual_ingestion_into_point_in_time_store(self):
+  products=list(("EURO_FX_DEALER_NET_OI_PCT","EURO_FX_ASSET_MANAGER_NET_OI_PCT","EURO_FX_LEVERAGED_MONEY_NET_OI_PCT"))
+  payload=[make_row(i) for i in range(30)]
+  adapters={ (SOURCE_ID,p):CFTCPositioningAdapter(product_id=p,records_provider=lambda req,payload=payload:payload) for p in products }
+  registry=load_registry()
+  with tempfile.TemporaryDirectory() as directory:
+   store=PointInTimeObservationStore(Path(directory)/"cftc.sqlite")
+   ingestion=SourceObservationIngestion(registry=registry,adapters=adapters,store=store,clock=lambda:datetime(2026,7,25,18,tzinfo=UTC))
+   for product in products:
+    summary=ingestion.ingest(SOURCE_ID,product)
+    self.assertEqual(summary.observations_received,30)
+   self.assertEqual(store.count_observations(),90)
+   rows={p:store.get_as_of(SOURCE_ID,p,datetime(2026,7,26,tzinfo=UTC)) for p in products}
+  report=PositioningSentimentIntelligenceEngine().assess(as_of_utc=datetime(2026,7,26,tzinfo=UTC),observations=rows)
+  self.assertEqual(report["status"],"AVAILABLE")
+  self.assertEqual(set(report["groups"]),{"DEALER","ASSET_MANAGER","LEVERAGED_MONEY"})
+
 if __name__=="__main__": unittest.main()
