@@ -65,6 +65,7 @@ class ResearchIntelligenceEngine:
         blocked_current = []
         degraded = False
         partial = False
+        authority_audit_violations = []
 
         for name in (*_CURRENT, *_HISTORICAL):
             entry = sources.get(name)
@@ -73,6 +74,7 @@ class ResearchIntelligenceEngine:
                     "source": name, "class": "CURRENT" if name in _CURRENT else "HISTORICAL",
                     "status": "MISSING", "source_status": "MISSING",
                     "evaluated_at_utc": None, "reason_codes": [f"{name.upper()}_MISSING"],
+                    "authority_violations": [],
                 })
                 reasons.append(f"{name.upper()}_MISSING")
                 if name in _CURRENT:
@@ -84,12 +86,20 @@ class ResearchIntelligenceEngine:
             payload = entry.get("payload")
             if not isinstance(payload, Mapping):
                 payload = {}
+                source_authority_violations = []
                 source_status = "MALFORMED"
                 reason_codes = [f"{name.upper()}_PAYLOAD_INVALID"]
                 degraded = True
             else:
                 reason_codes = list(payload.get("reason_codes", ()))
                 source_status = self._source_status(name, payload)
+                source_authority_violations = self._authority_violations(payload)
+                if source_authority_violations:
+                    source_status = "AUTHORITY_VIOLATION"
+                    reason_codes.append(f"{name.upper()}_AUTHORITY_CONTRACT_VIOLATION")
+                    degraded = True
+                    for violation in source_authority_violations:
+                        authority_audit_violations.append({"source": name, **violation})
                 source_broker = entry.get("broker_server")
                 source_symbol = entry.get("symbol")
                 if ((source_broker is not None and source_broker != broker_server)
@@ -119,7 +129,7 @@ class ResearchIntelligenceEngine:
                 )
                 degraded = True
 
-            if source_status in {"DEGRADED", "MALFORMED", "IDENTITY_MISMATCH", "INVALID_TIME"}:
+            if source_status in {"DEGRADED", "MALFORMED", "IDENTITY_MISMATCH", "INVALID_TIME", "AUTHORITY_VIOLATION"}:
                 degraded = True
 
             if name in _CURRENT:
@@ -141,6 +151,7 @@ class ResearchIntelligenceEngine:
                 "source_status": self._source_status(name, payload),
                 "evaluated_at_utc": source_time.isoformat() if source_time else None,
                 "reason_codes": sorted(set(str(code) for code in reason_codes if code)),
+                "authority_violations": source_authority_violations,
             })
 
         # Explicit gates are reported, never translated into directional evidence.
@@ -176,6 +187,10 @@ class ResearchIntelligenceEngine:
                 "sources": historical_states,
             },
             "source_manifest": manifest,
+            "authority_audit": {
+                "status": "VIOLATION" if authority_audit_violations else "PASS",
+                "violations": authority_audit_violations,
+            },
             "reason_codes": sorted(set(reasons)),
             "interpretation_limits": [
                 "This report synthesizes specialist assessments; it does not create a directional signal.",
@@ -187,6 +202,31 @@ class ResearchIntelligenceEngine:
             "trade_authority": "NONE",
             "order_execution": "DISABLED",
         }
+
+    @staticmethod
+    def _authority_violations(payload: Mapping) -> list[dict]:
+        """Detect explicit claims that exceed the research-only authority contract."""
+        contracts = {
+            "decision_authority": {"ASSESSMENT_ONLY", "CONTEXT_ONLY"},
+            "trade_authority": {"NONE"},
+            "order_execution": {"DISABLED"},
+            "trade_execution": {"DISABLED"},
+            "entry_eligibility": {"BLOCKED"},
+            "decision": {"WAIT"},
+        }
+        violations = []
+        for field, allowed in contracts.items():
+            if field not in payload:
+                continue
+            value = payload[field]
+            normalized = value.strip().upper() if isinstance(value, str) else ""
+            if normalized not in allowed:
+                violations.append({
+                    "field": field,
+                    "actual": str(value),
+                    "expected": sorted(allowed),
+                })
+        return violations
 
     @staticmethod
     def _source_status(name: str, payload: Mapping) -> str:
