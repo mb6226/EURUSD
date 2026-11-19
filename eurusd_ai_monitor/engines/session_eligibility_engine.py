@@ -75,7 +75,11 @@ class SessionRiskStore:
                     reservation = self._from_row(existing)
                     total = self._daily_total(db, broker_server, symbol, reservation.risk_date)
                     db.commit()
-                    return "ALREADY_RESERVED", reservation, total
+                    if (reservation.session_name == session_name
+                            and reservation.session_date == session_date
+                            and reservation.risk_date == risk_date):
+                        return "ALREADY_RESERVED", reservation, total
+                    return "SETUP_ALREADY_RESERVED", reservation, total
                 existing = db.execute("""SELECT * FROM session_setup_reservations
                     WHERE broker_server=? AND symbol=? AND session_name=? AND session_date=?""",
                     (broker_server, symbol, session_name, session_date)).fetchone()
@@ -163,6 +167,9 @@ class SessionEligibilityRiskGate:
                                 evaluated, name, reservation, total)
         if status == "SESSION_SLOT_USED":
             return self._result("BLOCKED", ("ONE_SETUP_PER_SESSION_LIMIT_REACHED",),
+                                evaluated, name, reservation, total)
+        if status == "SETUP_ALREADY_RESERVED":
+            return self._result("BLOCKED", ("SETUP_ALREADY_RESERVED_FOR_ANOTHER_SESSION_DATE",),
                                 evaluated, name, reservation, total)
         return self._result("BLOCKED", ("DAILY_RISK_BUDGET_EXCEEDED",),
                             evaluated, name, None, total)
