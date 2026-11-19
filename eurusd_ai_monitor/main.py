@@ -17,9 +17,13 @@ from eurusd_ai_monitor.engines.price_action_engine import summarize_structure
 from eurusd_ai_monitor.engines.vision_engine import inspect_screenshot
 from eurusd_ai_monitor.engines.decision_engine import evaluate
 from eurusd_ai_monitor.engines.market_context_builder import MarketContextBuilder
+from eurusd_ai_monitor.engines.price_action_coordinator import PriceActionCoordinator
+from eurusd_ai_monitor.engines.price_action_runtime import PriceActionRuntime
+from eurusd_ai_monitor.engines.lifecycle_recovery_manager import LifecycleRecoveryManager
 from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
+from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
 from eurusd_ai_monitor.storage.mt5_market_adapter import MT5MarketDataAdapter
 from eurusd_ai_monitor.alerts.signal_manager import SignalManager
 
@@ -126,6 +130,37 @@ def _technical_structure_payload(structure) -> dict:
     }
 
 
+
+def _price_action_runtime_payload(result, recovery_details: dict) -> dict:
+    structure = result.technical_structure
+    transition = result.transition
+    return {
+        "status": result.status.value,
+        "broker_server": result.broker_server,
+        "evaluated_at_utc": result.evaluated_at_utc.isoformat(),
+        "technical_structure": (
+            _technical_structure_payload(structure) if structure is not None else None
+        ),
+        "transition_type": (
+            transition.transition_type.value if transition is not None else None
+        ),
+        "lifecycle_id": result.lifecycle_id,
+        "lifecycle_state": (
+            result.lifecycle_state.value if result.lifecycle_state is not None else None
+        ),
+        "persistence_status": (
+            result.persistence_status.value
+            if result.persistence_status is not None else None
+        ),
+        "recovery": recovery_details,
+        "revision_watermark": result.revision_watermark,
+        "record_version": result.record_version,
+        "state_version": result.state_version,
+        "reason_codes": list(result.reason_codes),
+        "trade_authority": result.trade_authority,
+    }
+
+
 def main():
     config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
     data_dir = ROOT / "data" / "market"
@@ -141,7 +176,17 @@ def main():
         max_age_seconds=config.get("context_max_age_seconds", {"M1": 180, "M5": 900}),
     )
     signals = SignalManager(ROOT / "logs")
-    technical_engine = TechnicalEngine(load_strategy_config())
+    strategy_config = load_strategy_config()
+    technical_engine = TechnicalEngine(strategy_config)
+    lifecycle_store = LifecycleStore(market_store)
+    recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
+    price_action_runtime = PriceActionRuntime(
+        coordinator=PriceActionCoordinator(),
+        lifecycle_store=lifecycle_store,
+        config=strategy_config,
+        recovery_gate=recovery_manager,
+    )
+    recovered_streams = set()
 
     connector.connect()
     print("[MONITOR] Alert-only mode. No order functions are present.")
@@ -154,6 +199,21 @@ def main():
                 snapshot = context_builder.build(
                     timeframes=tuple(config["timeframes"]),
                     count=config["bars_to_fetch"],
+                )
+                stream_key = (snapshot.broker_server, snapshot.symbol)
+                if stream_key not in recovered_streams:
+                    recovery_manager.recover_stream(
+                        snapshot.broker_server,
+                        snapshot.symbol,
+                        strategy_config,
+                    )
+                    recovered_streams.add(stream_key)
+                price_action_result = price_action_runtime.process(snapshot)
+                price_action_payload = _price_action_runtime_payload(
+                    price_action_result,
+                    recovery_manager.get_details(
+                        snapshot.broker_server, snapshot.symbol
+                    ),
                 )
                 structures = {}
                 screenshots = {}
@@ -205,6 +265,7 @@ def main():
                     "symbol": snapshot.symbol,
                     "tick": tick,
                     "market_structure": structures,
+                    "price_action_lifecycle": price_action_payload,
                     "technical_analysis": (
                         technical_analysis
                         if technical_analysis is not None
@@ -228,6 +289,13 @@ def main():
                     **decision,
                 }
                 signals.publish(payload)
+                if price_action_result.status.value not in ("PROCESSED", "NO_LIFECYCLE"):
+                    print(
+                        "[PRICE_ACTION] "
+                        + price_action_result.status.value
+                        + ": "
+                        + " | ".join(price_action_result.reason_codes)
+                    )
                 if not snapshot.quality.is_valid:
                     print("[CONTEXT] Invalid market context: " + " | ".join(snapshot.quality.issues))
                 elif snapshot.quality.warnings:
