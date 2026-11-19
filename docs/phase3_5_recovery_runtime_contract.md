@@ -32,7 +32,7 @@ The monitor creates one MarketDataStore and shares it with LifecycleStore and Li
 
 The published payload now contains `price_action_lifecycle`, including runtime status, transition, lifecycle identity/state, persistence versions, recovery details, reason codes, and the explicit `trade_authority: NONE` boundary.
 
-The legacy `decision`, `direction`, and `trade_execution` fields are not derived from this lifecycle output in this phase. No order placement or management is introduced.
+The legacy decision evaluator itself is not replaced in this phase. However, the monitor applies a fail-closed boundary: any Price Action runtime status other than `PROCESSED` or `NO_LIFECYCLE` forces the top-level decision to `WAIT` with the runtime reason codes. The lifecycle output is not yet fused into a directional signal; that belongs to Phase 6. No order placement or management is introduced.
 
 ## Revision policy
 
