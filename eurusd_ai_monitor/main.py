@@ -238,7 +238,7 @@ def main():
 
         def refresh_worker() -> None:
             try:
-                start_calendar_refresh()
+                macro_calendar_engine.refresh_due()
             except Exception as exc:
                 print(f"[MACRO_CALENDAR] {type(exc).__name__}: {exc}")
             finally:
@@ -258,11 +258,28 @@ def main():
                     timeframes=tuple(config["timeframes"]),
                     count=config["bars_to_fetch"],
                 )
-                macro_calendar_engine.refresh_due()
-                macro_calendar_payload = macro_calendar_engine.build_context(
-                    now_utc=snapshot.timestamp_utc,
-                    horizon_hours=int(config.get("calendar_horizon_hours", 72)),
-                )
+                try:
+                    start_calendar_refresh()
+                    macro_calendar_payload = macro_calendar_engine.build_context(
+                        now_utc=snapshot.timestamp_utc,
+                        horizon_hours=int(config.get("calendar_horizon_hours", 72)),
+                    )
+                except Exception as exc:
+                    macro_calendar_payload = {
+                        "status": "UNAVAILABLE",
+                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "horizon_hours": int(config.get("calendar_horizon_hours", 72)),
+                        "currencies": ["EUR", "USD"],
+                        "source_states": {},
+                        "stale_sources": ["CALENDAR_CONTEXT_UNAVAILABLE"],
+                        "upcoming_events": [],
+                        "event_count": 0,
+                        "high_impact_count": 0,
+                        "reason_code": "CALENDAR_CONTEXT_READ_FAILED",
+                        "reason": f"{type(exc).__name__}: {exc}",
+                        "trade_authority": "NONE",
+                        "decision_authority": "CONTEXT_ONLY",
+                    }
                 stream_key = (snapshot.broker_server, snapshot.symbol)
                 if stream_key not in recovered_streams:
                     recovery_manager.recover_stream(
