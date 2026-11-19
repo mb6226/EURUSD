@@ -178,6 +178,32 @@ class IntermarketIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(report["status"], "PARTIAL")
         self.assertEqual(report["drivers"]["GOLD_USD_TROY_OUNCE"]["status"], "STALE")
 
+    def test_publication_after_retrieval_is_rejected(self):
+        bad = [dict(row) for row in self.eurusd]
+        bad[-1]["published_at_utc"] = (AS_OF + timedelta(hours=1)).isoformat()
+        bad[-1]["retrieved_at_utc"] = (AS_OF - timedelta(hours=1)).isoformat()
+        with self.assertRaises(ValueError):
+            self.engine.assess(
+                as_of_utc=AS_OF, eurusd_observations=bad,
+                driver_observations=self.drivers(),
+            )
+
+    def test_zero_variance_driver_is_not_reported_as_a_valid_correlation(self):
+        drivers = self.drivers()
+        drivers["GOLD_USD_TROY_OUNCE"] = make_rows(
+            "LBMA_INTERMARKET", "GOLD_USD_TROY_OUNCE", "usd_per_troy_ounce",
+            [Decimal("2000")] * (len(CHANGES) + 1),
+        )
+        report = self.engine.assess(
+            as_of_utc=AS_OF, eurusd_observations=self.eurusd,
+            driver_observations=drivers,
+        )
+        self.assertEqual(report["status"], "PARTIAL")
+        self.assertEqual(
+            report["drivers"]["GOLD_USD_TROY_OUNCE"]["reason_codes"],
+            ["ZERO_VARIANCE_IN_ALIGNED_RETURNS"],
+        )
+
     def test_identity_and_unit_mismatch_fail_closed(self):
         bad = [dict(row) for row in self.eurusd]
         bad[0]["unit"] = "wrong"
