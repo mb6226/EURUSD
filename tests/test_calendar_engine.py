@@ -62,10 +62,10 @@ class CalendarParserTests(unittest.TestCase):
         with self.assertRaises(CalendarSourceError):
             parse_ics_events("", "UTC")
         with self.assertRaisesRegex(CalendarSourceError, "unterminated"):
-            parse_ics_events("BEGIN:VCALENDAR\\nBEGIN:VEVENT\\nSUMMARY:X\\n", "UTC")
+            parse_ics_events("BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:X\n", "UTC")
 
     def test_ics_parser_rejects_unknown_timezone(self):
-        ics = "BEGIN:VCALENDAR\\nBEGIN:VEVENT\\nUID:x\\nDTSTART;TZID=Not/AZone:20261120T083000\\nSUMMARY:X\\nEND:VEVENT\\nEND:VCALENDAR"
+        ics = "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:x\nDTSTART;TZID=Not/AZone:20261120T083000\nSUMMARY:X\nEND:VEVENT\nEND:VCALENDAR"
         with self.assertRaisesRegex(CalendarSourceError, "unknown iCalendar timezone"):
             parse_ics_events(ics, "UTC")
 
