@@ -155,6 +155,8 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
 
     def test_missing_evidence_candle_quarantines_active_lifecycle(self):
         self.create_active_lifecycle()
+        lifecycle = self.store.load_active(BROKER, SYMBOL)
+        evidence_time = lifecycle.impulse.start_pivot.candle.candle_open_time_utc
         with self.market._connect() as connection:
             connection.execute(
                 """
@@ -165,7 +167,7 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
                 (
                     BROKER,
                     SYMBOL,
-                    self.candles[0].candle_open_time_utc.isoformat(timespec="microseconds").replace("+00:00", "Z"),
+                    evidence_time.isoformat(timespec="microseconds").replace("+00:00", "Z"),
                 ),
             )
             connection.commit()
