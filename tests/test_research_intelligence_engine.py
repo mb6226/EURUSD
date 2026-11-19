@@ -214,9 +214,7 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(result["status"], "BLOCKED")
         state = result["current_context"]["quantitative_market_statistics"]
         self.assertEqual(state["source_status"], "BLOCKED")
-        self.assertIn("quantitative_market_statistics", [
-            item for item in result["reason_codes"]
-        ] if False else ["quantitative_market_statistics"])
+        self.assertIn("MARKET_CONTEXT_QUALITY_FAILED", state["reason_codes"])
 
 
 if __name__ == "__main__":
