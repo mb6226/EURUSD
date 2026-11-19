@@ -119,6 +119,9 @@ class ResearchIntelligenceEngine:
                 )
                 degraded = True
 
+            if source_status in {"DEGRADED", "MALFORMED", "IDENTITY_MISMATCH", "INVALID_TIME"}:
+                degraded = True
+
             if name in _CURRENT:
                 current_states[name] = self._compact_state(name, payload, source_status)
                 if source_status in {"BLOCKED", "STALE", "INVALID_TIME", "MALFORMED", "DEGRADED", "UNAVAILABLE"}:
