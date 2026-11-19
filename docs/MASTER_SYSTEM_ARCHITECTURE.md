@@ -131,3 +131,10 @@ Phase 32 extends Phase 31 reconstruction into a bounded deterministic replay loo
 This is a meaningful first recomputation slice, not full domain parity. Price Action lifecycle remains un-replayed because its current coordinator is stateful; news semantic and calendar impact specialists lack pinned historical model/feature versions; Fusion is not substituted as a directional authority. The replay reports these gaps explicitly and never falls back to archived future reports. It uses the currently injected algorithm versions rather than claiming exact historical code-version parity. Exact parity requires an immutable algorithm/parameter registry, feature snapshots, and isolated lifecycle event replay.
 
 No data stores, monitor logs, RAG/knowledge stores, strategy configuration, lifecycle state, risk settings or execution controls are mutated. No probabilities, trading P&L or profitability claims are produced. See phase32_deterministic_historical_specialist_replay.md.
+
+
+## Phase 33 ? Immutable specialist execution provenance
+
+Phase 33 extends deterministic historical specialist replay with canonical SHA-256 fingerprints for the exact reconstructed M1/M5 feature snapshot, the Phase 31 reconstructed evidence bundle, each specialist report payload, and each specialist engine source file when locally available. Per-report provenance records also retain the declared algorithm/parameter versions, engine module/class, as-of timestamp, provenance scope and explicit non-claim of historical version parity.
+
+These fingerprints make repeated replay outputs auditable and allow a changed feature snapshot, report or engine source file to be distinguished. They do not constitute a transitive build manifest, immutable raw observation snapshot, historical algorithm registry, or executable historical environment. Exact historical code/parameter parity and complete fundamental input reconstruction remain future dependencies. No database, source archive, RAG store, strategy configuration, lifecycle state, risk setting or execution control is mutated.

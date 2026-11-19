@@ -68,6 +68,15 @@ def test_replay_reconstructs_both_timeframes_and_reexecutes_specialists():
     assert point["specialist_reports"]["technical_analysis"]["reexecution_status"] == "REEXECUTED"
     assert point["specialist_reports"]["technical_analysis"]["trend"]["direction"] == "UP"
     assert point["specialist_reports"]["quantitative_market_statistics"]["reexecution_status"] == "REEXECUTED"
+    provenance = point["specialist_reports"]["technical_analysis"]["execution_provenance"]
+    assert provenance["schema_version"] == "SPECIALIST_EXECUTION_PROVENANCE_V1"
+    assert provenance["algorithm_version"] == "stub-tech-v1"
+    assert provenance["implementation_source_status"] == "HASHED"
+    assert len(provenance["implementation_source_sha256"]) == 64
+    assert len(provenance["feature_snapshot_sha256"]) == 64
+    assert len(provenance["reconstructed_evidence_sha256"]) == 64
+    assert len(provenance["report_payload_sha256"]) == 64
+    assert provenance["historical_version_parity"] == "NOT_CLAIMED"
     assert point["historical_specialists_recomputed"] is True
     assert point["specialists_not_recomputed"]["price_action_lifecycle"] == "STATEFUL_LIFECYCLE_REPLAY_NOT_YET_SUPPORTED"
     assert point["scenario_assessment"]["scenario_hypotheses"][0]["scenario_id"] == "EURUSD_UP_CONTINUATION"
@@ -222,3 +231,31 @@ def test_invalid_market_snapshot_blocks_all_specialist_reexecution():
         for report in point["specialist_reports"].values()
     )
     assert point["scenario_assessment"]["directional_assessment"]["state"] == "UNRESOLVED"
+
+
+
+def test_feature_snapshot_fingerprint_is_deterministic_and_changes_with_input():
+    class ChangedReconstruction(StubReconstruction):
+        def reconstruct(self, **kwargs):
+            report = super().reconstruct(**kwargs)
+            report["market_candles"]["candles"][0]["close"] = "1.1003"
+            return report
+
+    def replay_with(reconstruction):
+        engine = DeterministicHistoricalSpecialistReplayEngine(
+            reconstruction, technical_engine=StubTechnical()
+        )
+        result = engine.replay(
+            [{"evaluated_at_utc": AS_OF.isoformat()}],
+            broker_server="Broker-Demo", symbol="EURUSD",
+            start_utc=AS_OF - timedelta(hours=2), end_utc=AS_OF,
+        )
+        return result["points"][0]["specialist_reports"]["technical_analysis"][
+            "execution_provenance"
+        ]["feature_snapshot_sha256"]
+
+    first = replay_with(StubReconstruction())
+    repeated = replay_with(StubReconstruction())
+    changed = replay_with(ChangedReconstruction())
+    assert first == repeated
+    assert first != changed

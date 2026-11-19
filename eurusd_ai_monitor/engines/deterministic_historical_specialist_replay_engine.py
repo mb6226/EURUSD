@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import hashlib
+import inspect
+import json
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from eurusd_ai_monitor.engines.central_scenario_intelligence_engine import CentralScenarioIntelligenceEngine
@@ -29,6 +33,14 @@ def _time(value: Any, field: str) -> datetime:
     except ValueError as exc:
         raise ValueError(f"{field} is invalid") from exc
     return _utc(parsed, field)
+
+
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value, sort_keys=True, separators=(",", ":"),
+        ensure_ascii=False, default=str,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 class DeterministicHistoricalSpecialistReplayEngine:
@@ -171,12 +183,15 @@ class DeterministicHistoricalSpecialistReplayEngine:
                 "Technical structure, market regime, quantitative statistics and liquidity proxies are re-executed from reconstructed candles.",
                 "Macro, policy, intermarket and positioning specialists are re-executed only when their engines and point-in-time observation store are supplied.",
                 "The central scenario engine receives newly recomputed reports; missing specialists remain missing.",
+                "Each specialist report carries canonical feature/evidence/report SHA-256 fingerprints and an implementation source-file fingerprint when available.",
                 "No archived future specialist output is used to fill gaps.",
             ],
             "limitations": [
                 "Price Action lifecycle is stateful and is not replayed by this phase; it is explicitly missing from scenario inputs.",
                 "News semantic and macro-calendar impact models are not re-executed without pinned model/feature versions; only their reconstructed evidence coverage is reported.",
                 "Historical replay uses the currently injected deterministic algorithm versions; exact historical code-version replay requires a future immutable model registry.",
+                "Implementation fingerprints cover each engine source file, not the full transitive dependency closure; they identify current code but do not recreate historical environments.",
+                "Fundamental input provenance is bounded by the observation/report fields returned by the existing specialists; raw observation snapshots are not copied into replay output.",
                 "No numeric probability calibration, trading P&L, strategy optimization, or profitability claim is produced.",
             ],
             "decision_authority": "ASSESSMENT_ONLY",
@@ -251,6 +266,7 @@ class DeterministicHistoricalSpecialistReplayEngine:
                 "positioning_sentiment_intelligence",
             ):
                 reports[name] = self._quality_blocked_report(snapshot, name)
+            self._attach_execution_provenance(reports, snapshot, m1_report, m5_report)
             return reports
 
         technical_structure = None
@@ -312,7 +328,101 @@ class DeterministicHistoricalSpecialistReplayEngine:
                     "reason_codes": ["REQUIRED_ENGINE_OR_POINT_IN_TIME_STORE_NOT_CONFIGURED"],
                     "reexecution_status": "NOT_CONFIGURED",
                 }
+        self._attach_execution_provenance(reports, snapshot, m1_report, m5_report)
         return reports
+
+    def _attach_execution_provenance(self, reports, snapshot, m1_report, m5_report):
+        feature_payload = {
+            "schema_version": "EURUSD_MARKET_SNAPSHOT_V1",
+            "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+            "broker_server": snapshot.broker_server,
+            "symbol": snapshot.symbol,
+            "quality": {
+                "is_valid": snapshot.quality.is_valid,
+                "issues": list(snapshot.quality.issues),
+            },
+            "candles": [
+                {
+                    "timeframe": candle.timeframe,
+                    "open_time_utc": candle.candle_open_time_utc.isoformat(),
+                    "open": str(candle.open), "high": str(candle.high),
+                    "low": str(candle.low), "close": str(candle.close),
+                    "tick_volume": candle.tick_volume,
+                    "spread": candle.spread,
+                    "real_volume": candle.real_volume,
+                }
+                for candle in (*snapshot.m1_candles, *snapshot.m5_candles)
+            ],
+        }
+        feature_digest = _canonical_sha256(feature_payload)
+        reconstructed_evidence_digest = _canonical_sha256({
+            "m1_reconstruction": m1_report,
+            "m5_reconstruction": m5_report,
+        })
+        engines = {
+            "technical_analysis": self._technical,
+            "market_regime_intelligence": self._regime,
+            "quantitative_market_statistics": self._quant,
+            "liquidity_microstructure_intelligence": self._liquidity,
+            "macro_fundamentals_intelligence": self._macro,
+            "policy_rate_differential_intelligence": self._policy,
+            "intermarket_intelligence": self._intermarket,
+            "positioning_sentiment_intelligence": self._positioning,
+        }
+        observation_specialists = {
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+            "intermarket_intelligence",
+            "positioning_sentiment_intelligence",
+        }
+        for name, report in reports.items():
+            engine = engines.get(name)
+            source_path = None
+            source_digest = None
+            if engine is not None:
+                try:
+                    source_path = inspect.getsourcefile(type(engine))
+                    if source_path:
+                        source_digest = hashlib.sha256(
+                            Path(source_path).read_bytes()
+                        ).hexdigest()
+                except (OSError, TypeError):
+                    source_digest = None
+            algorithm_version = (
+                report.get("algorithm_version")
+                or report.get("version")
+                or (getattr(type(engine), "VERSION", None) if engine is not None else None)
+            )
+            reports[name] = {
+                **report,
+                "execution_provenance": {
+                    "schema_version": "SPECIALIST_EXECUTION_PROVENANCE_V1",
+                    "specialist": name,
+                    "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                    "engine_module": type(engine).__module__ if engine is not None else None,
+                    "engine_class": type(engine).__qualname__ if engine is not None else None,
+                    "implementation_source_sha256": source_digest,
+                    "implementation_source_status": (
+                        "HASHED" if source_digest else "UNAVAILABLE"
+                    ),
+                    "algorithm_version": algorithm_version,
+                    "parameter_version": report.get("parameter_version"),
+                    "version_identity_status": (
+                        "DECLARED" if algorithm_version else "NOT_DECLARED"
+                    ),
+                    "feature_snapshot_schema": "EURUSD_MARKET_SNAPSHOT_V1",
+                    "feature_snapshot_sha256": feature_digest,
+                    "reconstructed_evidence_sha256": reconstructed_evidence_digest,
+                    "report_payload_sha256": _canonical_sha256(report),
+                    "input_provenance_scope": (
+                        "MARKET_SNAPSHOT_AND_POINT_IN_TIME_OBSERVATION_SPECIALIST_OUTPUT"
+                        if name in observation_specialists
+                        else "RECONSTRUCTED_MARKET_SNAPSHOT"
+                    ),
+                    "historical_version_parity": "NOT_CLAIMED",
+                    "reexecution_status": report.get("reexecution_status"),
+                },
+            }
 
     @staticmethod
     def _quality_blocked_report(snapshot, name):
