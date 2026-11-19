@@ -12,7 +12,7 @@ EURUSD_IDENTITY = ("BROKER_SPOT_REFERENCE", "EURUSD_SPOT_REFERENCE", "usd_per_eu
 DRIVERS = {
     "US_10Y_TREASURY_YIELD": {
         "source_id": "FRED_INTERMARKET", "unit": "percent_per_annum",
-        "change_method": "YIELD_CHANGE_BP", "max_age_days": 45,
+        "change_method": "YIELD_CHANGE_BP", "max_age_days": 5,
     },
     "DE_10Y_GOVERNMENT_YIELD": {
         "source_id": "ECB_INTERMARKET", "unit": "percent_per_annum",
