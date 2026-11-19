@@ -590,7 +590,11 @@ def main():
                 else:
                     technical_error = "Market context quality gate failed"
                 try:
-                    if technical_structure is None:
+                    if not snapshot.quality.is_valid:
+                        market_regime_report = market_regime_engine.assess(
+                            snapshot, technical_structure
+                        )
+                    elif technical_structure is None:
                         market_regime_report = {
                             "status": "DEGRADED",
                             "regime": "UNKNOWN",
