@@ -241,7 +241,13 @@ class LifecycleStoreTests(unittest.TestCase):
             created_at_utc=self.created_at + timedelta(minutes=1),
         )
         self.assertIsNone(result)
-        self.assertEqual(self.store.get_events(self.lifecycle.lifecycle_id), self.store.get_events(self.lifecycle.lifecycle_id))
+        self.assertEqual(len(self.store.get_events(self.lifecycle.lifecycle_id)), 1)
+        with closing(sqlite3.connect(self.db_path)) as db:
+            record = db.execute(
+                "SELECT record_version FROM pa_lifecycle_state WHERE lifecycle_id = ?",
+                (self.lifecycle.lifecycle_id,),
+            ).fetchone()
+        self.assertEqual(record[0], 1)
 
     def test_stale_m5_revision_watermark_is_rejected(self):
         m5 = candle(13, "1.10800", "1.10650")
