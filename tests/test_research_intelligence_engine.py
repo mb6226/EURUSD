@@ -43,6 +43,43 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(result["decision_authority"], "ASSESSMENT_ONLY")
         self.assertEqual(result["trade_authority"], "NONE")
         self.assertEqual(result["order_execution"], "DISABLED")
+        self.assertEqual(result["authority_audit"]["status"], "PASS")
+
+    def test_explicit_trade_authority_claim_degrades_report(self):
+        items = sources()
+        items["setup_assessment"]["payload"]["trade_authority"] = "AUTHORIZED"
+        result = self.build(items)
+        self.assertEqual(result["status"], "DEGRADED")
+        self.assertEqual(result["authority_audit"]["status"], "VIOLATION")
+        self.assertIn(
+            "SETUP_ASSESSMENT_AUTHORITY_CONTRACT_VIOLATION",
+            result["reason_codes"],
+        )
+        self.assertEqual(
+            result["authority_audit"]["violations"][0]["field"],
+            "trade_authority",
+        )
+
+    def test_explicit_order_execution_enablement_degrades_report(self):
+        items = sources()
+        items["session_eligibility"]["payload"]["order_execution"] = "ENABLED"
+        result = self.build(items)
+        self.assertEqual(result["status"], "DEGRADED")
+        self.assertEqual(result["authority_audit"]["status"], "VIOLATION")
+
+    def test_explicit_entry_eligibility_enablement_degrades_report(self):
+        items = sources()
+        items["setup_assessment"]["payload"]["entry_eligibility"] = "ELIGIBLE"
+        result = self.build(items)
+        self.assertEqual(result["status"], "DEGRADED")
+        self.assertEqual(result["authority_audit"]["status"], "VIOLATION")
+
+    def test_explicit_decision_authority_escalation_degrades_report(self):
+        items = sources()
+        items["fusion_assessment"]["payload"]["decision_authority"] = "TRADE_AUTHORITY"
+        result = self.build(items)
+        self.assertEqual(result["status"], "DEGRADED")
+        self.assertEqual(result["authority_audit"]["status"], "VIOLATION")
 
     def test_missing_current_source_is_partial(self):
         items = sources()
