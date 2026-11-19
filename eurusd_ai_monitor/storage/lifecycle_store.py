@@ -444,12 +444,12 @@ class LifecycleStore:
     def get_revision_watermark(self, broker_server: str, symbol: str) -> int:
         _validate_identifier(broker_server, "broker_server")
         _validate_identifier(symbol, "symbol")
-        with self._market_data_store._connect() as connection:
+        with closing(self._market_data_store._connect()) as connection:
             return self._watermark_on_connection(connection, broker_server, symbol)
 
     def load_by_id(self, lifecycle_id: str) -> CorrectionLifecycle | None:
         _validate_identifier(lifecycle_id, "lifecycle_id")
-        with self._market_data_store._connect() as connection:
+        with closing(self._market_data_store._connect()) as connection:
             row = connection.execute(
                 "SELECT state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state WHERE lifecycle_id = ?",
                 (lifecycle_id,),
@@ -474,7 +474,7 @@ class LifecycleStore:
         _validate_identifier(broker_server, "broker_server")
         _validate_identifier(symbol, "symbol")
         placeholders = ", ".join("?" for _ in self._ACTIVE_STATES)
-        with self._market_data_store._connect() as connection:
+        with closing(self._market_data_store._connect()) as connection:
             rows = connection.execute(
                 f"""
                 SELECT lifecycle_id, state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state
@@ -516,7 +516,7 @@ class LifecycleStore:
             raise ValueError("after_sequence must be a non-negative integer")
         if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
             raise ValueError("limit must be a positive integer")
-        with self._market_data_store._connect() as connection:
+        with closing(self._market_data_store._connect()) as connection:
             rows = connection.execute(
                 """
                 SELECT event_id, event_sequence, transition_type, previous_state,
