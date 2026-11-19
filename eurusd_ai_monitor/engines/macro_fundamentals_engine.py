@@ -176,16 +176,15 @@ class MacroFundamentalsEngine:
     def _inflation(self, us: dict, ea: dict, cutoff: datetime) -> dict[str, Any]:
         if not us or not ea:
             return {"status": "UNAVAILABLE", "reason_codes": ["INFLATION_SERIES_MISSING"]}
-        us_period = max(us)
-        ea_period = max(ea)
-        if us_period != ea_period:
+        common_periods = set(us).intersection(ea)
+        if not common_periods:
             return {
                 "status": "UNAVAILABLE",
                 "reason_codes": ["INFLATION_REFERENCE_MONTHS_NOT_ALIGNED"],
-                "us_reference_month": f"{us_period[0]:04d}-{us_period[1]:02d}",
-                "ea_reference_month": f"{ea_period[0]:04d}-{ea_period[1]:02d}",
+                "us_latest_reference_month": f"{max(us)[0]:04d}-{max(us)[1]:02d}",
+                "ea_latest_reference_month": f"{max(ea)[0]:04d}-{max(ea)[1]:02d}",
             }
-        period = us_period
+        period = max(common_periods)
         prior_year = (period[0] - 1, period[1])
         us_now, us_prior = us[period], us.get(prior_year)
         ea_now, ea_prior = ea[period], ea.get(prior_year)
