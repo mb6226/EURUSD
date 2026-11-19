@@ -27,6 +27,12 @@ def _decimal(value: Decimal, name: str) -> Decimal:
     return value
 
 
+def _decimal_text(value: Decimal) -> str:
+    """Serialize decimals without insignificant trailing zeroes."""
+    normalized = value.normalize()
+    return format(normalized, "f") if normalized else "0"
+
+
 def _candle_id(candle: Candle) -> str:
     stamp = candle.candle_open_time_utc.isoformat().replace("+00:00", "Z")
     return f"{candle.broker_server}|{candle.symbol}|{candle.timeframe}|{stamp}"
@@ -255,7 +261,7 @@ class ObservationStore:
                         candles_processed=?,completed_at_utc=COALESCE(?,completed_at_utc)
                     WHERE setup_key=?
                 """, (
-                    current, str(mfe), str(mae), mfe_at, mae_at, last, processed,
+                    current, _decimal_text(mfe), _decimal_text(mae), mfe_at, mae_at, last, processed,
                     completed_at, setup_key,
                 ))
                 db.commit()
