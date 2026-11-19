@@ -60,17 +60,23 @@ class LiquidityMicrostructureEngine:
 
     VERSION = "1.0.0"
 
-    def __init__(self, *, minimum_samples: int = 20, max_age_seconds: int = 180,
+    def __init__(self, *, minimum_samples: int = 20,
+                 max_age_seconds: Mapping[str, int] | None = None,
                  comparison_window: int = 5) -> None:
         for name, value in (("minimum_samples", minimum_samples),
-                            ("max_age_seconds", max_age_seconds),
                             ("comparison_window", comparison_window)):
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
                 raise ValueError(f"{name} must be a positive integer")
+        age_limits = dict(max_age_seconds or {"M1": 180, "M5": 900})
+        if set(age_limits) != {"M1", "M5"} or any(
+            isinstance(value, bool) or not isinstance(value, int) or value <= 0
+            for value in age_limits.values()
+        ):
+            raise ValueError("max_age_seconds must define positive M1 and M5 limits")
         if comparison_window * 2 > minimum_samples:
             raise ValueError("minimum_samples must cover both comparison windows")
         self.minimum_samples = minimum_samples
-        self.max_age_seconds = max_age_seconds
+        self.max_age_seconds = age_limits
         self.comparison_window = comparison_window
 
     def analyze(self, *, evaluated_at_utc: datetime, broker_server: str,
@@ -135,7 +141,7 @@ class LiquidityMicrostructureEngine:
                 frames[timeframe] = {"status": "DEGRADED", "reason_codes": ["FUTURE_CANDLE"]}
                 reasons.append(f"{timeframe}_FUTURE_CANDLE")
                 continue
-            if age > self.max_age_seconds:
+            if age > self.max_age_seconds[timeframe]:
                 frames[timeframe] = {
                     "status": "STALE", "age_seconds": int(age),
                     "sample_count": len(rows), "reason_codes": ["LATEST_CANDLE_STALE"],
