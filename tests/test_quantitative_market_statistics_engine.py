@@ -148,6 +148,10 @@ class QuantitativeMarketStatisticsEngineTests(unittest.TestCase):
             QuantitativeThresholds(lookback_bars=10, minimum_bars=11)
         with self.assertRaises(ValueError):
             QuantitativeThresholds(pip_size=Decimal("0"))
+        with self.assertRaises(ValueError):
+            QuantitativeThresholds(pip_size="not-a-number")
+        with self.assertRaises(TypeError):
+            QuantitativeMarketStatisticsEngine(object())
 
     def test_non_snapshot_input_is_rejected(self):
         with self.assertRaises(TypeError):
