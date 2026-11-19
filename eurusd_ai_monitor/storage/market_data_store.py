@@ -147,6 +147,11 @@ CREATE TABLE IF NOT EXISTS pa_lifecycle_events (
 CREATE INDEX IF NOT EXISTS idx_pa_lifecycle_events_time
     ON pa_lifecycle_events (lifecycle_id, event_sequence);
 
+CREATE INDEX IF NOT EXISTS idx_candle_revisions_stream
+    ON candle_revisions (
+        broker_server, symbol, timeframe, revision_id
+    );
+
 CREATE TABLE IF NOT EXISTS pa_lifecycle_recovery (
     broker_server TEXT NOT NULL,
     symbol TEXT NOT NULL,
