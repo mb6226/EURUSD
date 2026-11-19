@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 import hashlib
 import json
@@ -177,15 +177,6 @@ class LifecycleStore:
         with self._market_data_store._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
-                current_watermark = self._watermark_on_connection(
-                    connection, broker, symbol
-                )
-                if current_watermark != revision_watermark:
-                    raise LifecycleRevisionConflict(
-                        "M5 revision watermark changed: "
-                        f"analysis={revision_watermark}, current={current_watermark}"
-                    )
-
                 if event_id is not None:
                     existing_event = connection.execute(
                         """
@@ -207,7 +198,9 @@ class LifecycleStore:
                             "current_state": existing_event["current_state"],
                             "occurred_at_utc": _timestamp_from_db(
                                 existing_event["occurred_at_utc"]
-                            ).isoformat().replace("+00:00", "Z"),
+                            ).strftime("%Y-%m-%dT%H:%M:%S.%fZ") if "." in existing_event["occurred_at_utc"] else _datetime_to_string(
+                                _timestamp_from_db(existing_event["occurred_at_utc"])
+                            ),
                             "reason_codes": json.loads(existing_event["reason_codes_json"]),
                             "evidence_refs": json.loads(existing_event["evidence_refs_json"]),
                             "lifecycle_snapshot": json.loads(
@@ -319,10 +312,8 @@ class LifecycleStore:
                             f"expected record_version {expected_record_version}, "
                             f"found {stored_record_version}"
                         )
-                    if (
-                        current["broker_server"] if "broker_server" in current.keys() else broker
-                    ) != broker:
-                        raise LifecycleIntegrityError("lifecycle broker identity changed")
+                    if current["broker_server"] != broker or current["symbol"] != symbol:
+                        raise LifecycleIntegrityError("lifecycle broker/symbol identity changed")
                     if current["state"] in (
                         LifecycleState.RESOLVED.value,
                         LifecycleState.INVALIDATED.value,
