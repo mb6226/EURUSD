@@ -147,6 +147,18 @@ CREATE TABLE IF NOT EXISTS pa_lifecycle_events (
 CREATE INDEX IF NOT EXISTS idx_pa_lifecycle_events_time
     ON pa_lifecycle_events (lifecycle_id, event_sequence);
 
+CREATE TRIGGER IF NOT EXISTS trg_pa_lifecycle_events_no_update
+BEFORE UPDATE ON pa_lifecycle_events
+BEGIN
+    SELECT RAISE(ABORT, 'pa_lifecycle_events is append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_pa_lifecycle_events_no_delete
+BEFORE DELETE ON pa_lifecycle_events
+BEGIN
+    SELECT RAISE(ABORT, 'pa_lifecycle_events is append-only');
+END;
+
 CREATE INDEX IF NOT EXISTS idx_candle_revisions_stream
     ON candle_revisions (
         broker_server, symbol, timeframe, revision_id
