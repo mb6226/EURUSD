@@ -108,7 +108,9 @@ class MarketRegimeEngineTests(unittest.TestCase):
 
     def test_provenance_and_output_are_deterministic(self):
         m5 = make_candles("M5", 100, start=BASE - timedelta(minutes=500))
-        snap = make_snapshot(m5=m5)
+        # Include a closed M1 window so the provenance timestamp is available.
+        m1 = make_candles("M1", 20, start=BASE - timedelta(minutes=20))
+        snap = make_snapshot(m5=m5, m1=m1)
         one = self.engine.assess(snap, make_structure("UP"))
         two = self.engine.assess(snap, make_structure("UP"))
         self.assertEqual(one, two)
