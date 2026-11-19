@@ -12,6 +12,7 @@ RESEARCH_SOURCE_NAMES = (
     "setup_outcome_observation",
     "statistical_outcome_evaluation",
     "regime_conditioned_outcome_evaluation",
+    "quantitative_market_statistics",
 )
 
 
