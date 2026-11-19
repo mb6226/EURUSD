@@ -179,8 +179,17 @@ def parse_ecb_meeting_calendar_html(contents: str) -> list[dict]:
         if not title:
             continue
         scheduled_date = datetime.strptime(match.group(1), "%d/%m/%Y").date()
+        lowered_title = title.casefold()
+        if "non-monetary policy meeting" in lowered_title:
+            meeting_kind = "NON_MONETARY_POLICY"
+        elif "monetary policy meeting" in lowered_title:
+            meeting_kind = "MONETARY_POLICY"
+        elif "general council" in lowered_title:
+            meeting_kind = "GENERAL_COUNCIL"
+        else:
+            meeting_kind = "COUNCIL_EVENT"
         records.append({
-            "source_event_id": f"{scheduled_date.isoformat()}|{title}",
+            "source_event_id": f"ECB|{scheduled_date.year:04d}-{scheduled_date.month:02d}|{meeting_kind}",
             "title": title,
             "description": "Official ECB meeting calendar. The page provides a date; no release time is inferred.",
             "scheduled_date": scheduled_date,
@@ -237,7 +246,7 @@ def parse_fomc_calendar_html(contents: str, as_of_date=None) -> list[dict]:
             )
             status = "TENTATIVE" if scheduled_date >= today else "CONFIRMED"
             records.append({
-                "source_event_id": f"FOMC|{scheduled_date.isoformat()}",
+                "source_event_id": f"FOMC|{year:04d}-{month:02d}",
                 "title": title,
                 "description": (
                     "Official FOMC calendar lists a two-day meeting. The event is dated on day 2; "
