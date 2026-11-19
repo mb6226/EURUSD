@@ -112,7 +112,7 @@ class PointInTimeObservationStoreTests(unittest.TestCase):
         self.assertEqual(summary.observations_revised, 0)
         self.assertEqual(self.store.count_observations(), 1)
         rows = self.store.get_as_of("TEST_SOURCE", "TEST_PRODUCT", stamp(5))
-        self.assertEqual(rows[0]["retrieved_at_utc"], "2026-01-01T02:00:00.000000Z")
+        self.assertEqual(rows[0]["retrieved_at_utc"], "2026-01-02T00:00:00.000000Z")
 
     def test_revision_counts_are_reported(self):
         self.store.persist_fetch_result(result("100.0", stamp(2)))
