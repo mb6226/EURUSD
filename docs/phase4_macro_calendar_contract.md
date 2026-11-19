@@ -21,7 +21,7 @@ The calendar is context-only:
 
 FOMC dates are represented on the second day of each two-day meeting; the official calendar does not provide a release time. Future FOMC dates are marked tentative until confirmed. Strategy-only meetings are labeled separately and are not mislabeled as rate decisions.
 
-Canonical source URLs are held in `calendar_sources.json`. Refresh cadence and stale thresholds are source-specific and configurable. The built-in transport uses Python's standard library, HTTPS, a bounded response size and a finite timeout. No paid API or additional runtime dependency is required.
+Canonical source URLs are held in `calendar_sources.json`. Refresh cadence and stale thresholds are source-specific and configurable. The built-in transport uses Python's standard library, HTTPS, a bounded response size and a finite timeout. The `tzdata` package supplies IANA timezone definitions on Windows for correct daylight-saving conversion; no paid API is required.
 
 ## Event contract
 
