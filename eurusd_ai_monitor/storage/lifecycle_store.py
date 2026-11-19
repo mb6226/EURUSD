@@ -491,20 +491,26 @@ class LifecycleStore:
         _validate_identifier(broker_server, "broker_server")
         _validate_identifier(symbol, "symbol")
         with closing(self._market_data_store._connect()) as connection:
-            rows = connection.execute(
-                """
-                SELECT lifecycle_id, state, broker_server, symbol, state_version,
-                       record_version, algorithm_version, parameter_version,
-                       last_processed_m5_utc, revision_watermark, snapshot_json
-                FROM pa_lifecycle_state
-                WHERE broker_server = ? AND symbol = ?
-                ORDER BY updated_at_utc DESC
-                """,
-                (broker_server, symbol),
-            ).fetchall()
-            watermark = self._watermark_on_connection(
-                connection, broker_server, symbol
-            )
+            connection.execute("BEGIN")
+            try:
+                rows = connection.execute(
+                    """
+                    SELECT lifecycle_id, state, broker_server, symbol, state_version,
+                           record_version, algorithm_version, parameter_version,
+                           last_processed_m5_utc, revision_watermark, snapshot_json
+                    FROM pa_lifecycle_state
+                    WHERE broker_server = ? AND symbol = ?
+                    ORDER BY updated_at_utc DESC
+                    """,
+                    (broker_server, symbol),
+                ).fetchall()
+                watermark = self._watermark_on_connection(
+                    connection, broker_server, symbol
+                )
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
 
         active: list[StoredLifecycleRecord] = []
         for row in rows:
