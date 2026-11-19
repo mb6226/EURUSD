@@ -101,3 +101,15 @@ Phase 27 adds a read-only runtime bridge from the existing append-only point-in-
 The four specialist reports are included in the canonical research source envelope and are classified as optional current-cycle context. Missing/unconfigured observations remain explicit in the source manifest; partial coverage remains incomplete; stale or degraded evidence is not silently promoted. The specialists retain their assessment/context-only authority, and none becomes a Fusion directional vote. The observation database is opened read-only only when an existing, schema-valid database is present; the runtime does not create an empty operational database.
 
 This phase does not establish that external data is populated, current, licensed, or operational. It does not add provider automation, RAG access, learning, backtesting, directional scenario synthesis, BUY/SELL behavior, risk changes, or order execution. The comprehensive central scenario brain remains a later capability.
+
+
+
+## Post-Phase 29 — Historical central scenario replay
+
+Phase 29 adds `HistoricalScenarioReplayEngine` and a read-only adapter for the existing monitoring JSONL archive. It evaluates archived Phase 28 central scenario reports against later closed M1/M5 candles at explicit bar-count horizons. Outputs include scenario classification accuracy, directional accuracy, confusion matrices, and descriptive forward movement.
+
+The evaluator rejects unresolved/conflicted forecasts, invalid report identity/timestamps, missing anchors, insufficient future bars, discontinuous windows, and candle revisions detected after the scenario timestamp. The replay reads the existing market archive and revision history; it does not rewrite market data or source logs. The adapter consumes the actual central scenario object published by the existing SignalManager.
+
+This is historical outcome evaluation of recorded scenario labels, not a reconstruction of historical central intelligence. It cannot prove all upstream specialist inputs were archived point-in-time. The current market store does not retain a complete queryable as-of version of every candle value; affected samples are conservatively excluded when later revisions are detected. Full candle version reconstruction, historical specialist report manifests, walk-forward partitions, calibration and uncertainty estimates remain open research gaps.
+
+No probability calibration, source reliability weighting, learning, Fusion votes, strategy/risk changes, BUY/SELL enablement, or execution authority is introduced. Metrics are not trade profitability or realized P/L.
