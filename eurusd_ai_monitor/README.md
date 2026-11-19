@@ -10,7 +10,7 @@ Alert-only starter for MetaTrader 5 + Python. It monitors EURUSD on M1 and M5.
 - Actual vision-model interpretation: NOT YET CONNECTED.
 - Technical structure and the persisted Price Action lifecycle are implemented with fail-closed recovery.
 - Macro calendar ingestion is implemented for official BLS, BEA, ECB, and Federal Reserve schedule sources; it is context-only and has no trade authority.
-- News, general fundamental analysis, statistical research, and learning modules remain scaffolds.
+- Official-source News Intelligence is implemented as context-only RSS/Atom ingestion; general fundamental analysis, statistical research, and learning modules remain scaffolds.
 - User's full Trend → Correction → Rejection → Pullback rules: NOT YET CODED.
 - BUY/SELL signal generation and order execution: DISABLED. The rules engine intentionally returns WAIT.
 
@@ -19,7 +19,7 @@ Do not use this starter as a trading system or assume it has validated profitabi
 ## Project layout
 - `engines/`: MT5 data, market context, Technical Engine, Price Action lifecycle/runtime, macro calendar context, screenshot validation, and remaining analysis-engine placeholders.
 - `alerts/`: JSONL signal logging.
-- `data/`: market snapshots, an independent SQLite macro calendar store, and reserved news, screenshot, and historical-data folders.
+- `data/`: market snapshots, independent SQLite macro calendar and news stores, screenshot, and historical-data folders.
 - `knowledge/`: reserved for reviewed rules and analysis references.
 - `memory/`: reserved for future SQLite stores and analysis history.
 - `learning/`: feedback and evaluation placeholders; no online learning is active.
@@ -59,6 +59,6 @@ The knowledge folders remain placeholders. The macro calendar uses its own SQLit
 1. Confirm broker symbol spelling (some brokers use EURUSD., EURUSDm, etc.).
 2. Validate data timestamps, broker server time, spread, and pip conversion.
 3. Validate official macro-calendar source freshness and feed compatibility during local operation.
-4. Implement the remaining news and fundamental intelligence layers with official, provenance-preserving sources.
+4. Expand reviewed news coverage and implement the remaining fundamental intelligence layer with official, provenance-preserving sources.
 5. Connect a vision provider only after its structured evidence contract is reviewed.
 6. Complete decision fusion, outcome tracking, replay/backtests and forward testing in alert-only mode.

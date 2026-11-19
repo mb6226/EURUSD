@@ -254,7 +254,6 @@ def main():
     def start_news_refresh() -> None:
         if not news_refresh_lock.acquire(blocking=False):
             return
-
         def refresh_worker() -> None:
             try:
                 news_engine.refresh_due()
@@ -262,7 +261,6 @@ def main():
                 print(f"[NEWS] {type(exc).__name__}: {exc}")
             finally:
                 news_refresh_lock.release()
-
         Thread(target=refresh_worker, name="news-refresh", daemon=True).start()
 
     connector.connect()
@@ -286,6 +284,13 @@ def main():
                         horizon_hours=int(config.get("calendar_horizon_hours", 72)),
                     )
                 except Exception as exc:
+                    news_payload = {
+                        "status": "UNAVAILABLE", "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "source_states": [], "stale_sources": ["NEWS_CONTEXT_UNAVAILABLE"],
+                        "article_count": 0, "articles": [], "reason_code": "NEWS_CONTEXT_READ_FAILED",
+                        "reason": f"{type(exc).__name__}: {exc}",
+                        "decision_authority": "CONTEXT_ONLY", "trade_authority": "NONE",
+                    }
                     macro_calendar_payload = {
                         "status": "UNAVAILABLE",
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
