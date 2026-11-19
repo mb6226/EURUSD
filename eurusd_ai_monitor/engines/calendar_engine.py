@@ -232,7 +232,7 @@ def parse_fomc_calendar_html(contents: str, as_of_date=None) -> list[dict]:
             detail = body[match.end():detail_end]
             strategy_only = bool(re.search(r"Monetary Policy Strategy Meeting", detail, re.IGNORECASE))
             title = (
-                "FOMC monetary policy strategy meeting (no policy decision expected)"
+                "FOMC monetary policy strategy meeting"
                 if strategy_only else "FOMC policy decision (meeting day 2)"
             )
             status = "TENTATIVE" if scheduled_date >= today else "CONFIRMED"
@@ -241,7 +241,7 @@ def parse_fomc_calendar_html(contents: str, as_of_date=None) -> list[dict]:
                 "title": title,
                 "description": (
                     "Official FOMC calendar lists a two-day meeting. The event is dated on day 2; "
-                    "the calendar does not provide a release time. Future dates are tentative."
+                    "the calendar does not provide a release time. Future dates are tentative. Strategy-only labels are preserved."
                 ),
                 "scheduled_date": scheduled_date,
                 "scheduled_at_utc": None,
