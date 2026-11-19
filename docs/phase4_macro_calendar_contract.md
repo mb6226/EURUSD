@@ -2,7 +2,7 @@
 
 ## Scope and authority
 
-Phase 4 adds a deterministic, provenance-preserving event calendar for EURUSD macro context. It ingests official publication schedules from the U.S. Bureau of Labor Statistics (BLS), the U.S. Bureau of Economic Analysis (BEA), and the European Central Bank (ECB).
+Phase 4 adds a deterministic, provenance-preserving event calendar for EURUSD macro context. It ingests official publication schedules from the U.S. Bureau of Labor Statistics (BLS), the U.S. Bureau of Economic Analysis (BEA), the Federal Reserve, and the European Central Bank (ECB).
 
 The calendar is context-only:
 - `trade_authority: NONE` and `decision_authority: CONTEXT_ONLY` are explicit in the monitor payload.
