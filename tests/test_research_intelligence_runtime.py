@@ -143,9 +143,9 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
             name: {"status": "AVAILABLE", "evaluated_at_utc": NOW.isoformat()}
             for name in RESEARCH_SOURCE_NAMES
         }
-        payloads["market_regime_intelligence"].update(
-            {"broker_server": "Other-Broker", "symbol": "GBPUSD"}
-        )
+        payloads["market_regime_intelligence"]["provenance"] = {
+            "broker_server": "Other-Broker", "symbol": "GBPUSD"
+        }
         sources = build_research_intelligence_sources(
             payloads, broker_server="Broker-Demo", symbol="EURUSD"
         )
@@ -170,7 +170,7 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
             name: {"status": "AVAILABLE", "evaluated_at_utc": NOW.isoformat()}
             for name in RESEARCH_SOURCE_NAMES
         }
-        payloads["market_regime_intelligence"]["symbol"] = None
+        payloads["market_regime_intelligence"]["provenance"] = {"symbol": None}
         sources = build_research_intelligence_sources(
             payloads, broker_server="Broker-Demo", symbol="EURUSD"
         )
