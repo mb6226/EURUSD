@@ -205,12 +205,10 @@ class MacroFundamentalsEngine:
         prior_year = (period[0] - 1, period[1])
         us_now, us_prior = us[period], us.get(prior_year)
         ea_now, ea_prior = ea[period], ea.get(prior_year)
-        if not all((us_prior, ea_prior)):
-            return {
-                "status": "UNAVAILABLE",
-                "reason_codes": ["INFLATION_YEAR_AGO_BASELINE_MISSING"],
-                "reference_month": f"{period[0]:04d}-{period[1]:02d}",
-            }
+        # Freshness is a property of the selected current observations and must
+        # be reported before checking the historical YoY baseline. Otherwise a
+        # stale current month with a missing 12-month baseline is misclassified
+        # as merely unavailable, hiding the more important data-quality state.
         if not self._fresh(us_now, cutoff) or not self._fresh(ea_now, cutoff):
             return {
                 "status": "STALE",
@@ -220,6 +218,12 @@ class MacroFundamentalsEngine:
                     "us_current": self._evidence(us_now),
                     "euro_area_current": self._evidence(ea_now),
                 },
+            }
+        if not all((us_prior, ea_prior)):
+            return {
+                "status": "UNAVAILABLE",
+                "reason_codes": ["INFLATION_YEAR_AGO_BASELINE_MISSING"],
+                "reference_month": f"{period[0]:04d}-{period[1]:02d}",
             }
         if min(us_now["value"], us_prior["value"], ea_now["value"], ea_prior["value"]) <= 0:
             raise ValueError("CPI/HICP index values must be positive")
