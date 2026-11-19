@@ -318,11 +318,11 @@ class MarketDataStore:
                     f"Unsupported market database schema version: {version}"
                 )
             if version == 1:
-                schema = _BACKFILL_SCHEMA + "\\n" + _PA_LIFECYCLE_SCHEMA
+                schema = _BACKFILL_SCHEMA + "\n" + _PA_LIFECYCLE_SCHEMA
             elif version == 2:
                 schema = _PA_LIFECYCLE_SCHEMA
             else:
-                schema = _SCHEMA + "\\n" + _BACKFILL_SCHEMA + "\\n" + _PA_LIFECYCLE_SCHEMA
+                schema = _SCHEMA + "\n" + _BACKFILL_SCHEMA + "\n" + _PA_LIFECYCLE_SCHEMA
             connection.executescript(
                 "BEGIN IMMEDIATE;\n"
                 + schema
