@@ -213,7 +213,6 @@ class PointInTimeObservationStore:
                         _stamp(observation.published_at_utc)
                         if observation.published_at_utc is not None else None
                     ),
-                    "retrieved_at_utc": retrieved,
                     "value": value,
                     "unit": observation.unit,
                     "source_record_id": observation.source_record_id,
@@ -299,8 +298,11 @@ class PointInTimeObservationStore:
             + " AND ".join(clauses)
             + " ORDER BY observation_key, retrieved_at_utc, version"
         )
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
             rows = connection.execute(query, parameters).fetchall()
+        finally:
+            connection.close()
 
         latest: dict[str, sqlite3.Row] = {}
         for row in rows:
