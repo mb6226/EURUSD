@@ -23,7 +23,7 @@ class CFTCPositioningTests(unittest.TestCase):
    a=CFTCPositioningAdapter(product_id=p,records_provider=lambda req,i=i:[make_row(i)])
    o=a.fetch(FetchRequest(SOURCE_ID,p)).observations[0]
    rows.append({"source_id":SOURCE_ID,"product_id":p,"effective_at_utc":o.effective_at_utc.isoformat(),"published_at_utc":o.published_at_utc.isoformat(),"retrieved_at_utc":(o.published_at_utc+timedelta(minutes=1)).isoformat(),"value":str(o.value),"payload_sha256":"a"*64})
-  report=PositioningSentimentIntelligenceEngine().assess(as_of_utc=datetime(2026,12,1,tzinfo=UTC),observations={p:rows})
+  report=PositioningSentimentIntelligenceEngine().assess(as_of_utc=datetime(2026,7,25,tzinfo=UTC),observations={p:rows})
   item=report["groups"]["LEVERAGED_MONEY"]; self.assertEqual(item["status"],"AVAILABLE"); self.assertEqual(item["interpretation"],"NET_LONG"); self.assertIn("historical_percentile",item); self.assertEqual(report["decision_authority"],"CONTEXT_ONLY")
  def test_future_published_excluded(self):
   p="EURO_FX_DEALER_NET_OI_PCT"; r=make_row(published_at_utc=datetime(2026,12,2,tzinfo=UTC).isoformat())
