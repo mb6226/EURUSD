@@ -30,6 +30,13 @@ class LifecycleRecoveryManager:
             raise TypeError("lifecycle_store must be a LifecycleStore")
         if not isinstance(market_data_store, MarketDataStore):
             raise TypeError("market_data_store must be a MarketDataStore")
+        if (
+            lifecycle_store._market_data_store.db_path.resolve()
+            != market_data_store.db_path.resolve()
+        ):
+            raise ValueError(
+                "LifecycleStore and recovery manager must share the same market database"
+            )
         self._lifecycle_store = lifecycle_store
         self._market_data_store = market_data_store
 
