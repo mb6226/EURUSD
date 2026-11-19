@@ -14,6 +14,7 @@ RESEARCH_SOURCE_NAMES = (
     "regime_conditioned_outcome_evaluation",
     "quantitative_market_statistics",
     "intermarket_intelligence",
+    "positioning_sentiment_intelligence",
 )
 
 
