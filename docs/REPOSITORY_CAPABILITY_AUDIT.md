@@ -30,7 +30,7 @@ The package README's original scaffold statements predate Phases 18–22: determ
 | Evidence lineage | Phase 14 merged at `14d852577101640ce92206b310026ea1bf21b667` | Per-cycle M1/M5 candle-reference traceability and validation; not broader multi-source lineage for every future domain |
 | Vision | `vision_engine.py` validates image presence/dimensions; vision analysis is NOT_CONNECTED | Provider/model disconnected |
 | Intermarket | Phase 22 `IntermarketSeriesAdapter`, six logical products across FRED/ECB/LBMA/broker source families, and `IntermarketIntelligenceEngine` with exact-time return/change correlations and lead/lag diagnostics | Initial deterministic foundation implemented and tested with synthetic end-to-end ingestion; provider series IDs, legal availability, real data history, and runtime wiring remain unverified/unimplemented |
-| Positioning/sentiment/options | No dedicated specialist/source/store evident in audited tree | Not implemented as a domain |
+| Positioning/sentiment/options | Phase 23 CFTC TFF Futures-Only CME EURO FX adapter and PositioningSentimentIntelligenceEngine; Dealer, Asset Manager, Leveraged Money net positioning as % of open interest | Initial weekly futures-positioning proxy; no spot-wide positioning, options risk reversals, retail sentiment, or live provider/runtime wiring |
 | Liquidity/microstructure | Spread available from MT5 tick; no comprehensive depth/order-flow/liquidity specialist evident | Partial raw inputs; specialist absent |
 | Learning | `feedback_engine.py`, `model_evaluator.py`, `performance_analyzer.py` are placeholders | Placeholder / no active learning |
 | Memory | memory README says market_memory.db and trade_memory.db are not created; folders are placeholders | Not implemented |
@@ -42,7 +42,7 @@ The package README's original scaffold statements predate Phases 18–22: determ
 
 ## Runtime integration observations
 
-The inspected `main.py` orchestrates MT5, market context, technical, Price Action, macro calendar, news, Fusion, setup/session eligibility, outcome tracking, market regime, and research intelligence. The monitoring loop does not yet invoke the Phase 18 quantitative, Phase 20 policy differential, Phase 21 macro fundamentals, or Phase 22 intermarket specialists automatically. Vision interpretation, learning placeholders, and knowledge-v2 RAG also remain disconnected. These new specialists expose deterministic, testable contracts and source/store integration, but are not yet live runtime participants.
+The inspected `main.py` orchestrates MT5, market context, technical, Price Action, macro calendar, news, Fusion, setup/session eligibility, outcome tracking, market regime, and research intelligence. The monitoring loop does not yet invoke the Phase 18 quantitative, Phase 20 policy differential, Phase 21 macro fundamentals, Phase 22 intermarket, or Phase 23 positioning specialists automatically. Vision interpretation, learning placeholders, and knowledge-v2 RAG also remain disconnected. These new specialists expose deterministic, testable contracts and source/store integration, but are not yet live runtime participants.
 
 Current Fusion specialists include technical, Price Action, macro calendar, and news. Macro/news are context-only. The Phase 20–22 specialist outputs are not yet wired into Fusion or the monitoring runtime. Phase 13 synthesizes current specialist and historical descriptive outcome payloads; its contract says it is not a directional specialist, backtest, optimizer, or learner. Phase 14 adds evidence-lineage validation to the cycle, not missing specialist domains.
 
@@ -53,7 +53,7 @@ Current Fusion specialists include technical, Price Action, macro calendar, and 
 3. **RAG isolation:** knowledge-v2 exists as a separate add-on; notes say it is not integrated into v1 main.
 4. **Research gap:** descriptive MFE/MAE cohorts are not a general backtesting, hypothesis-testing, model-training, or strategy-evaluation platform.
 5. **Central brain gap:** current Phase 13 synthesis checks coherence/provenance/authority; it does not yet perform broad cross-domain scenario reasoning.
-6. **Data breadth gap:** the point-in-time store and logical macro/intermarket product contracts now exist, but no real multi-asset provider history or live operational data plane has been demonstrated; positioning/sentiment remains absent.
+6. **Data breadth gap:** the point-in-time store and logical macro/intermarket product contracts now exist, but no real multi-asset provider history or live operational data plane has been demonstrated; positioning/sentiment now has an initial CFTC futures-only proxy; options/retail sentiment and live provider coverage remain absent.
 7. **Operational evidence gap:** repository code/unit tests do not prove local MT5-connected runtime or real-time external feeds are operational.
 
 ## Priority gap order
@@ -63,7 +63,7 @@ Current Fusion specialists include technical, Price Action, macro calendar, and 
 3. Extend Phase 18 quantitative foundations with event studies, wave/sequence statistics, conditional distributions and uncertainty estimates; connect the specialist to the monitoring runtime only after explicit data/freshness integration and acceptance.
 4. Implement full **Macro/Fundamental Intelligence** using existing calendar/news foundations and additional reliable point-in-time sources.
 5. Extend Phase 22 by verifying provider-specific series IDs, publication/availability metadata, licensing, calendar alignment, and real historical samples; then validate relationship stability and out-of-sample behavior before runtime wiring.
-6. Add **Liquidity/Microstructure** and **Positioning/Sentiment** only where reliable, legally usable data exists; label proxies honestly.
+6. Extend Phase 23 with verified CFTC ingestion metadata and research validation; add options/retail sentiment only where reliable, legally usable data exists. Add **Liquidity/Microstructure** with the same source discipline.
 7. Integrate knowledge/RAG as a cited research assistant, never a directional authority.
 8. Build the next-generation central orchestrator after specialist outputs are broad, typed, and evidence-grounded.
 9. Build reproducible backtesting, walk-forward evaluation, learning, and controlled research promotion.
