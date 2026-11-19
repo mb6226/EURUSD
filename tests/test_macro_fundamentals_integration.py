@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from eurusd_ai_monitor.engines.macro_fundamentals_engine import MacroFundamentalsEngine
+from eurusd_ai_monitor.engines.fundamental_engine import MacroFundamentalsEngine
 from source_registry.adapters.macro_series import (
     EUROSTAT_SOURCE_ID, US_BLS_SOURCE_ID, OfficialMacroSeriesAdapter,
 )
