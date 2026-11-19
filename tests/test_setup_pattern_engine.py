@@ -79,6 +79,31 @@ class SetupPatternEngineTests(unittest.TestCase):
             TrendDirection.UP, rejection, Decimal("0.00020"), "alg", "params",
         )
         self.assertIsNone(result)
+ 
+    def test_bearish_breakout_and_retest(self):
+        rejection = self.engine.find_rejection(
+            (c(0, "1.10020", "1.10050", "1.10000", "1.10010"),),
+            TrendDirection.DOWN, Decimal("1.10030"), "alg", "params",
+        )
+        result = self.engine.find_pullback(
+            (c(1, "1.10010", "1.10020", "1.09990", "1.10000"),
+             c(2, "1.10000", "1.10025", "1.09980", "1.09990")),
+            TrendDirection.DOWN, rejection, Decimal("0.00020"), "alg", "params",
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.trigger_level, Decimal("1.10000"))
+
+    def test_retest_beyond_tolerance_is_rejected(self):
+        rejection = self.engine.find_rejection(
+            (c(0, "1.10010", "1.10030", "1.09980", "1.10020"),),
+            TrendDirection.UP, Decimal("1.10000"), "alg", "params",
+        )
+        result = self.engine.find_pullback(
+            (c(1, "1.10020", "1.10050", "1.10010", "1.10040"),
+             c(2, "1.10040", "1.10045", "1.10000", "1.10035")),
+            TrendDirection.UP, rejection, Decimal("0.00020"), "alg", "params",
+        )
+        self.assertIsNone(result)
 
     def test_assessment_is_never_trade_authority(self):
         from eurusd_ai_monitor.engines.setup_pattern_engine import SetupAssessment
@@ -95,4 +120,3 @@ class SetupPatternEngineTests(unittest.TestCase):
             self.engine.assess(None, (c(0, "1.1", "1.2", "1.0", "1.1"),),
                                BASE + timedelta(seconds=30))
 
-if __tests__ if False else False: pass
