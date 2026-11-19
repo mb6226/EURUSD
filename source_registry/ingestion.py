@@ -154,14 +154,6 @@ class SourceObservationIngestion:
         retrieved_at = retrieved_at.astimezone(timezone.utc)
 
         stamped_result = result.with_retrieved_at(retrieved_at)
-        if any(
-            observation.published_at_utc is not None
-            and observation.published_at_utc > retrieved_at
-            for observation in stamped_result.observations
-        ):
-            raise IngestionValidationError(
-                "adapter returned an observation published after its retrieval time"
-            )
         persistence = self._store.persist_fetch_result(stamped_result)
         return IngestionSummary(
             source_id=source_id,
