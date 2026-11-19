@@ -85,7 +85,7 @@ class ResearchIntelligenceEngine:
                 continue
             if not isinstance(entry, Mapping):
                 manifest.append({
-                    "source": name, "class": "CURRENT" if name in _CURRENT else "HISTORICAL",
+                    "source": name, "class": "OPTIONAL_CURRENT" if name in _OPTIONAL_CURRENT else ("CURRENT" if name in _CURRENT else "HISTORICAL"),
                     "status": "MISSING", "source_status": "MISSING",
                     "evaluated_at_utc": None, "reason_codes": [f"{name.upper()}_MISSING"],
                     "authority_violations": [],
