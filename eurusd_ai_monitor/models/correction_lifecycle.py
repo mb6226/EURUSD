@@ -153,6 +153,8 @@ class CorrectionLifecycle:
                 raise ValueError("correction pivots must retain TREND_PIVOT evidence role")
             if ref.algorithm_version != self.algorithm_version or ref.parameter_version != self.parameter_version:
                 raise ValueError("correction pivot evidence versions must match lifecycle")
+            if ref.candle.candle_open_time_utc < self.candidate_start_evidence.candle.candle_open_time_utc:
+                raise ValueError("correction pivots cannot precede candidate creation")
             pivot_times.append(candle.candle_open_time_utc)
         if pivot_times != sorted(set(pivot_times)):
             raise ValueError("correction_pivots must be chronologically ordered")
@@ -176,6 +178,22 @@ class CorrectionLifecycle:
         )
         last_processed = _utc(self.last_processed_m5_utc, "last_processed_m5_utc")
         latest_processed_close = last_processed + timedelta(seconds=_M5_SECONDS)
+        if int(last_processed.timestamp()) % _M5_SECONDS:
+            raise ValueError("last_processed_m5_utc must align to an M5 candle open")
+        candidate_close = (
+            self.candidate_start_evidence.candle.candle_open_time_utc
+            + timedelta(seconds=_M5_SECONDS)
+        )
+        if candidate_at != candidate_close:
+            raise ValueError("candidate start is confirmed at its M5 candle close")
+        extreme_close = (
+            self.extreme_evidence.candle.candle_open_time_utc
+            + timedelta(seconds=_M5_SECONDS)
+        )
+        if self.extreme_evidence.confirmed_at_utc != extreme_close:
+            raise ValueError("correction extreme is confirmed at its M5 candle close")
+        if self.extreme_evidence.candle.candle_open_time_utc < self.candidate_start_evidence.candle.candle_open_time_utc:
+            raise ValueError("correction extreme cannot precede candidate creation")
         if self.candidate_start_evidence.candle.candle_open_time_utc <= self.impulse.ended_at_utc:
             raise ValueError("candidate start must follow the impulse terminal pivot")
         if self.impulse.confirmed_at_utc > latest_processed_close:
@@ -362,8 +380,34 @@ class TransitionResult:
             }[self.transition_type]
             if self.current_state is not expected_state:
                 raise ValueError("transition_type does not match current_state")
+            allowed_previous = {
+                TransitionType.CREATED: (None,),
+                TransitionType.CONFIRMED: (LifecycleState.CANDIDATE,),
+                TransitionType.DEEPENED: (LifecycleState.CONFIRMED, LifecycleState.DEEPENING),
+                TransitionType.RESOLVED: (LifecycleState.CONFIRMED, LifecycleState.DEEPENING),
+                TransitionType.INVALIDATED: (
+                    LifecycleState.CANDIDATE,
+                    LifecycleState.CONFIRMED,
+                    LifecycleState.DEEPENING,
+                ),
+                TransitionType.EXPIRED: (
+                    LifecycleState.CANDIDATE,
+                    LifecycleState.CONFIRMED,
+                    LifecycleState.DEEPENING,
+                ),
+            }[self.transition_type]
+            if self.previous_state not in allowed_previous:
+                raise ValueError("previous_state is not valid for this transition_type")
 
+        if self.lifecycle is None and self.evidence_refs:
+            raise ValueError("evidence_refs require a lifecycle")
         if self.lifecycle is not None:
+            for ref in self.evidence_refs:
+                candle = ref.candle
+                if candle.broker_server != self.lifecycle.broker_server or candle.symbol != self.lifecycle.symbol:
+                    raise ValueError("transition evidence identity must match lifecycle")
+                if ref.confirmed_at_utc > occurred:
+                    raise ValueError("transition cannot use evidence confirmed in the future")
             latest_close = self.lifecycle.last_processed_m5_utc + timedelta(seconds=_M5_SECONDS)
             if occurred > latest_close:
                 raise ValueError("transition cannot occur after the last processed M5 close")
