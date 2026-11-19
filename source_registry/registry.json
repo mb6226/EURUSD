@@ -222,6 +222,199 @@
       ],
       "validation_profile": "official_macro_monthly",
       "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "name": "Federal Reserve Economic Data market reference series",
+      "category": "FINANCIAL_MARKETS",
+      "publisher": {
+        "name": "Federal Reserve Bank of St. Louis FRED",
+        "role": "DATA_DISTRIBUTOR",
+        "authority_tier": "B"
+      },
+      "topics": [
+        "USD",
+        "rates",
+        "broad_usd",
+        "equities"
+      ],
+      "access": {
+        "adapter": "intermarket_series",
+        "canonical_url": "https://fred.stlouisfed.org/",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 86400,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "US_10Y_TREASURY_YIELD",
+          "measure": "US 10-year Treasury constant maturity yield",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "USD_BROAD_TRADE_WEIGHTED_INDEX",
+          "measure": "US broad trade-weighted dollar index",
+          "data_type": "TIME_SERIES",
+          "unit": "index_points",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "SP500_INDEX",
+          "measure": "S&P 500 reference index",
+          "data_type": "TIME_SERIES",
+          "unit": "index_points",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "intermarket_point_in_time",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "ECB_INTERMARKET",
+      "name": "European Central Bank market reference series",
+      "category": "FINANCIAL_MARKETS",
+      "publisher": {
+        "name": "European Central Bank",
+        "role": "OFFICIAL_PRIMARY",
+        "authority_tier": "A"
+      },
+      "topics": [
+        "EUR",
+        "rates",
+        "sovereign_yields"
+      ],
+      "access": {
+        "adapter": "intermarket_series",
+        "canonical_url": "https://data.ecb.europa.eu/",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 86400,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "DE_10Y_GOVERNMENT_YIELD",
+          "measure": "Germany 10-year government benchmark yield",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "intermarket_point_in_time",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "LBMA_INTERMARKET",
+      "name": "London Bullion Market Association gold reference prices",
+      "category": "FINANCIAL_MARKETS",
+      "publisher": {
+        "name": "London Bullion Market Association",
+        "role": "DATA_DISTRIBUTOR",
+        "authority_tier": "B"
+      },
+      "topics": [
+        "gold",
+        "precious_metals",
+        "USD"
+      ],
+      "access": {
+        "adapter": "intermarket_series",
+        "canonical_url": "https://www.lbma.org.uk/prices-and-data/precious-metal-prices",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 86400,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "GOLD_USD_TROY_OUNCE",
+          "measure": "Gold reference price in USD per troy ounce",
+          "data_type": "TIME_SERIES",
+          "unit": "usd_per_troy_ounce",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "intermarket_point_in_time",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "BROKER_SPOT_REFERENCE",
+      "name": "Broker-supplied EURUSD spot reference observations",
+      "category": "FX_MARKET",
+      "publisher": {
+        "name": "Broker market-data feed (manually supplied)",
+        "role": "DATA_DISTRIBUTOR",
+        "authority_tier": "C"
+      },
+      "topics": [
+        "EURUSD",
+        "spot_fx",
+        "benchmark"
+      ],
+      "access": {
+        "adapter": "intermarket_series",
+        "canonical_url": "https://www.metatrader5.com/",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 86400,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "EURUSD_SPOT_REFERENCE",
+          "measure": "EURUSD spot reference price",
+          "data_type": "TIME_SERIES",
+          "unit": "usd_per_eur",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "intermarket_point_in_time",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
     }
   ]
 }
