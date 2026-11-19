@@ -113,3 +113,12 @@ The evaluator rejects unresolved/conflicted forecasts, invalid report identity/t
 This is historical outcome evaluation of recorded scenario labels, not a reconstruction of historical central intelligence. It cannot prove all upstream specialist inputs were archived point-in-time. The current market store does not retain a complete queryable as-of version of every candle value; affected samples are conservatively excluded when later revisions are detected. Full candle version reconstruction, historical specialist report manifests, walk-forward partitions, calibration and uncertainty estimates remain open research gaps.
 
 No probability calibration, source reliability weighting, learning, Fusion votes, strategy/risk changes, BUY/SELL enablement, or execution authority is introduced. Metrics are not trade profitability or realized P/L.
+
+
+## Post-Phase 30 — Historical dataset integrity and chronological holdout
+
+Phase 30 adds `HistoricalDatasetValidationEngine` for read-only integrity audits of broker-specific M1/M5 closed-candle archives. It reports wall-clock slot coverage, missing ranges (including leading/trailing intervals), duplicate/unaligned timestamps, revision watermark/scan completeness, and revision events. It degrades when gaps/revisions exist or the revision scan reaches its configured limit.
+
+The same engine creates chronological train/validation/test partitions for timestamped scenario reports, with an outcome-horizon embargo that purges train and validation samples whose forward windows could cross the next partition boundary. It reports partition times/counts and source report indices; no random shuffle or model fitting is performed.
+
+Limitations: wall-clock coverage is not session-calendar-aware; weekend/holiday/maintenance gaps are not distinguished from missing feed data. The market store still lacks a complete as-of candle-version reader, and the scenario archive/upstream specialist provenance need separate completeness audits. This is a single holdout split, not repeated rolling-origin walk-forward folds. No source fetching, data repair, DB mutation, calibration, learning, strategy/risk change, or order execution is introduced.
