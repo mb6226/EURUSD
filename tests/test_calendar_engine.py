@@ -227,6 +227,26 @@ class MacroCalendarEngineTests(unittest.TestCase):
                 clock=lambda: datetime(2026, 11, 19, 12),
             ).refresh_due()
 
+    def test_checked_in_source_config_loads_without_network_access(self):
+        config_path = Path(__file__).resolve().parents[1] / "eurusd_ai_monitor" / "calendar_sources.json"
+        engine = MacroCalendarEngine.from_config(
+            self.store, config_path, fetcher=lambda url: ICS_FIXTURE,
+            clock=lambda: self.now,
+        )
+        self.assertEqual(
+            {source["source_id"] for source in engine.sources},
+            {
+                "BLS_US_RELEASES",
+                "BEA_US_RELEASES",
+                "ECB_GOVERNING_COUNCIL",
+                "FED_FOMC_CALENDAR",
+            },
+        )
+
+    def test_rejects_empty_source_registry(self):
+        with self.assertRaisesRegex(CalendarSourceError, "at least one"):
+            MacroCalendarEngine(self.store, [])
+
     def test_rejects_invalid_source_timezone(self):
         source = dict(self.source)
         source["timezone"] = "Not/AZone"
