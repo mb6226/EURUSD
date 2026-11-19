@@ -8,6 +8,7 @@ from .exceptions import (
     FetchValidationError,
 )
 from .models import DecimalRange, FetchRequest, FetchResult, Observation
+from .macro_series import OfficialMacroSeriesAdapter
 
 __all__ = [
     "FetchAdapter",
@@ -19,4 +20,5 @@ __all__ = [
     "FetchValidationError",
     "DecimalRange",
     "Observation",
+    "OfficialMacroSeriesAdapter",
 ]

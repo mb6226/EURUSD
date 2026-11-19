@@ -172,6 +172,33 @@ class SourceObservationIngestionTests(unittest.TestCase):
             service.ingest("TEST_SOURCE", "TEST_RATE")
         self.assertEqual(self.store.count_observations(), 0)
 
+    def test_publication_after_retrieval_is_rejected_as_lookahead(self):
+        future = Observation(
+            source_id="TEST_SOURCE",
+            product_id="TEST_RATE",
+            value=Decimal("4.00"),
+            unit="percent_per_annum",
+            effective_at_utc=EFFECTIVE,
+            published_at_utc=datetime(2026, 2, 3, 9, tzinfo=UTC),
+            source_record_id="RATE_FUTURE_PUBLICATION",
+        )
+        adapter = FakeAdapter(result=FetchResult(
+            source_id="TEST_SOURCE",
+            product_id="TEST_RATE",
+            observations=(future,),
+            source_url="https://example.test/rates",
+            record_count=1,
+        ))
+        service = SourceObservationIngestion(
+            registry=self.registry,
+            adapters={("TEST_SOURCE", "TEST_RATE"): adapter},
+            store=self.store,
+            clock=lambda: RETRIEVED,
+        )
+        with self.assertRaises(IngestionValidationError):
+            service.ingest("TEST_SOURCE", "TEST_RATE")
+        self.assertEqual(self.store.count_observations(), 0)
+
     def test_adapter_failure_propagates_without_persisting(self):
         failure = RuntimeError("provider unavailable")
         adapter = FakeAdapter(error=failure)

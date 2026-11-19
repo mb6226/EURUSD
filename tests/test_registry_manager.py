@@ -96,8 +96,8 @@ class RegistryManagerTests(unittest.TestCase):
     def test_creates_initial_source_and_product_states(self):
         result = self.manager.sync()
 
-        self.assertEqual(result.sources_added, 2)
-        self.assertEqual(result.products_added, 4)
+        self.assertEqual(result.sources_added, 4)
+        self.assertEqual(result.products_added, 8)
         with state_connection(self.db_path) as connection:
             source_statuses = {
                 row["status"]

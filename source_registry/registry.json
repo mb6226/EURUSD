@@ -112,6 +112,116 @@
       ],
       "validation_profile": "policy_rate",
       "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "US_BLS_MACRO",
+      "name": "US Bureau of Labor Statistics Monthly Macro Series",
+      "category": "ECONOMIC_DATA",
+      "publisher": {
+        "name": "US Bureau of Labor Statistics",
+        "role": "OFFICIAL_PRIMARY",
+        "authority_tier": "A"
+      },
+      "topics": [
+        "USD",
+        "inflation",
+        "consumer_prices",
+        "employment",
+        "unemployment"
+      ],
+      "access": {
+        "adapter": "macro_series",
+        "canonical_url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 86400,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "US_CPI_ALL_ITEMS_INDEX",
+          "measure": "consumer_price_index_all_items",
+          "data_type": "TIME_SERIES",
+          "unit": "index_1982_84_100",
+          "observation_frequency": "MONTHLY",
+          "effective_date_field": "reference_period",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "US_UNEMPLOYMENT_RATE",
+          "measure": "unemployment_rate_civilian_labor_force",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_of_labor_force",
+          "observation_frequency": "MONTHLY",
+          "effective_date_field": "reference_period",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "official_macro_monthly",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "EUROSTAT_MACRO",
+      "name": "Eurostat Euro Area Monthly Macro Series",
+      "category": "ECONOMIC_DATA",
+      "publisher": {
+        "name": "Eurostat",
+        "role": "OFFICIAL_PRIMARY",
+        "authority_tier": "A"
+      },
+      "topics": [
+        "EUR",
+        "inflation",
+        "hicp",
+        "employment",
+        "unemployment"
+      ],
+      "access": {
+        "adapter": "macro_series",
+        "canonical_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 86400,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "EA_HICP_ALL_ITEMS_INDEX",
+          "measure": "hicp_all_items_index_euro_area",
+          "data_type": "TIME_SERIES",
+          "unit": "index_2015_100",
+          "observation_frequency": "MONTHLY",
+          "effective_date_field": "reference_period",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "EA_UNEMPLOYMENT_RATE",
+          "measure": "harmonised_unemployment_rate_euro_area",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_of_labor_force",
+          "observation_frequency": "MONTHLY",
+          "effective_date_field": "reference_period",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "official_macro_monthly",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
     }
   ]
 }
