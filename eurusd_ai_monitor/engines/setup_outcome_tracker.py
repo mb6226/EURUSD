@@ -5,6 +5,7 @@ from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 import sqlite3
+import json
 from zoneinfo import ZoneInfo
 
 from eurusd_ai_monitor.storage.market_data_store import Candle, TIMEFRAME_SECONDS
@@ -69,6 +70,30 @@ class ObservationStore:
                     completed_at_utc TEXT,
                     conflict_reason TEXT
                 );
+                CREATE TABLE IF NOT EXISTS observation_regime_context (
+                    setup_key TEXT PRIMARY KEY,
+                    context_status TEXT NOT NULL,
+                    regime TEXT NOT NULL,
+                    volatility_state TEXT NOT NULL,
+                    trend_direction TEXT NOT NULL,
+                    lower_timeframe_alignment TEXT NOT NULL,
+                    algorithm_version TEXT,
+                    evaluated_at_utc TEXT,
+                    m5_window_end_utc TEXT,
+                    m5_candle_ids_json TEXT NOT NULL DEFAULT '[]',
+                    features_json TEXT NOT NULL DEFAULT '{}',
+                    reason_codes_json TEXT NOT NULL DEFAULT '[]',
+                    FOREIGN KEY(setup_key) REFERENCES setup_observations(setup_key)
+                        ON DELETE RESTRICT
+                );
+                CREATE TRIGGER IF NOT EXISTS trg_observation_regime_context_no_update
+                BEFORE UPDATE ON observation_regime_context BEGIN
+                    SELECT RAISE(ABORT, 'observation regime context is immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS trg_observation_regime_context_no_delete
+                BEFORE DELETE ON observation_regime_context BEGIN
+                    SELECT RAISE(ABORT, 'observation regime context is immutable');
+                END;
                 CREATE TABLE IF NOT EXISTS observation_candles (
                     setup_key TEXT NOT NULL,
                     candle_open_utc TEXT NOT NULL,
@@ -103,6 +128,7 @@ class ObservationStore:
         direction: str, reference_at_utc: datetime, reference_price: Decimal,
         pip_size: Decimal, evaluated_at_utc: datetime, candles: tuple[Candle, ...],
         eligible: bool,
+        regime_context: dict | None = None,
     ) -> dict:
         reference_at = _utc(reference_at_utc, "reference_at_utc")
         evaluated = _utc(evaluated_at_utc, "evaluated_at_utc")
@@ -149,6 +175,7 @@ class ObservationStore:
                     row = db.execute(
                         "SELECT * FROM setup_observations WHERE setup_key=?", (setup_key,)
                     ).fetchone()
+                    self._insert_regime_context(db, setup_key, regime_context, reference_at)
                 else:
                     immutable = (
                         row["lifecycle_id"] == lifecycle_id
@@ -270,6 +297,54 @@ class ObservationStore:
                 db.rollback()
                 raise
 
+    @staticmethod
+    def _insert_regime_context(db, setup_key: str, context: dict | None,
+                               reference_at: datetime) -> None:
+        context = context if isinstance(context, dict) else {}
+        provenance = context.get("provenance") if isinstance(context.get("provenance"), dict) else {}
+        features = context.get("features") if isinstance(context.get("features"), dict) else {}
+        status = str(context.get("status", "NOT_SUPPLIED"))
+        reason_codes = context.get("reason_codes", [])
+        if not isinstance(reason_codes, list):
+            reason_codes = []
+        regime = str(context.get("regime", "UNKNOWN"))
+        volatility = str(context.get("volatility_state", "UNKNOWN"))
+        direction = str(context.get("trend_direction", "UNKNOWN"))
+        alignment = str(context.get("lower_timeframe_alignment", "UNAVAILABLE"))
+        evaluated_at = context.get("evaluated_at_utc")
+        window_end = provenance.get("m5_window_end_utc")
+        available = status == "AVAILABLE" and regime in {
+            "TRENDING", "RANGING", "TRANSITIONAL"
+        } and volatility in {"HIGH", "NORMAL", "LOW"}
+        if available:
+            try:
+                window_end_dt = _utc(datetime.fromisoformat(str(window_end).replace("Z", "+00:00")),
+                                     "m5_window_end_utc")
+                if window_end_dt > reference_at:
+                    status = "TEMPORAL_ALIGNMENT_FAILED"
+                    available = False
+            except (TypeError, ValueError):
+                status = "PROVENANCE_INCOMPLETE"
+                available = False
+        if not available:
+            regime, volatility, direction, alignment = "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNAVAILABLE"
+            if not reason_codes:
+                reason_codes = [status]
+        db.execute("""
+            INSERT INTO observation_regime_context (
+                setup_key,context_status,regime,volatility_state,trend_direction,
+                lower_timeframe_alignment,algorithm_version,evaluated_at_utc,
+                m5_window_end_utc,m5_candle_ids_json,features_json,reason_codes_json
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            setup_key, "AVAILABLE" if available else status, regime, volatility,
+            direction, alignment, context.get("algorithm_version"), evaluated_at,
+            window_end if available else None,
+            json.dumps(provenance.get("m5_candle_ids", []) if available else [], sort_keys=True),
+            json.dumps(features if available else {}, sort_keys=True),
+            json.dumps(reason_codes, sort_keys=True),
+        ))
+
     def advance_existing(
         self, *, lifecycle_id: str, broker_server: str, symbol: str,
         evaluated_at_utc: datetime, candles: tuple[Candle, ...],
@@ -341,6 +416,7 @@ class SetupOutcomeTracker:
         self, *, evaluated_at_utc: datetime, broker_server: str, symbol: str,
         lifecycle_id: str | None, setup_assessment: dict,
         session_eligibility: dict, m1_candles: tuple[Candle, ...],
+        regime_context: dict | None = None,
     ) -> dict:
         evaluated = _utc(evaluated_at_utc, "evaluated_at_utc")
         if not isinstance(setup_assessment, dict) or not isinstance(session_eligibility, dict):
@@ -393,6 +469,7 @@ class SetupOutcomeTracker:
             direction=direction, reference_at_utc=reference_at,
             reference_price=retest.close, pip_size=self._pip_size,
             evaluated_at_utc=evaluated, candles=m1_candles, eligible=eligible,
+            regime_context=regime_context,
         )
         result.update({
             "decision_authority": "ASSESSMENT_ONLY",
