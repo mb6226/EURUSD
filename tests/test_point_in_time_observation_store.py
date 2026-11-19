@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -165,7 +166,7 @@ class PointInTimeObservationStoreTests(unittest.TestCase):
 
     def test_append_only_guards_prevent_update_and_delete(self):
         self.store.persist_fetch_result(result("101.2", stamp(2)))
-        with sqlite3.connect(self.store.db_path) as connection:
+        with closing(sqlite3.connect(self.store.db_path)) as connection:
             with self.assertRaises(sqlite3.IntegrityError):
                 connection.execute("UPDATE observations SET unit='changed'")
             with self.assertRaises(sqlite3.IntegrityError):
