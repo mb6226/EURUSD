@@ -13,6 +13,7 @@ RESEARCH_SOURCE_NAMES = (
     "statistical_outcome_evaluation",
     "regime_conditioned_outcome_evaluation",
     "quantitative_market_statistics",
+    "intermarket_intelligence",
 )
 
 
