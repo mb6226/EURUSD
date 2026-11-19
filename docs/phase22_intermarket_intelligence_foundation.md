@@ -53,11 +53,17 @@ The engine selects the latest revision available at the requested cutoff, exclud
 
 Default research window is up to 120 observations with a minimum of 20 aligned returns. Thresholds are injectable for deterministic tests and future research.
 
-### 4. End-to-end path
+### 4. Optional central-research consumption
+
+The research source envelope and `ResearchIntelligenceEngine` now recognize `intermarket_intelligence` as an optional current-cycle specialist. Its status, driver-level results, timestamps, and provenance are preserved in the research context. Missing intermarket output remains compatible with legacy research cycles; partial coverage is surfaced as incomplete rather than promoted to a directional vote.
+
+This is a tested consumer contract, not automatic monitoring-loop invocation. The main runtime remains unchanged until real providers and operational freshness are independently validated.
+
+### 5. End-to-end path
 
 Validated source registry → explicitly injected provider-extracted records → `IntermarketSeriesAdapter` → `SourceObservationIngestion` → append-only Phase 15 SQLite store → strict `get_as_of` reads → `IntermarketIntelligenceEngine`.
 
-The integration test uses synthetic, timestamped records for all six products and a temporary SQLite database. It validates the data contract and calculation path; it does not validate live provider availability, actual historical correlations, or any trading edge.
+The integration test uses synthetic, timestamped records for all six products and a temporary SQLite database. A separate research-contract test verifies optional specialist consumption. These tests validate the data contract and calculation path; they do not validate live provider availability, actual historical correlations, or any trading edge.
 
 ## Interpretation limits
 
