@@ -205,6 +205,8 @@ class ResearchIntelligenceEngine:
             if raw in {"WAIT_SETUP", "WAITING_FOR_SETUP"}:
                 return "INCOMPLETE"
             return "AVAILABLE"
+        if raw in {"DEGRADED", "UNAVAILABLE"}:
+            return raw
         if name == "market_regime_intelligence" and str(payload.get("regime", "")).upper() == "UNKNOWN":
             return "INCOMPLETE"
         if name == "setup_outcome_observation":
