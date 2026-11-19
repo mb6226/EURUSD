@@ -96,6 +96,13 @@ class MacroFundamentalsEngineTests(unittest.TestCase):
     def test_stale_current_series_is_not_used(self):
         payload=inputs()
         payload["us_cpi_observations"][-1]["effective_at_utc"]="2026-07-01T00:00:00Z"
+        payload["us_cpi_observations"][-1]["source_record_id"]="US_CPI_ALL_ITEMS_INDEX:2026-07"
+        payload["us_cpi_observations"][-1]["published_at_utc"]="2026-08-12T13:30:00Z"
+        payload["us_cpi_observations"][-1]["retrieved_at_utc"]="2026-08-12T14:00:00Z"
+        payload["ea_hicp_observations"].extend([
+            row("EUROSTAT_MACRO","EA_HICP_ALL_ITEMS_INDEX","124","2025-07","2025-08-19T10:00:00Z","2025-08-19T11:00:00Z","index_2015_100"),
+            row("EUROSTAT_MACRO","EA_HICP_ALL_ITEMS_INDEX","128","2026-07","2026-08-18T10:00:00Z","2026-08-18T11:00:00Z","index_2015_100"),
+        ])
         report=self.engine.assess(as_of_utc=AS_OF,**payload)
         self.assertEqual(report["inflation"]["status"],"STALE")
 
