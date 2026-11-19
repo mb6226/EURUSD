@@ -73,7 +73,9 @@ class EvidenceLineageEngineTests(unittest.TestCase):
                 "candle": {"timeframe": "M5", "open_time_utc": opened.isoformat()},
             }]}
         }})
-        self.assertEqual(result["status"], "TRACEABLE")
+        self.assertEqual(result["status"], "PARTIAL")
+        item = next(x for x in result["source_manifest"] if x["source"] == "technical_analysis")
+        self.assertEqual(item["status"], "TRACEABLE")
 
     def test_unknown_candle_reference_degrades(self):
         result = self.audit({"setup_assessment": {"rejection": {"candle_id": "missing"}}})
