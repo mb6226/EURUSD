@@ -122,3 +122,12 @@ Phase 31 adds a read-only reconstruction engine for four evidence families at an
 The replay adapter consumes archived specialist reports from historical monitor JSONL cycles, reconstructs the evidence bundle independently at each original timestamp, rejects future/mismatched specialist reports, and reassesses archived reports through the central scenario engine. It does not recompute specialist algorithms from raw historical inputs. Missing reports and unprovable evidence remain explicit. Full historical specialist recomputation, complete news fetch-version history, explicit candle-closure event history, calendar source-health history, and source coverage manifests remain future capabilities.
 
 The replay returns reconstructed raw evidence alongside central reassessment; raw observations are not yet transformed into specialist reports or injected as new votes. The central engine consumes only archived specialist report objects that pass timestamp and identity checks.
+
+
+## Phase 32 — Deterministic historical specialist re-execution
+
+Phase 32 extends Phase 31 reconstruction into a bounded deterministic replay loop. At each archived evaluation timestamp it independently reconstructs M1 and M5 candles, builds a historical MarketSnapshot, re-executes technical structure, market regime, quantitative statistics and liquidity proxies, and conditionally re-executes macro fundamentals, policy differential, intermarket and positioning specialists when their engines and read-only point-in-time observation store are supplied. Newly computed reports are passed to the central scenario engine; reconstructed news/calendar availability is retained as context.
+
+This is a meaningful first recomputation slice, not full domain parity. Price Action lifecycle remains un-replayed because its current coordinator is stateful; news semantic and calendar impact specialists lack pinned historical model/feature versions; Fusion is not substituted as a directional authority. The replay reports these gaps explicitly and never falls back to archived future reports. It uses the currently injected algorithm versions rather than claiming exact historical code-version parity. Exact parity requires an immutable algorithm/parameter registry, feature snapshots, and isolated lifecycle event replay.
+
+No data stores, monitor logs, RAG/knowledge stores, strategy configuration, lifecycle state, risk settings or execution controls are mutated. No probabilities, trading P&L or profitability claims are produced. See phase32_deterministic_historical_specialist_replay.md.
