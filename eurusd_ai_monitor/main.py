@@ -697,34 +697,50 @@ def main():
                 research_sources = {
                     "fusion_assessment": {
                         "payload": fusion_assessment.to_dict(),
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "market_regime_intelligence": {
                         "payload": market_regime_report,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "price_action_lifecycle": {
                         "payload": price_action_payload,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "setup_assessment": {
                         "payload": setup_assessment,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "session_eligibility": {
                         "payload": session_eligibility,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "setup_outcome_observation": {
                         "payload": setup_outcome,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "statistical_outcome_evaluation": {
                         "payload": statistical_outcome_report,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                     "regime_conditioned_outcome_evaluation": {
                         "payload": regime_conditioned_outcome_report,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
                         "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
                     },
                 }
