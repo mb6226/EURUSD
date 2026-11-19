@@ -200,6 +200,37 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(state["source_status"], "INCOMPLETE")
         self.assertIn("M1_HISTORY_TOO_SHORT", state["reason_codes"])
 
+    def test_optional_intermarket_specialist_missing_does_not_break_legacy_cycle(self):
+        result = self.build()
+        self.assertEqual(result["status"], "COHERENT")
+        self.assertEqual(
+            result["current_context"]["intermarket_intelligence"]["source_status"],
+            "MISSING",
+        )
+        item = next(
+            entry for entry in result["source_manifest"]
+            if entry["source"] == "intermarket_intelligence"
+        )
+        self.assertEqual(item["class"], "OPTIONAL_CURRENT")
+
+    def test_partial_intermarket_evidence_is_preserved_as_incomplete(self):
+        items = sources()
+        items["intermarket_intelligence"] = {
+            "payload": {
+                "status": "PARTIAL",
+                "evaluated_at_utc": NOW.isoformat(),
+                "reason_codes": ["ONE_OR_MORE_DRIVER_SERIES_UNAVAILABLE"],
+                "drivers": {"GOLD_USD_TROY_OUNCE": {"status": "AVAILABLE"}},
+            },
+            "evaluated_at_utc": NOW.isoformat(),
+        }
+        result = self.build(items)
+        self.assertEqual(result["status"], "PARTIAL")
+        state = result["current_context"]["intermarket_intelligence"]
+        self.assertEqual(state["source_status"], "INCOMPLETE")
+        self.assertIn("ONE_OR_MORE_DRIVER_SERIES_UNAVAILABLE", state["reason_codes"])
+        self.assertIn("drivers", state)
+
     def test_quantitative_quality_block_is_not_promoted_to_available(self):
         items = sources()
         items["quantitative_market_statistics"] = {
