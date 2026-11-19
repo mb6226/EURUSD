@@ -199,23 +199,25 @@ class LifecycleStateMachine:
         # Priority 4: complete the correction pivot sequence.
         if lifecycle.state is LifecycleState.CANDIDATE and len(correction_pivots) >= 3:
             last_three = correction_pivots[-3:]
+            pivot_kinds = {
+                pivot.evidence.candle_id: pivot.kind
+                for pivot in structure.pivots
+            }
             kinds = tuple(
-                next(
-                    pivot.kind
-                    for pivot in structure.pivots
-                    if pivot.evidence.candle_id == ref.candle_id
-                )
+                pivot_kinds.get(ref.candle_id)
                 for ref in last_three
             )
             if lifecycle.trend_direction is TrendDirection.UP:
                 valid_sequence = (
-                    kinds == (PivotKind.LOW, PivotKind.HIGH, PivotKind.LOW)
+                    None not in kinds
+                    and kinds == (PivotKind.LOW, PivotKind.HIGH, PivotKind.LOW)
                     and last_three[1].candle.high < lifecycle.impulse.end_price
                     and last_three[2].candle.low < last_three[0].candle.low
                 )
             else:
                 valid_sequence = (
-                    kinds == (PivotKind.HIGH, PivotKind.LOW, PivotKind.HIGH)
+                    None not in kinds
+                    and kinds == (PivotKind.HIGH, PivotKind.LOW, PivotKind.HIGH)
                     and last_three[1].candle.low > lifecycle.impulse.end_price
                     and last_three[2].candle.high > last_three[0].candle.high
                 )
