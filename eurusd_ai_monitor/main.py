@@ -244,14 +244,25 @@ def main():
                     )
 
                 tick = dict(snapshot.tick or {})
-                if not snapshot.quality.is_valid or technical_error is not None:
+                price_action_blocked = price_action_result.status.value not in (
+                    "PROCESSED",
+                    "NO_LIFECYCLE",
+                )
+                if (
+                    not snapshot.quality.is_valid
+                    or technical_error is not None
+                    or price_action_blocked
+                ):
+                    decision_reasons = [
+                        technical_error or "Market context quality gate failed",
+                        *snapshot.quality.issues,
+                    ]
+                    if price_action_blocked:
+                        decision_reasons.extend(price_action_result.reason_codes)
                     decision = {
                         "decision": "WAIT",
                         "direction": "NONE",
-                        "reasons": [
-                            technical_error or "Market context quality gate failed",
-                            *snapshot.quality.issues,
-                        ],
+                        "reasons": decision_reasons,
                         "trade_execution": "DISABLED",
                     }
                 else:
