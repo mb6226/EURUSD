@@ -81,6 +81,8 @@ class ObservationStore:
                     evaluated_at_utc TEXT,
                     m5_window_end_utc TEXT,
                     m5_candle_ids_json TEXT NOT NULL DEFAULT '[]',
+                    m1_candle_ids_json TEXT NOT NULL DEFAULT '[]',
+                    m1_window_end_utc TEXT,
                     features_json TEXT NOT NULL DEFAULT '{}',
                     reason_codes_json TEXT NOT NULL DEFAULT '[]',
                     FOREIGN KEY(setup_key) REFERENCES setup_observations(setup_key)
@@ -114,6 +116,20 @@ class ObservationStore:
                     SELECT RAISE(ABORT, 'observation candle evidence is immutable');
                 END;
             """)
+            context_columns = {
+                row["name"] for row in db.execute(
+                    "PRAGMA table_info(observation_regime_context)"
+                ).fetchall()
+            }
+            if "m1_candle_ids_json" not in context_columns:
+                db.execute(
+                    "ALTER TABLE observation_regime_context "
+                    "ADD COLUMN m1_candle_ids_json TEXT NOT NULL DEFAULT '[]'"
+                )
+            if "m1_window_end_utc" not in context_columns:
+                db.execute(
+                    "ALTER TABLE observation_regime_context ADD COLUMN m1_window_end_utc TEXT"
+                )
 
     def _connect(self):
         db = sqlite3.connect(self._path, timeout=20)
@@ -313,6 +329,8 @@ class ObservationStore:
         alignment = str(context.get("lower_timeframe_alignment", "UNAVAILABLE"))
         evaluated_at = context.get("evaluated_at_utc")
         window_end = provenance.get("m5_window_end_utc")
+        m1_window_end = provenance.get("m1_window_end_utc")
+        m1_candle_ids = provenance.get("m1_confirmation_candle_ids", [])
         available = status == "AVAILABLE" and regime in {
             "TRENDING", "RANGING", "TRANSITIONAL"
         } and volatility in {"HIGH", "NORMAL", "LOW"}
@@ -323,6 +341,14 @@ class ObservationStore:
                 if window_end_dt > reference_at:
                     status = "TEMPORAL_ALIGNMENT_FAILED"
                     available = False
+                elif alignment != "UNAVAILABLE":
+                    m1_end_dt = _utc(
+                        datetime.fromisoformat(str(m1_window_end).replace("Z", "+00:00")),
+                        "m1_window_end_utc",
+                    )
+                    if m1_end_dt > reference_at or not isinstance(m1_candle_ids, list) or not m1_candle_ids:
+                        status = "M1_TEMPORAL_ALIGNMENT_FAILED"
+                        available = False
             except (TypeError, ValueError):
                 status = "PROVENANCE_INCOMPLETE"
                 available = False
@@ -334,13 +360,16 @@ class ObservationStore:
             INSERT INTO observation_regime_context (
                 setup_key,context_status,regime,volatility_state,trend_direction,
                 lower_timeframe_alignment,algorithm_version,evaluated_at_utc,
-                m5_window_end_utc,m5_candle_ids_json,features_json,reason_codes_json
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                m5_window_end_utc,m5_candle_ids_json,m1_candle_ids_json,
+                m1_window_end_utc,features_json,reason_codes_json
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             setup_key, "AVAILABLE" if available else status, regime, volatility,
             direction, alignment, context.get("algorithm_version"), evaluated_at,
             window_end if available else None,
             json.dumps(provenance.get("m5_candle_ids", []) if available else [], sort_keys=True),
+            json.dumps(m1_candle_ids if available and alignment != "UNAVAILABLE" else [], sort_keys=True),
+            m1_window_end if available and alignment != "UNAVAILABLE" else None,
             json.dumps(features if available else {}, sort_keys=True),
             json.dumps(reason_codes, sort_keys=True),
         ))

@@ -21,7 +21,7 @@ def candle(minute, high="1.10040", low="1.09980", close="1.10020"):
 
 
 def context(regime="TRENDING", volatility="NORMAL", direction="UP",
-            alignment="ALIGNED", window_end=None):
+            alignment="ALIGNED", window_end=None, m1_window_end=None):
     return {
         "status": "AVAILABLE",
         "algorithm_version": "market-regime-m5-m1-v1",
@@ -34,6 +34,8 @@ def context(regime="TRENDING", volatility="NORMAL", direction="UP",
         "provenance": {
             "m5_window_end_utc": (window_end or BASE + timedelta(minutes=1)).isoformat(),
             "m5_candle_ids": ["m5-a", "m5-b"],
+            "m1_window_end_utc": (m1_window_end or BASE + timedelta(minutes=2)).isoformat(),
+            "m1_confirmation_candle_ids": ["m1-a", "m1-b"],
         },
     }
 
@@ -119,6 +121,14 @@ class RegimeConditionedOutcomeTests(unittest.TestCase):
         self.assertEqual(report["usable_regime_conditioned_observations"], 0)
         self.assertEqual(report["excluded_without_valid_setup_time_regime"], 1)
         self.assertEqual(report["context_status_counts"]["TEMPORAL_ALIGNMENT_FAILED"], 1)
+
+    def test_future_m1_alignment_window_is_rejected_at_capture(self):
+        future = context(m1_window_end=BASE + timedelta(minutes=3))
+        self.add("future-m1-context", context_value=future)
+        report = self.report()
+        self.assertEqual(report["usable_regime_conditioned_observations"], 0)
+        self.assertEqual(report["excluded_without_valid_setup_time_regime"], 1)
+        self.assertEqual(report["context_status_counts"]["M1_TEMPORAL_ALIGNMENT_FAILED"], 1)
 
     def test_old_observation_without_context_is_never_backfilled(self):
         self.add("legacy", supplied=False)

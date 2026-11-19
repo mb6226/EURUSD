@@ -8,7 +8,7 @@ Phase 12 adds a descriptive research layer that compares completed Phase 9 MFE/M
 
 - Regime context is captured exactly once when a new eligible Phase 9 observation is created.
 - Context includes the Phase 11 algorithm version, regime, volatility state, M5 trend direction, M1 alignment, selected features, M5 candle IDs, and M5 window end.
-- The M5 evidence window must end at or before the M1 retest confirmation timestamp. A later M5 window is rejected as `TEMPORAL_ALIGNMENT_FAILED`.
+- Both the M5 regime window and, when available, the M1 alignment window must end at or before the M1 retest confirmation timestamp. A future M5 or M1 window is rejected and stored as unavailable context; it is never attributed retrospectively.
 - Regime context is stored in a separate `observation_regime_context` table with database triggers preventing UPDATE and DELETE.
 - Existing observations without setup-time context are never backfilled using later market data. They remain unclassified.
 - Context unavailable at setup time is explicitly recorded and excluded from conditioned cohorts.

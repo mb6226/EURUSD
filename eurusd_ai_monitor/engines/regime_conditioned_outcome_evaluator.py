@@ -53,7 +53,7 @@ class RegimeConditionedOutcomeEvaluator:
                             WHERE c.setup_key=o.setup_key) AS evidence_count,
                            r.context_status,r.regime,r.volatility_state,
                            r.trend_direction,r.lower_timeframe_alignment,
-                           r.algorithm_version,r.m5_window_end_utc
+                           r.algorithm_version,r.m5_window_end_utc,r.m1_window_end_utc
                     FROM setup_observations o
                     LEFT JOIN observation_regime_context r ON r.setup_key=o.setup_key
                     ORDER BY o.session_date,o.session_name,o.setup_key
@@ -99,6 +99,13 @@ class RegimeConditionedOutcomeEvaluator:
                 if end.tzinfo is None or reference.tzinfo is None or end > reference:
                     integrity_errors += 1
                     continue
+                if row["lower_timeframe_alignment"] != "UNAVAILABLE":
+                    m1_end = datetime.fromisoformat(
+                        str(row["m1_window_end_utc"]).replace("Z", "+00:00")
+                    )
+                    if m1_end.tzinfo is None or m1_end > reference:
+                        integrity_errors += 1
+                        continue
             except (TypeError, ValueError):
                 integrity_errors += 1
                 continue

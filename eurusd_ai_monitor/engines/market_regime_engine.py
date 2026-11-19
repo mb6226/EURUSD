@@ -134,6 +134,10 @@ class MarketRegimeEngine:
                 "m1_confirmation_candle_ids": [
                     self._candle_id(c) for c in m1[-t.lookback_bars:]
                 ] if alignment != "UNAVAILABLE" else [],
+                "m1_window_end_utc": (
+                    m1[-1].candle_open_time_utc +
+                    timedelta(seconds=TIMEFRAME_SECONDS["M1"])
+                ).isoformat() if alignment != "UNAVAILABLE" else None,
                 "m1_is_context_only": True,
             },
             "interpretation_limits": [
