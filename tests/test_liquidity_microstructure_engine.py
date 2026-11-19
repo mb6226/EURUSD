@@ -53,8 +53,9 @@ class LiquidityMicrostructureEngineTests(unittest.TestCase):
 
     def test_stale_timeframe_is_not_used_as_available(self):
         rows = [sample(i, "M1") for i in range(10)]
-        result = self.engine.analyze(evaluated_at_utc=NOW, broker_server=BROKER,
-                                     symbol="EURUSD", samples=rows)
+        result = self.engine.analyze(evaluated_at_utc=NOW + timedelta(minutes=10),
+                                     broker_server=BROKER, symbol="EURUSD",
+                                     samples=rows)
         self.assertEqual(result["timeframes"]["M1"]["status"], "STALE")
         self.assertEqual(result["status"], "UNAVAILABLE")
 
