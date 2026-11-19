@@ -281,10 +281,7 @@ class LifecycleStateMachine:
                     TransitionType.DEEPENED, lifecycle.state, updated,
                     latest_close, ("NEW_CORRECTION_EXTREME_AFTER_CONFIRMATION",), (extreme_ref,)
                 )
-            return self._result(
-                TransitionType.NO_TRANSITION, lifecycle.state, updated,
-                latest_close, ("CORRECTION_EXTREME_UPDATED",), (extreme_ref,)
-            )
+            base = updated
 
         # Retain pivots discovered while the sequence is still incomplete.
         if correction_pivots != lifecycle.correction_pivots:
