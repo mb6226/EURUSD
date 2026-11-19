@@ -1,9 +1,6 @@
 {
   "symbol": "EURUSD",
-  "timeframes": [
-    "M1",
-    "M5"
-  ],
+  "timeframes": ["M1", "M5"],
   "poll_seconds": 2,
   "bars_to_fetch": 300,
   "screenshot_max_age_seconds": 30,
@@ -13,13 +10,11 @@
   "risk": {
     "stop_loss_pips": 5,
     "take_profit_pips": 50,
+    "max_daily_risk_pips": 10,
     "one_position_per_session": true,
     "trailing_stop": false
   },
-  "sessions": [
-    "London",
-    "New York"
-  ],
+  "sessions": ["London", "New York"],
   "vision": {
     "enabled": false,
     "mode": "both",

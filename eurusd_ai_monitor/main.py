@@ -4,6 +4,7 @@ import json
 import sys
 import time
 from datetime import datetime, timezone
+from decimal import Decimal
 from threading import Lock, Thread
 from pathlib import Path
 
@@ -29,6 +30,9 @@ from eurusd_ai_monitor.engines.calendar_engine import MacroCalendarEngine
 from eurusd_ai_monitor.engines.news_engine import NewsEngine
 from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
 from eurusd_ai_monitor.engines.setup_pattern_engine import SetupPatternEngine
+from eurusd_ai_monitor.engines.session_eligibility_engine import (
+    SessionEligibilityRiskGate, SessionRiskStore,
+)
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -370,6 +374,13 @@ def main():
     technical_engine = TechnicalEngine(strategy_config)
     fusion_engine = FusionEngine(max_evidence_age_seconds=300)
     setup_pattern_engine = SetupPatternEngine(strategy_config)
+    risk_config = config["risk"]
+    session_risk_gate = SessionEligibilityRiskGate(
+        SessionRiskStore(data_dir / "session_risk.sqlite3"),
+        stop_loss_pips=Decimal(str(risk_config["stop_loss_pips"])),
+        take_profit_pips=Decimal(str(risk_config["take_profit_pips"])),
+        max_daily_risk_pips=Decimal(str(risk_config["max_daily_risk_pips"])),
+    )
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -499,6 +510,22 @@ def main():
                         "trade_authority": "NONE",
                         "entry_eligibility": "BLOCKED",
                     }
+                try:
+                    session_eligibility = session_risk_gate.assess(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                        broker_server=snapshot.broker_server,
+                        symbol=snapshot.symbol,
+                        setup_assessment=setup_assessment,
+                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else None),
+                    )
+                except Exception as exc:
+                    session_eligibility = {
+                        "status": "BLOCKED",
+                        "reason_codes": [f"SESSION_RISK_GATE_ERROR:{type(exc).__name__}"],
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
                 structures = {}
                 screenshots = {}
                 technical_analysis = None
@@ -574,6 +601,7 @@ def main():
                     "market_structure": structures,
                     "price_action_lifecycle": price_action_payload,
                     "setup_assessment": setup_assessment,
+                    "session_eligibility": session_eligibility,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
                     "technical_analysis": (
