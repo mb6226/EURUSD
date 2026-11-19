@@ -91,6 +91,8 @@ class CorrectionLifecycle:
     correction_pivots: tuple[EvidenceRef, ...]
     confirmed_at_utc: datetime | None
     last_processed_m5_utc: datetime
+    # Count actual closed M5 candles from the candidate-start candle through
+    # last_processed_m5_utc, inclusive; callers must count available bars, not elapsed time.
     age_bars: int
     warnings: tuple[LifecycleWarning, ...]
     algorithm_version: str
@@ -194,8 +196,8 @@ class CorrectionLifecycle:
             raise ValueError("correction extreme is confirmed at its M5 candle close")
         if self.extreme_evidence.candle.candle_open_time_utc < self.candidate_start_evidence.candle.candle_open_time_utc:
             raise ValueError("correction extreme cannot precede candidate creation")
-        if self.candidate_start_evidence.candle.candle_open_time_utc <= self.impulse.ended_at_utc:
-            raise ValueError("candidate start must follow the impulse terminal pivot")
+        if candidate_at < self.impulse.confirmed_at_utc:
+            raise ValueError("candidate start cannot precede impulse confirmation")
         if self.impulse.confirmed_at_utc > latest_processed_close:
             raise ValueError("impulse cannot be confirmed after last processed candle")
         if self.candidate_start_evidence.candle.candle_open_time_utc > last_processed:
