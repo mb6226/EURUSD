@@ -100,6 +100,17 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         result = self.build(items)
         self.assertEqual(result["status"], "PARTIAL")
 
+    def test_degraded_market_regime_is_not_hidden_by_unknown_label(self):
+        items = sources()
+        items["market_regime_intelligence"]["payload"]["status"] = "DEGRADED"
+        items["market_regime_intelligence"]["payload"]["regime"] = "UNKNOWN"
+        result = self.build(items)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(
+            result["current_context"]["market_regime_intelligence"]["source_status"],
+            "DEGRADED",
+        )
+
     def test_historical_insufficient_data_is_not_current_context_failure(self):
         result = self.build()
         self.assertEqual(result["status"], "COHERENT")
