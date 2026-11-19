@@ -332,7 +332,10 @@ class MacroCalendarEngine:
         return cls(store, sources, fetcher=fetcher, clock=clock)
 
     def _validate_sources(self) -> None:
+        if not self.sources:
+            raise CalendarSourceError("at least one official calendar source is required")
         seen = set()
+        allowed_currencies = {"EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD"}
         for source in self.sources:
             required = {
                 "source_id", "name", "url", "format", "currency_codes",
@@ -345,12 +348,30 @@ class MacroCalendarEngine:
             if not isinstance(source_id, str) or not source_id.strip() or source_id in seen:
                 raise CalendarSourceError("calendar source ids must be unique non-empty strings")
             seen.add(source_id)
-            if source["format"] not in {"ICS", "BEA_JSON", "ECB_HTML", "FED_HTML"}:
+            for field in ("name", "category", "timezone"):
+                if not isinstance(source[field], str) or not source[field].strip():
+                    raise CalendarSourceError(f"{field} must be a non-empty string for {source_id}")
+            if not isinstance(source["format"], str) or source["format"] not in {"ICS", "BEA_JSON", "ECB_HTML", "FED_HTML"}:
                 raise CalendarSourceError(f"unsupported calendar format for {source_id}")
             if not isinstance(source["url"], str) or not source["url"].startswith("https://"):
                 raise CalendarSourceError("calendar source URL must use HTTPS")
             if not isinstance(source["enabled"], bool):
                 raise CalendarSourceError("enabled must be boolean")
+            if (
+                not isinstance(source["currency_codes"], list)
+                or not source["currency_codes"]
+                or any(code not in allowed_currencies for code in source["currency_codes"])
+                or len(set(source["currency_codes"])) != len(source["currency_codes"])
+            ):
+                raise CalendarSourceError("currency_codes must be unique supported ISO currency codes")
+            rules = source["impact_rules"]
+            if not isinstance(rules, dict):
+                raise CalendarSourceError("impact_rules must be an object")
+            for level, phrases in rules.items():
+                if level not in {"HIGH", "MEDIUM", "LOW", "EXCLUDE_HIGH"}:
+                    raise CalendarSourceError(f"unsupported impact rule level: {level}")
+                if not isinstance(phrases, list) or any(not isinstance(item, str) or not item.strip() for item in phrases):
+                    raise CalendarSourceError(f"impact rules for {level} must be non-empty strings")
             for key in ("refresh_interval_seconds", "stale_after_seconds"):
                 if type(source[key]) is not int or source[key] <= 0:
                     raise CalendarSourceError(f"{key} must be a positive integer")
