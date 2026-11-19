@@ -178,6 +178,31 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
             "ACTIVE_LIFECYCLE_EVIDENCE_MISMATCH",
         )
 
+    def test_runtime_revision_guard_persists_reconciliation(self):
+        self.create_active_lifecycle()
+        self.assertEqual(
+            self.manager.recover_stream(BROKER, SYMBOL, self.config),
+            RecoveryStatus.NORMAL,
+        )
+        source = self.candles[-1]
+        revised = replace(source, close=source.close + Decimal("0.00001"))
+        self.market.upsert_candles(
+            [revised], as_of_utc=self.as_of, observed_at_utc=self.as_of
+        )
+        runtime = PriceActionRuntime(
+            coordinator=PriceActionCoordinator(),
+            lifecycle_store=self.store,
+            config=self.config,
+            recovery_gate=self.manager,
+        )
+        result = runtime.process(snapshot(self.candles))
+        self.assertEqual(result.status.value, "WAIT_RECOVERY")
+        self.assertEqual(result.recovery_status, RecoveryStatus.RECONCILIATION)
+        self.assertEqual(
+            self.store.get_recovery_record(BROKER, SYMBOL)["reason_code"],
+            "UNRECONCILED_M5_CANDLE_REVISION",
+        )
+
     def test_missing_startup_record_fails_closed(self):
         self.assertEqual(
             self.manager.get_status(BROKER, SYMBOL),
