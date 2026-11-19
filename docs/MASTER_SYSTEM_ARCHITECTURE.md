@@ -97,3 +97,12 @@ A phase that only adds a standalone engine without a consumer, data contract, te
 ## 7. Current status
 
 See `REPOSITORY_CAPABILITY_AUDIT.md` for the current evidence-based inventory. This architecture describes the intended destination, not current completeness.
+
+
+## Phase 28 — First central scenario-synthesis vertical slice
+
+Phase 28 introduces a deterministic CentralScenarioIntelligenceEngine in the live cycle. It evaluates technical structure, confirmed Price Action lifecycle and market-regime state for directional consistency, then combines macro fundamentals, policy differential, intermarket, positioning, quantitative statistics, liquidity, calendar/news, setup/session gates and historical descriptive outcomes as contextual evidence. It emits up-continuation, down-continuation and range/transition hypotheses with supporting/opposing evidence references, source freshness/identity states and explicit cross-domain tensions.
+
+This is deliberately not a weighted majority vote. The three price-derived inputs share underlying broker price data and are treated as correlated consistency checks. Context-only domains do not cast directional votes. Conflicting direction or trend-versus-range evidence remains unresolved. The engine emits no numeric probability or calibrated confidence and has no trade authority.
+
+Phase 28 is a first vertical slice, not the full Gate 3 exit: calibrated uncertainty, demonstrated source-reliability weighting, causal cross-domain models, historical scenario replay/backtesting, applicability learning and broader provider coverage remain future gaps.
