@@ -231,6 +231,20 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertIn("ONE_OR_MORE_DRIVER_SERIES_UNAVAILABLE", state["reason_codes"])
         self.assertIn("drivers", state)
 
+    def test_optional_positioning_missing_does_not_break_legacy_cycle(self):
+        result = self.build()
+        self.assertEqual(result["status"], "COHERENT")
+        self.assertEqual(result["current_context"]["positioning_sentiment_intelligence"]["source_status"], "MISSING")
+
+    def test_partial_positioning_is_incomplete_context(self):
+        items = sources()
+        items["positioning_sentiment_intelligence"] = {"payload": {"status": "PARTIAL", "evaluated_at_utc": NOW.isoformat(), "groups": {"DEALER": {"status": "AVAILABLE"}}}, "evaluated_at_utc": NOW.isoformat()}
+        result = self.build(items)
+        self.assertEqual(result["status"], "PARTIAL")
+        state = result["current_context"]["positioning_sentiment_intelligence"]
+        self.assertEqual(state["source_status"], "INCOMPLETE")
+        self.assertIn("groups", state)
+
     def test_quantitative_quality_block_is_not_promoted_to_available(self):
         items = sources()
         items["quantitative_market_statistics"] = {

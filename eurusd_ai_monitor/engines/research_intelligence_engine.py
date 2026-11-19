@@ -12,8 +12,9 @@ _CURRENT = (
     "session_eligibility",
     "quantitative_market_statistics",
     "intermarket_intelligence",
+    "positioning_sentiment_intelligence",
 )
-_OPTIONAL_CURRENT = {"quantitative_market_statistics", "intermarket_intelligence"}
+_OPTIONAL_CURRENT = {"quantitative_market_statistics", "intermarket_intelligence", "positioning_sentiment_intelligence"}
 _HISTORICAL = (
     "setup_outcome_observation",
     "statistical_outcome_evaluation",
@@ -263,6 +264,10 @@ class ResearchIntelligenceEngine:
             if raw in {"WAIT_SETUP", "WAITING_FOR_SETUP"}:
                 return "INCOMPLETE"
             return "AVAILABLE"
+        if name == "positioning_sentiment_intelligence":
+            if raw in {"PARTIAL", "INSUFFICIENT_DATA"}: return "INCOMPLETE"
+            if raw in {"STALE", "BLOCKED", "UNAVAILABLE", "DEGRADED"}: return raw
+            return "AVAILABLE" if raw == "AVAILABLE" else raw
         if name == "intermarket_intelligence":
             if raw in {"PARTIAL", "INSUFFICIENT_DATA"}:
                 return "INCOMPLETE"
@@ -301,7 +306,7 @@ class ResearchIntelligenceEngine:
         else:
             state = payload.get("status", source_status)
         compact = {"state": str(state), "source_status": source_status}
-        for field in ("drivers", "directional_agreement", "directional_bias", "regime",
+        for field in ("groups", "drivers", "directional_agreement", "directional_bias", "regime",
                       "volatility_state", "trend_direction", "lower_timeframe_alignment",
                       "lifecycle_state", "reason_code", "timeframes", "provenance"):
             if field in payload:
