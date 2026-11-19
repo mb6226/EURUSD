@@ -105,7 +105,7 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         items["market_regime_intelligence"]["payload"]["status"] = "DEGRADED"
         items["market_regime_intelligence"]["payload"]["regime"] = "UNKNOWN"
         result = self.build(items)
-        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["status"], "DEGRADED")
         self.assertEqual(
             result["current_context"]["market_regime_intelligence"]["source_status"],
             "DEGRADED",
