@@ -15,6 +15,7 @@ RESEARCH_SOURCE_NAMES = (
     "quantitative_market_statistics",
     "intermarket_intelligence",
     "positioning_sentiment_intelligence",
+    "liquidity_microstructure_intelligence",
 )
 
 
