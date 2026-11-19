@@ -69,6 +69,14 @@ class SessionEligibilityRiskGateTests(unittest.TestCase):
         self.assertEqual(r["status"], "BLOCKED")
         self.assertIn("ONE_SETUP_PER_SESSION_LIMIT_REACHED", r["reason_codes"])
 
+    def test_same_setup_cannot_be_reused_in_another_session(self):
+        first = self.assess(datetime(2026, 11, 19, 8, 0, tzinfo=timezone.utc))
+        second = self.assess(datetime(2026, 11, 19, 13, 0, tzinfo=timezone.utc))
+        self.assertEqual(first["status"], "RESEARCH_ELIGIBLE")
+        self.assertEqual(second["status"], "BLOCKED")
+        self.assertIn("SETUP_ALREADY_RESERVED_FOR_ANOTHER_SESSION_DATE",
+                      second["reason_codes"])
+
     def test_daily_budget_shared_between_london_and_new_york(self):
         a = self.assess(datetime(2026, 11, 19, 8, 0, tzinfo=timezone.utc))
         b = self.assess(datetime(2026, 11, 19, 13, 0, tzinfo=timezone.utc), lifecycle="lifecycle-2")
