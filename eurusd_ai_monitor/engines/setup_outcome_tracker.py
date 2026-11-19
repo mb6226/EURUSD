@@ -450,6 +450,14 @@ class SetupOutcomeTracker:
         evaluated = _utc(evaluated_at_utc, "evaluated_at_utc")
         if not isinstance(setup_assessment, dict) or not isinstance(session_eligibility, dict):
             raise TypeError("setup_assessment and session_eligibility must be dictionaries")
+
+        def finalize(payload: dict) -> dict:
+            result = dict(payload)
+            result.setdefault("evaluated_at_utc", evaluated.isoformat())
+            result.setdefault("broker_server", broker_server)
+            result.setdefault("symbol", symbol)
+            return result
+
         pullback = setup_assessment.get("pullback")
         if setup_assessment.get("stage") != "PATTERN_CONFIRMED" or not isinstance(pullback, dict):
             if lifecycle_id:
@@ -463,31 +471,31 @@ class SetupOutcomeTracker:
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     })
-                    return continued
-            return {
+                    return finalize(continued)
+            return finalize({
                 "status": "WAIT_SETUP", "reason_code": "PATTERN_NOT_CONFIRMED",
                 "observation_type": "PRICE_EXCURSION_ONLY",
                 "trade_authority": "NONE", "order_execution": "DISABLED",
-            }
+            })
         retest_id = pullback.get("retest_candle_id")
         if not lifecycle_id or not retest_id:
-            return {
+            return finalize({
                 "status": "BLOCKED", "reason_code": "SETUP_IDENTITY_INCOMPLETE",
                 "trade_authority": "NONE", "order_execution": "DISABLED",
-            }
+            })
         setup_key = f"{lifecycle_id}:{retest_id}"
         retest = next((c for c in m1_candles if c.timeframe == "M1" and _candle_id(c) == retest_id), None)
         if retest is None:
-            return {
+            return finalize({
                 "status": "BLOCKED", "setup_key": setup_key,
                 "reason_code": "RETEST_CANDLE_NOT_IN_CURRENT_EVIDENCE",
                 "trade_authority": "NONE", "order_execution": "DISABLED",
-            }
+            })
         direction = setup_assessment.get("trend_direction")
         if direction not in ("UP", "DOWN"):
-            return {"status": "BLOCKED", "setup_key": setup_key,
+            return finalize({"status": "BLOCKED", "setup_key": setup_key,
                     "reason_code": "DIRECTION_UNAVAILABLE",
-                    "trade_authority": "NONE", "order_execution": "DISABLED"}
+                    "trade_authority": "NONE", "order_execution": "DISABLED"})
         reference_at = datetime.fromisoformat(pullback["confirmed_at_utc"].replace("Z", "+00:00"))
         eligible = session_eligibility.get("status") == "RESEARCH_ELIGIBLE"
         result = self._store.update(
@@ -505,4 +513,4 @@ class SetupOutcomeTracker:
             "trade_authority": "NONE",
             "order_execution": "DISABLED",
         })
-        return result
+        return finalize(result)

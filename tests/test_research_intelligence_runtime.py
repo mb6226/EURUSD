@@ -4,6 +4,11 @@ from datetime import datetime, timezone
 from eurusd_ai_monitor.engines.research_intelligence_runtime import (
     build_research_intelligence_payload,
 )
+from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
+from eurusd_ai_monitor.engines.research_intelligence_sources import (
+    RESEARCH_SOURCE_NAMES,
+    build_research_intelligence_sources,
+)
 
 NOW = datetime(2026, 11, 19, 12, tzinfo=timezone.utc)
 
@@ -79,6 +84,114 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
         self.assertEqual(result["status"], "DEGRADED")
         self.assertIn("RESEARCH_INTELLIGENCE_ERROR:TypeError", result["reason_codes"])
 
+
+    def test_source_envelope_preserves_specialist_timestamps_and_identity(self):
+        payloads = {
+            name: {
+                "status": "AVAILABLE",
+                "evaluated_at_utc": NOW.isoformat(),
+                "broker_server": "Broker-Demo",
+                "symbol": "EURUSD",
+            }
+            for name in RESEARCH_SOURCE_NAMES
+        }
+        payloads["fusion_assessment"]["status"] = "READY_FOR_RULES"
+        payloads["market_regime_intelligence"]["regime"] = "TRENDING"
+        payloads["price_action_lifecycle"]["status"] = "NO_LIFECYCLE"
+        payloads["setup_assessment"]["stage"] = "WAIT"
+        payloads["session_eligibility"]["status"] = "RESEARCH_ELIGIBLE"
+        payloads["setup_outcome_observation"]["status"] = "ACTIVE"
+        payloads["statistical_outcome_evaluation"]["status"] = "INSUFFICIENT_DATA"
+        payloads["regime_conditioned_outcome_evaluation"]["status"] = "INSUFFICIENT_DATA"
+        sources = build_research_intelligence_sources(
+            payloads, broker_server="Broker-Demo", symbol="EURUSD"
+        )
+        report = ResearchIntelligenceEngine().build_report(
+            evaluated_at_utc=NOW,
+            broker_server="Broker-Demo",
+            symbol="EURUSD",
+            sources=sources,
+        )
+        self.assertEqual(len(report["source_manifest"]), 8)
+        self.assertEqual(report["status"], "COHERENT")
+        self.assertEqual(sources["market_regime_intelligence"]["evaluated_at_utc"], NOW.isoformat())
+
+    def test_missing_specialist_timestamp_is_not_replaced_by_cycle_time(self):
+        payloads = {
+            name: {"status": "AVAILABLE", "evaluated_at_utc": NOW.isoformat()}
+            for name in RESEARCH_SOURCE_NAMES
+        }
+        payloads["market_regime_intelligence"].pop("evaluated_at_utc")
+        sources = build_research_intelligence_sources(
+            payloads, broker_server="Broker-Demo", symbol="EURUSD"
+        )
+        self.assertIsNone(sources["market_regime_intelligence"]["evaluated_at_utc"])
+        report = ResearchIntelligenceEngine().build_report(
+            evaluated_at_utc=NOW,
+            broker_server="Broker-Demo",
+            symbol="EURUSD",
+            sources=sources,
+        )
+        self.assertEqual(report["status"], "DEGRADED")
+        self.assertIn(
+            "MARKET_REGIME_INTELLIGENCE_TIMESTAMP_INVALID",
+            report["reason_codes"],
+        )
+
+    def test_explicit_specialist_identity_mismatch_is_not_overwritten(self):
+        payloads = {
+            name: {"status": "AVAILABLE", "evaluated_at_utc": NOW.isoformat()}
+            for name in RESEARCH_SOURCE_NAMES
+        }
+        payloads["market_regime_intelligence"]["provenance"] = {
+            "broker_server": "Other-Broker", "symbol": "GBPUSD"
+        }
+        sources = build_research_intelligence_sources(
+            payloads, broker_server="Broker-Demo", symbol="EURUSD"
+        )
+        self.assertEqual(
+            sources["market_regime_intelligence"]["broker_server"], "Other-Broker"
+        )
+        self.assertEqual(sources["market_regime_intelligence"]["symbol"], "GBPUSD")
+        report = ResearchIntelligenceEngine().build_report(
+            evaluated_at_utc=NOW,
+            broker_server="Broker-Demo",
+            symbol="EURUSD",
+            sources=sources,
+        )
+        self.assertEqual(report["status"], "DEGRADED")
+        self.assertIn(
+            "MARKET_REGIME_INTELLIGENCE_IDENTITY_MISMATCH",
+            report["reason_codes"],
+        )
+
+    def test_explicit_null_specialist_identity_is_not_treated_as_omitted(self):
+        payloads = {
+            name: {"status": "AVAILABLE", "evaluated_at_utc": NOW.isoformat()}
+            for name in RESEARCH_SOURCE_NAMES
+        }
+        payloads["market_regime_intelligence"]["provenance"] = {"symbol": None}
+        sources = build_research_intelligence_sources(
+            payloads, broker_server="Broker-Demo", symbol="EURUSD"
+        )
+        self.assertEqual(sources["market_regime_intelligence"]["symbol"], "")
+        report = ResearchIntelligenceEngine().build_report(
+            evaluated_at_utc=NOW,
+            broker_server="Broker-Demo",
+            symbol="EURUSD",
+            sources=sources,
+        )
+        self.assertEqual(report["status"], "DEGRADED")
+        self.assertIn(
+            "MARKET_REGIME_INTELLIGENCE_IDENTITY_MISMATCH",
+            report["reason_codes"],
+        )
+
+    def test_source_envelope_rejects_invalid_cycle_identity(self):
+        with self.assertRaises(ValueError):
+            build_research_intelligence_sources(
+                {}, broker_server="", symbol="EURUSD"
+            )
 
 if __name__ == "__main__":
     unittest.main()
