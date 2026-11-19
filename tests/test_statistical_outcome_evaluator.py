@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -179,10 +180,11 @@ class StatisticalOutcomeEvaluatorTests(unittest.TestCase):
     def test_inconsistent_candle_count_is_degraded_and_excluded(self):
         self.add_observation(lifecycle="integrity")
         import sqlite3
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db:
             db.execute(
                 "UPDATE setup_observations SET candles_processed=99 WHERE lifecycle_id='integrity'"
             )
+            db.commit()
         report = StatisticalOutcomeEvaluator(self.db_path).build_report(evaluated_at_utc=BASE)
         self.assertEqual(report["status"], "DEGRADED")
         self.assertEqual(report["excluded_integrity_errors"], 1)
@@ -199,10 +201,10 @@ class StatisticalOutcomeEvaluatorTests(unittest.TestCase):
     def test_read_only_evaluator_does_not_change_observation_rows(self):
         self.add_observation(lifecycle="one")
         import sqlite3
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db:
             before = db.execute("SELECT COUNT(*) FROM setup_observations").fetchone()[0]
         StatisticalOutcomeEvaluator(self.db_path).build_report(evaluated_at_utc=BASE)
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db:
             after = db.execute("SELECT COUNT(*) FROM setup_observations").fetchone()[0]
         self.assertEqual(before, after)
 
