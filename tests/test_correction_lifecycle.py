@@ -74,7 +74,7 @@ def make_impulse():
 
 def make_lifecycle(state=LifecycleState.CONFIRMED):
     impulse = make_impulse()
-    candidate = evidence(5, "1.1090", "1.1070", EvidenceRole.CORRECTION, 5)
+    candidate = evidence(6, "1.1090", "1.1070", EvidenceRole.CORRECTION, 5)
     extreme = evidence(12, "1.1080", "1.1070", EvidenceRole.CORRECTION, 5)
     pivots = tuple(
         evidence(index, high, low, EvidenceRole.TREND_PIVOT, 15)
@@ -103,7 +103,7 @@ def make_lifecycle(state=LifecycleState.CONFIRMED):
         correction_pivots=pivots if confirmed is not None else (),
         confirmed_at_utc=confirmed,
         last_processed_m5_utc=BASE + timedelta(minutes=60),
-        age_bars=8,
+        age_bars=7,
         warnings=(),
         algorithm_version=ALGORITHM,
         parameter_version=PARAMETERS,
@@ -119,6 +119,20 @@ class CorrectionLifecycleModelTests(unittest.TestCase):
         self.assertEqual(len(confirmed.correction_pivots), 3)
         self.assertEqual(confirmed.candidate_start_candle_id, confirmed.candidate_start_evidence.candle_id)
         self.assertEqual(confirmed.correction_extreme_price, Decimal("1.1070"))
+
+    def test_rejects_candidate_start_before_impulse_confirmation(self):
+        lifecycle = make_lifecycle(LifecycleState.CANDIDATE)
+        early_candidate = evidence(
+            5, "1.1090", "1.1070", EvidenceRole.CORRECTION, 5
+        )
+        with self.assertRaisesRegex(ValueError, "cannot precede impulse confirmation"):
+            CorrectionLifecycle(
+                **{
+                    **lifecycle.__dict__,
+                    "candidate_start_evidence": early_candidate,
+                    "age_bars": 8,
+                }
+            )
 
     def test_rejects_inconsistent_depth(self):
         lifecycle = make_lifecycle()
