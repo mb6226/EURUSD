@@ -48,6 +48,22 @@ class SetupOutcomeTrackerTests(unittest.TestCase):
             session_eligibility=session or self.eligible, m1_candles=tuple(candles),
         )
 
+    def test_wait_setup_payload_includes_cycle_provenance(self):
+        now = BASE + timedelta(minutes=3)
+        result = self.tracker.assess(
+            evaluated_at_utc=now,
+            broker_server="Broker",
+            symbol="EURUSD",
+            lifecycle_id=None,
+            setup_assessment={"stage": "WAIT_CORRECTION_CONFIRMATION"},
+            session_eligibility={"status": "OUTSIDE_SESSION"},
+            m1_candles=(),
+        )
+        self.assertEqual(result["status"], "WAIT_SETUP")
+        self.assertEqual(result["evaluated_at_utc"], now.isoformat())
+        self.assertEqual(result["broker_server"], "Broker")
+        self.assertEqual(result["symbol"], "EURUSD")
+
     def test_reference_is_retest_close_and_mfe_mae_are_directional(self):
         bars = (self.retest, candle(2, "1.10040", "1.09980", "1.10020"))
         result = self.assess(BASE + timedelta(minutes=3), bars)
