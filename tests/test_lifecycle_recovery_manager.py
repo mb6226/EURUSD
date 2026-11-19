@@ -2,6 +2,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import tempfile
+from contextlib import closing
 import unittest
 from pathlib import Path
 
@@ -157,7 +158,7 @@ class LifecycleRecoveryManagerTests(unittest.TestCase):
         self.create_active_lifecycle()
         lifecycle = self.store.load_active(BROKER, SYMBOL)
         evidence_time = lifecycle.impulse.start_pivot.candle.candle_open_time_utc
-        with self.market._connect() as connection:
+        with closing(self.market._connect()) as connection:
             connection.execute(
                 """
                 DELETE FROM candles
