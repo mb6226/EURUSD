@@ -9,7 +9,7 @@ from source_registry.observation_store import PointInTimeObservationStore
 from source_registry.registry_loader import load_registry
 
 UTC = timezone.utc
-RETRIEVED = datetime(2026, 11, 19, 16, tzinfo=UTC)
+RETRIEVED = datetime(2026, 11, 19, 12, tzinfo=UTC)
 
 
 class FedIngestionIntegrationTests(unittest.TestCase):
@@ -40,7 +40,7 @@ class FedIngestionIntegrationTests(unittest.TestCase):
         self.assertEqual(rows[0]["value"], {"low": "4.75", "high": "5.00"})
         self.assertEqual(rows[0]["unit"], "percent_per_annum")
         self.assertEqual(rows[0]["published_at_utc"], "2024-09-18T18:00:00.000000Z")
-        self.assertEqual(rows[0]["retrieved_at_utc"], "2026-11-19T16:00:00.000000Z")
+        self.assertEqual(rows[0]["retrieved_at_utc"], "2026-11-19T12:00:00.000000Z")
 
 
 if __name__ == "__main__":
