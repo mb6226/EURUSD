@@ -694,54 +694,55 @@ def main():
                     macro_calendar_payload,
                     news_payload,
                 )
+                fusion_payload = fusion_assessment.to_dict()
                 research_sources = {
                     "fusion_assessment": {
-                        "payload": fusion_assessment.to_dict(),
+                        "payload": fusion_payload,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": fusion_payload.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "market_regime_intelligence": {
                         "payload": market_regime_report,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": market_regime_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "price_action_lifecycle": {
                         "payload": price_action_payload,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": price_action_payload.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "setup_assessment": {
                         "payload": setup_assessment,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": setup_assessment.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "session_eligibility": {
                         "payload": session_eligibility,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": session_eligibility.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "setup_outcome_observation": {
                         "payload": setup_outcome,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": setup_outcome.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "statistical_outcome_evaluation": {
                         "payload": statistical_outcome_report,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": statistical_outcome_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                     "regime_conditioned_outcome_evaluation": {
                         "payload": regime_conditioned_outcome_report,
                         "broker_server": snapshot.broker_server,
                         "symbol": snapshot.symbol,
-                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "evaluated_at_utc": regime_conditioned_outcome_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
                     },
                 }
                 try:
@@ -765,7 +766,7 @@ def main():
                         "order_execution": "DISABLED",
                     }
                 payload = {
-                    "fusion_assessment": fusion_assessment.to_dict(),
+                    "fusion_assessment": fusion_payload,
                     "research_intelligence": research_intelligence,
                     "symbol": snapshot.symbol,
                     "tick": tick,
