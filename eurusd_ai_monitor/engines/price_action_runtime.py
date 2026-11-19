@@ -180,6 +180,9 @@ class PriceActionRuntime:
                 active_record is not None
                 and active_record.revision_watermark != stream.revision_watermark
             ):
+                recovery_status = self._mark_reconciliation(
+                    snapshot, "UNRECONCILED_M5_CANDLE_REVISION"
+                )
                 return self._result(
                     snapshot,
                     PriceActionRuntimeStatus.WAIT_RECOVERY,
@@ -258,9 +261,13 @@ class PriceActionRuntime:
                 reason_codes=transition.reason_codes,
             )
         except LifecycleRevisionConflict:
+            recovery_status = self._mark_reconciliation(
+                snapshot, "M5_CANDLE_REVISION_DURING_ANALYSIS"
+            )
             return self._result(
                 snapshot,
                 PriceActionRuntimeStatus.WAIT_REVISION_CONFLICT,
+                recovery_status=recovery_status,
                 reason_codes=("M5_CANDLE_REVISION_DURING_ANALYSIS",),
             )
         except LifecycleConcurrencyConflict:
@@ -276,6 +283,15 @@ class PriceActionRuntime:
                 reason_codes=(f"PRICE_ACTION_RUNTIME_ERROR:{type(exc).__name__}:{exc}",),
             )
 
+    def _mark_reconciliation(
+        self, snapshot: MarketSnapshot, reason_code: str
+    ) -> RecoveryStatus:
+        marker = getattr(self._recovery_gate, "mark_reconciliation", None)
+        if callable(marker):
+            status = marker(snapshot.broker_server, snapshot.symbol, reason_code)
+            if isinstance(status, RecoveryStatus):
+                return status
+        return RecoveryStatus.RECONCILIATION
     @staticmethod
     def _result(
         snapshot: MarketSnapshot,
