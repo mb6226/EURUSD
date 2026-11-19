@@ -339,7 +339,10 @@ class PointInTimeObservationStore:
         ]
 
     def count_observations(self) -> int:
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
             return connection.execute(
                 "SELECT COUNT(*) FROM observations"
             ).fetchone()[0]
+        finally:
+            connection.close()
