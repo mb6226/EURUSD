@@ -788,6 +788,7 @@ class LifecycleStore:
                 (broker_server, symbol),
             ).fetchall()
 
+        current_watermark = self.get_revision_watermark(broker_server, symbol)
         audited = 0
         for row in rows:
             lifecycle_id = row["lifecycle_id"]
@@ -822,6 +823,10 @@ class LifecycleStore:
                 if event.event_sequence != index:
                     raise LifecycleIntegrityError(
                         f"lifecycle {lifecycle_id} event sequence is not contiguous"
+                    )
+                if event.revision_watermark > current_watermark:
+                    raise LifecycleIntegrityError(
+                        f"lifecycle {lifecycle_id} event watermark exceeds current M5 watermark"
                     )
                 if event_lifecycle.lifecycle_id != lifecycle_id:
                     raise LifecycleIntegrityError(
