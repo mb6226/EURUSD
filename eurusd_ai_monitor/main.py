@@ -741,7 +741,7 @@ def main():
                         "market_regime_intelligence": market_regime_report,
                         "price_action_lifecycle": price_action_payload,
                         "setup_assessment": setup_assessment,
-                        "technical_analysis": technical_analysis or {},
+                        "technical_analysis": technical_analysis or {"status": "SKIPPED"},
                     },
                 )
                 payload = {
