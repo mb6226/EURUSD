@@ -177,6 +177,8 @@ class IntermarketIntelligenceEngine:
                 continue
             published_at = _timestamp(published, "published_at_utc")
             retrieved_at = _timestamp(row.get("retrieved_at_utc"), "retrieved_at_utc")
+            if published_at < effective:
+                raise ValueError("intermarket publication timestamp cannot precede observation time")
             if published_at > retrieved_at:
                 raise ValueError("intermarket publication timestamp cannot follow retrieval timestamp")
             if effective > cutoff or published_at > cutoff or retrieved_at > cutoff:
@@ -239,6 +241,14 @@ class IntermarketIntelligenceEngine:
             [eurusd_returns[at] for at in common],
             [driver_returns[at] for at in common],
         )
+        if contemporaneous is None:
+            return {
+                "status": "INSUFFICIENT_DATA",
+                "reason_codes": ["ZERO_VARIANCE_IN_ALIGNED_RETURNS"],
+                "change_method": definition["change_method"],
+                "observation_count": len(observations),
+                "aligned_return_count": len(common),
+            }
         lead_pairs = [(driver_returns[common[i - 1]], eurusd_returns[common[i]]) for i in range(1, len(common))]
         lag_pairs = [(eurusd_returns[common[i - 1]], driver_returns[common[i]]) for i in range(1, len(common))]
         return {
