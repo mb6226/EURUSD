@@ -196,9 +196,7 @@ class LifecycleStore:
                             "transition_type": existing_event["transition_type"],
                             "previous_state": existing_event["previous_state"],
                             "current_state": existing_event["current_state"],
-                            "occurred_at_utc": _timestamp_from_db(
-                                existing_event["occurred_at_utc"]
-                            ).strftime("%Y-%m-%dT%H:%M:%S.%fZ") if "." in existing_event["occurred_at_utc"] else _datetime_to_string(
+                            "occurred_at_utc": _datetime_to_string(
                                 _timestamp_from_db(existing_event["occurred_at_utc"])
                             ),
                             "reason_codes": json.loads(existing_event["reason_codes_json"]),
@@ -241,9 +239,18 @@ class LifecycleStore:
                             int(sequence_row["event_sequence"]),
                         )
 
+                current_watermark = self._watermark_on_connection(
+                    connection, broker, symbol
+                )
+                if current_watermark != revision_watermark:
+                    raise LifecycleRevisionConflict(
+                        "M5 revision watermark changed: "
+                        f"analysis={revision_watermark}, current={current_watermark}"
+                    )
+
                 current = connection.execute(
                     """
-                    SELECT state, state_version, record_version,
+                    SELECT broker_server, symbol, state, state_version, record_version,
                            algorithm_version, parameter_version,
                            last_processed_m5_utc, revision_watermark, snapshot_json
                     FROM pa_lifecycle_state
@@ -374,14 +381,19 @@ class LifecycleStore:
 
                 event_sequence = None
                 if event_id is not None:
-                    sequence_row = connection.execute(
+                    history = connection.execute(
                         """
-                        SELECT COALESCE(MAX(event_sequence), 0) + 1 AS next_sequence
+                        SELECT COUNT(*) AS event_count,
+                               COALESCE(MAX(event_sequence), 0) AS max_sequence
                         FROM pa_lifecycle_events WHERE lifecycle_id = ?
                         """,
                         (lifecycle_id,),
                     ).fetchone()
-                    event_sequence = int(sequence_row["next_sequence"])
+                    if int(history["event_count"]) != int(history["max_sequence"]):
+                        raise LifecycleIntegrityError(
+                            "existing lifecycle event sequence is not contiguous"
+                        )
+                    event_sequence = int(history["max_sequence"]) + 1
                     connection.execute(
                         """
                         INSERT INTO pa_lifecycle_events (
