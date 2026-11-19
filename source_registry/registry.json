@@ -415,6 +415,71 @@
       ],
       "validation_profile": "intermarket_point_in_time",
       "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
+    },
+    {
+      "source_id": "CFTC_TFF_POSITIONING",
+      "name": "CFTC Traders in Financial Futures — CME EURO FX futures-only positioning",
+      "category": "FINANCIAL_MARKETS",
+      "publisher": {
+        "name": "U.S. Commodity Futures Trading Commission",
+        "role": "REGULATOR",
+        "authority_tier": "A"
+      },
+      "topics": [
+        "EUR",
+        "USD",
+        "futures_positioning",
+        "sentiment",
+        "COT"
+      ],
+      "access": {
+        "adapter": "cftc_positioning",
+        "canonical_url": "https://publicreporting.cftc.gov/d/gpe5-46if/visualization",
+        "format": "JSON",
+        "credential_env": null
+      },
+      "enabled": true,
+      "auto_fetch": false,
+      "fetch": {
+        "mode": "MANUAL",
+        "minimum_interval_seconds": 604800,
+        "max_attempts": 1,
+        "retry_backoff_seconds": []
+      },
+      "products": [
+        {
+          "product_id": "EURO_FX_DEALER_NET_OI_PCT",
+          "measure": "Dealer net position as percent of open interest",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_of_open_interest",
+          "observation_frequency": "WEEKLY",
+          "effective_date_field": "report_date_tuesday",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "EURO_FX_ASSET_MANAGER_NET_OI_PCT",
+          "measure": "Asset manager net position as percent of open interest",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_of_open_interest",
+          "observation_frequency": "WEEKLY",
+          "effective_date_field": "report_date_tuesday",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "EURO_FX_LEVERAGED_MONEY_NET_OI_PCT",
+          "measure": "Leveraged money net position as percent of open interest",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_of_open_interest",
+          "observation_frequency": "WEEKLY",
+          "effective_date_field": "report_date_tuesday",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        }
+      ],
+      "validation_profile": "cftc_tff_positioning",
+      "failure_policy": "KEEP_LAST_VALID_MARK_STALE"
     }
   ]
 }
