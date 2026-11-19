@@ -113,3 +113,12 @@ Phase 28 is a first vertical slice, not the full Gate 3 exit. Phase 29 adds read
 Phase 30 adds a read-only audit of the existing M1/M5 candle archive: expected wall-clock bar slots, observed closed bars, coverage, missing intervals, timestamp integrity, revision watermark/completeness and revised-candle counts. It also provides deterministic chronological train/validation/test partitioning with a forward-horizon embargo at partition boundaries. This is a single chronological holdout, not repeated rolling folds.
 
 The audit does not distinguish FX market closures from data outages, does not mutate/backfill the store, and cannot reconstruct complete first-seen candle versions. Scenario archive coverage and point-in-time provenance of all multi-domain specialist inputs remain separate requirements. Full as-of reconstruction, scenario archive manifests, rolling-origin folds, regime-stratified evaluation and calibrated uncertainty remain future gaps.
+
+
+## Phase 31 — Point-in-time evidence reconstruction and multi-domain replay
+
+Phase 31 adds a read-only reconstruction engine for four evidence families at an explicit historical UTC timestamp: broker-specific M1/M5 candles (including reversal of later candle revisions and conservative closed-bar availability checks), append-only source-registry observations (effective/published/retrieved as-of filtering), news semantic versions (revision rollback with conservative exclusion where unchanged refresh history is unprovable), and macro calendar event versions (revision rollback bounded by immutable first-seen time).
+
+The replay adapter consumes archived specialist reports from historical monitor JSONL cycles, reconstructs the evidence bundle independently at each original timestamp, rejects future/mismatched specialist reports, and reassesses archived reports through the central scenario engine. It does not recompute specialist algorithms from raw historical inputs. Missing reports and unprovable evidence remain explicit. Full historical specialist recomputation, complete news fetch-version history, explicit candle-closure event history, calendar source-health history, and source coverage manifests remain future capabilities.
+
+The replay returns reconstructed raw evidence alongside central reassessment; raw observations are not yet transformed into specialist reports or injected as new votes. The central engine consumes only archived specialist report objects that pass timestamp and identity checks.
