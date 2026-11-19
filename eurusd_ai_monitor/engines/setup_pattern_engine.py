@@ -202,10 +202,14 @@ class SetupPatternEngine:
             if candle.candle_open_time_utc <= breakout.candle_open_time_utc:
                 continue
             if direction is TrendDirection.UP:
-                touched = candle.low <= trigger + tolerance
+                # A bullish retest must actually reach the trigger, but may not
+                # penetrate it by more than the configured tolerance.
+                touched = trigger - tolerance <= candle.low <= trigger
                 held = candle.close > trigger
             else:
-                touched = candle.high >= trigger - tolerance
+                # Bearish mirror: reach the trigger from below without
+                # overshooting above it by more than the configured tolerance.
+                touched = trigger <= candle.high <= trigger + tolerance
                 held = candle.close < trigger
             if touched and held:
                 breakout_ref = self._evidence(breakout, EvidenceRole.PULLBACK, algorithm_version, parameter_version)
