@@ -86,8 +86,8 @@ class SetupPatternEngineTests(unittest.TestCase):
             TrendDirection.DOWN, Decimal("1.10030"), "alg", "params",
         )
         result = self.engine.find_pullback(
-            (c(1, "1.10010", "1.10020", "1.09990", "1.10000"),
-             c(2, "1.10000", "1.10025", "1.09980", "1.09990")),
+            (c(1, "1.10010", "1.10020", "1.09990", "1.09995"),
+             c(2, "1.10000", "1.10010", "1.09980", "1.09990")),
             TrendDirection.DOWN, rejection, Decimal("0.00020"), "alg", "params",
         )
         self.assertIsNotNone(result)
