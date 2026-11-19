@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from source_registry.adapters import FetchRequest
-from source_registry.adapters.exceptions import FetchValidationError
+from source_registry.adapters.exceptions import FetchParseError, FetchValidationError
 from source_registry.adapters.macro_series import (
     EUROSTAT_SOURCE_ID, US_BLS_SOURCE_ID, OfficialMacroSeriesAdapter,
 )
@@ -62,7 +62,7 @@ class MacroSeriesAdapterTests(unittest.TestCase):
 
     def test_missing_publication_timestamp_is_rejected(self):
         adapter = self.adapter(records=[{"reference_period":"2026-10","value":"330"}])
-        with self.assertRaises(Exception):
+        with self.assertRaises(FetchParseError):
             adapter.fetch(self.request())
 
     def test_naive_publication_timestamp_is_rejected(self):
