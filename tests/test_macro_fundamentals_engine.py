@@ -49,7 +49,7 @@ class MacroFundamentalsEngineTests(unittest.TestCase):
         report = self.assess()
         self.assertEqual(report["status"],"AVAILABLE")
         self.assertEqual(report["inflation"]["us_cpi_yoy_percent"],"3.12500")
-        self.assertEqual(report["inflation"]["euro_area_hicp_yoy_percent"],"3.000")
+        self.assertEqual(report["inflation"]["euro_area_hicp_yoy_percent"],"3.00")
         self.assertEqual(report["inflation"]["us_minus_euro_area_inflation_pp"],"0.12500")
         self.assertEqual(report["unemployment"]["us_minus_euro_area_unemployment_pp"],"-2.1")
         self.assertEqual(report["decision_authority"],"ASSESSMENT_ONLY")
@@ -59,6 +59,10 @@ class MacroFundamentalsEngineTests(unittest.TestCase):
     def test_excludes_future_publication_and_retrieval(self):
         payload=inputs()
         payload["us_cpi_observations"][-1]["published_at_utc"]="2026-11-20T00:00:00Z"
+        report=self.engine.assess(as_of_utc=AS_OF,**payload)
+        self.assertNotEqual(report["inflation"]["status"],"AVAILABLE")
+        payload=inputs()
+        payload["us_cpi_observations"][-1]["retrieved_at_utc"]="2026-11-20T00:00:00Z"
         report=self.engine.assess(as_of_utc=AS_OF,**payload)
         self.assertNotEqual(report["inflation"]["status"],"AVAILABLE")
 
