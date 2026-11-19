@@ -138,7 +138,7 @@ class IntermarketIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(report["status"], "AVAILABLE")
         self.assertNotIn("future", report["provenance"]["eurusd_observation_ids"])
 
-    def test_future_publication_is_excluded_even_if_retrieved_before_cutoff(self):
+    def test_future_publication_and_retrieval_are_excluded(self):
         row = dict(self.eurusd[-1])
         row["published_at_utc"] = (AS_OF + timedelta(hours=1)).isoformat()
         row["retrieved_at_utc"] = (AS_OF + timedelta(hours=2)).isoformat()
