@@ -47,6 +47,7 @@ class CFTCPositioningAdapter(FetchAdapter):
             if str(row["contract_market_code"]).strip()!="099741": raise FetchValidationError("Expected CME EURO FX contract market code 099741")
             try: report=datetime.strptime(str(row["report_date"]),"%Y-%m-%d").replace(tzinfo=timezone.utc)
             except ValueError as exc: raise FetchValidationError("report_date must use YYYY-MM-DD") from exc
+            if report.weekday()!=1: raise FetchValidationError("report_date must be a Tuesday CFTC position date")
             published=_timestamp(row["published_at_utc"],"published_at_utc")
             if published<report: raise FetchValidationError("publication cannot precede Tuesday report date")
             oi=_integer(row["open_interest"],"open_interest")
