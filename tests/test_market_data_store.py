@@ -184,6 +184,61 @@ class MarketDataStoreTests(unittest.TestCase):
             "pa_lifecycle_state", "pa_lifecycle_events", "pa_lifecycle_recovery"
         }.issubset(tables))
 
+    def test_lifecycle_events_are_append_only(self):
+        with closing(sqlite3.connect(self.db_path)) as db:
+            db.execute("PRAGMA foreign_keys = ON")
+            db.execute(
+                """
+                INSERT INTO pa_lifecycle_state (
+                    lifecycle_id, broker_server, symbol, state,
+                    state_version, record_version, algorithm_version,
+                    parameter_version, last_processed_m5_utc,
+                    revision_watermark, snapshot_json, updated_at_utc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "lifecycle-1", "Demo-Server", "EURUSD", "CANDIDATE",
+                    0, 1, "algo-v1", "params-v1",
+                    "2026-11-17T12:00:00.000000Z", 0, "{}", 
+                    "2026-11-17T12:00:00.000000Z",
+                ),
+            )
+            db.execute(
+                """
+                INSERT INTO pa_lifecycle_events (
+                    event_id, lifecycle_id, event_sequence, transition_type,
+                    previous_state, current_state, occurred_at_utc,
+                    reason_codes_json, evidence_refs_json,
+                    lifecycle_snapshot_json, revision_watermark, created_at_utc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "event-1", "lifecycle-1", 1, "CREATED", None, "CANDIDATE",
+                    "2026-11-17T12:00:00.000000Z", "[]", "[]", "{}", 0,
+                    "2026-11-17T12:00:00.000000Z",
+                ),
+            )
+            db.commit()
+            with self.assertRaisesRegex(
+                sqlite3.IntegrityError, "append-only"
+            ):
+                db.execute(
+                    "UPDATE pa_lifecycle_events SET transition_type = 'TAMPERED' "
+                    "WHERE event_id = 'event-1'"
+                )
+            db.rollback()
+            with self.assertRaisesRegex(
+                sqlite3.IntegrityError, "append-only"
+            ):
+                db.execute(
+                    "DELETE FROM pa_lifecycle_events WHERE event_id = 'event-1'"
+                )
+            db.rollback()
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM pa_lifecycle_events").fetchone()[0],
+                1,
+            )
+
     def test_revision_watermark_and_paged_revision_reads_are_scoped_and_ordered(self):
         open_time = datetime(2026, 11, 17, 12, 0, tzinfo=timezone.utc)
         observed = open_time + timedelta(minutes=1)
