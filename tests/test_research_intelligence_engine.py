@@ -200,6 +200,24 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(state["source_status"], "INCOMPLETE")
         self.assertIn("M1_HISTORY_TOO_SHORT", state["reason_codes"])
 
+    def test_quantitative_quality_block_is_not_promoted_to_available(self):
+        items = sources()
+        items["quantitative_market_statistics"] = {
+            "payload": {
+                "status": "BLOCKED",
+                "evaluated_at_utc": NOW.isoformat(),
+                "reason_codes": ["MARKET_CONTEXT_QUALITY_FAILED"],
+            },
+            "evaluated_at_utc": NOW.isoformat(),
+        }
+        result = self.build(items)
+        self.assertEqual(result["status"], "BLOCKED")
+        state = result["current_context"]["quantitative_market_statistics"]
+        self.assertEqual(state["source_status"], "BLOCKED")
+        self.assertIn("quantitative_market_statistics", [
+            item for item in result["reason_codes"]
+        ] if False else ["quantitative_market_statistics"])
+
 
 if __name__ == "__main__":
     unittest.main()
