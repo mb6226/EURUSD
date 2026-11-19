@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 
 from eurusd_ai_monitor.engines.correction_detector import CorrectionDetector
@@ -14,7 +15,7 @@ from eurusd_ai_monitor.models.correction_lifecycle import (
     TransitionType,
 )
 from eurusd_ai_monitor.models.price_action import TrendDirection
-from eurusd_ai_monitor.storage.market_data_store import Candle
+from eurusd_ai_monitor.storage.market_data_store import Candle, TIMEFRAME_SECONDS
 
 
 @dataclass(frozen=True)
@@ -117,7 +118,7 @@ class PriceActionCoordinator:
             lifecycle=candidate,
             occurred_at_utc=(
                 candidate.last_processed_m5_utc
-                + __import__("datetime").timedelta(seconds=300)
+                + timedelta(seconds=TIMEFRAME_SECONDS["M5"])
             ),
             reason_codes=("CORRECTION_THRESHOLD_REACHED",),
             evidence_refs=(
