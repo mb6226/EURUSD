@@ -107,6 +107,7 @@ class LifecycleRecoveryManager:
             details={"source": "runtime_revision_guard"},
         )
         return RecoveryStatus.RECONCILIATION
+
     def get_status(self, broker_server: str, symbol: str) -> RecoveryStatus:
         record = self._lifecycle_store.get_recovery_record(broker_server, symbol)
         if record is None:
