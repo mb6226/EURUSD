@@ -35,7 +35,7 @@ The package README's original scaffold statements predate Phases 18–22: determ
 | Learning | `feedback_engine.py`, `model_evaluator.py`, `performance_analyzer.py` are placeholders | Placeholder / no active learning |
 | Memory | memory README says market_memory.db and trade_memory.db are not created; folders are placeholders | Not implemented |
 | Knowledge/RAG | separate `knowledge_v2` package; integration notes say add-on, not wired into v1 main | Exists separately; runtime integration/governance incomplete |
-| Source registry | `source_registry` package with validated registry, typed adapters, controlled ingestion, append-only point-in-time store, and Phase 20–22 policy/macro/intermarket products | Shared manual ingestion and as-of foundations integrated for these specialists; automatic provider operations remain disabled |
+| Source registry | `source_registry` package with validated registry, typed adapters, controlled ingestion, append-only point-in-time store, and Phase 20–23 policy/macro/intermarket/positioning products | Shared manual ingestion and as-of foundations integrated for these specialists; automatic provider operations remain disabled |
 | Backtesting/replay | historical range retrieval and data folders exist; no comprehensive strategy/backtest/research harness evident in audited tree | Major gap |
 | Central intelligence | Phase 13 deterministic read-only aggregation of Phase 6–12 payloads | Foundation only; no applicability-aware multi-domain scenario brain |
 | Decision/execution | legacy decision path and signal manager; README says WAIT-only and execution disabled | Safe alert-only boundary; do not enable as part of this roadmap |
@@ -44,7 +44,7 @@ The package README's original scaffold statements predate Phases 18–22: determ
 
 The inspected `main.py` orchestrates MT5, market context, technical, Price Action, macro calendar, news, Fusion, setup/session eligibility, outcome tracking, market regime, and research intelligence. The monitoring loop does not yet invoke the Phase 18 quantitative, Phase 20 policy differential, Phase 21 macro fundamentals, Phase 22 intermarket, or Phase 23 positioning specialists automatically. Vision interpretation, learning placeholders, and knowledge-v2 RAG also remain disconnected. These new specialists expose deterministic, testable contracts and source/store integration, but are not yet live runtime participants.
 
-Current Fusion specialists include technical, Price Action, macro calendar, and news. Macro/news are context-only. The Phase 20–22 specialist outputs are not yet wired into Fusion or the monitoring runtime. Phase 13 synthesizes current specialist and historical descriptive outcome payloads; its contract says it is not a directional specialist, backtest, optimizer, or learner. Phase 14 adds evidence-lineage validation to the cycle, not missing specialist domains.
+Current Fusion specialists include technical, Price Action, macro calendar, and news. Macro/news are context-only. The Phase 20–23 specialist outputs are not yet wired into Fusion or the monitoring runtime. Phase 13 synthesizes current specialist and historical descriptive outcome payloads; its contract says it is not a directional specialist, backtest, optimizer, or learner. Phase 14 adds evidence-lineage validation to the cycle, not missing specialist domains.
 
 ## Architectural risks / gaps
 
