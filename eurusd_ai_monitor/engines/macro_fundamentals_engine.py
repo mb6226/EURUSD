@@ -138,15 +138,29 @@ class MacroFundamentalsEngine:
             if effective.day != 1 or effective.hour or effective.minute or effective.second or effective.microsecond:
                 raise ValueError("macro effective timestamp must be the first day of its reference month at 00:00 UTC")
             value = _decimal(row.get("value"), "macro value")
+            source_record_id = row.get("source_record_id")
+            version = row.get("version")
+            payload_sha256 = row.get("payload_sha256")
+            if not isinstance(source_record_id, str) or not source_record_id.strip():
+                raise ValueError("macro observation source_record_id is required")
+            if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+                raise ValueError("macro observation version must be a positive integer")
+            if not isinstance(payload_sha256, str) or len(payload_sha256) != 64 or any(
+                char not in "0123456789abcdef" for char in payload_sha256
+            ):
+                raise ValueError("macro observation payload_sha256 must be a lowercase SHA-256 digest")
             key = _month(effective)
             candidate = {
+                "source_id": source_id,
+                "product_id": product_id,
+                "unit": unit,
                 "value": value,
                 "effective_at_utc": effective,
                 "published_at_utc": published,
                 "retrieved_at_utc": retrieved,
-                "source_record_id": row.get("source_record_id"),
-                "version": row.get("version", 0),
-                "payload_sha256": row.get("payload_sha256"),
+                "source_record_id": source_record_id,
+                "version": version,
+                "payload_sha256": payload_sha256,
             }
             prior = latest.get(key)
             if prior is None or (
@@ -165,6 +179,9 @@ class MacroFundamentalsEngine:
     @staticmethod
     def _evidence(item: dict[str, Any]) -> dict[str, Any]:
         return {
+            "source_id": item["source_id"],
+            "product_id": item["product_id"],
+            "unit": item["unit"],
             "effective_at_utc": item["effective_at_utc"].isoformat(),
             "published_at_utc": item["published_at_utc"].isoformat(),
             "retrieved_at_utc": item["retrieved_at_utc"].isoformat(),
@@ -199,6 +216,10 @@ class MacroFundamentalsEngine:
                 "status": "STALE",
                 "reason_codes": ["INFLATION_CURRENT_OBSERVATION_STALE"],
                 "reference_month": f"{period[0]:04d}-{period[1]:02d}",
+                "provenance": {
+                    "us_current": self._evidence(us_now),
+                    "euro_area_current": self._evidence(ea_now),
+                },
             }
         if min(us_now["value"], us_prior["value"], ea_now["value"], ea_prior["value"]) <= 0:
             raise ValueError("CPI/HICP index values must be positive")
@@ -230,6 +251,10 @@ class MacroFundamentalsEngine:
                 "status": "STALE",
                 "reason_codes": ["UNEMPLOYMENT_CURRENT_OBSERVATION_STALE"],
                 "reference_month": f"{period[0]:04d}-{period[1]:02d}",
+                "provenance": {
+                    "us": self._evidence(us_item),
+                    "euro_area": self._evidence(ea_item),
+                },
             }
         gap = us_item["value"] - ea_item["value"]
         return {
