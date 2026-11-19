@@ -239,8 +239,11 @@ class MacroCalendarStore:
             raise ValueError("start_utc and end_utc must be ordered timezone-aware datetimes")
         if not 1 <= limit <= 2000:
             raise ValueError("limit must be between 1 and 2000")
-        start_date = start_utc.astimezone(timezone.utc).date().isoformat()
-        end_date = end_utc.astimezone(timezone.utc).date().isoformat()
+        start_day = start_utc.astimezone(timezone.utc).date()
+        end_day = end_utc.astimezone(timezone.utc).date()
+        # Include adjacent local calendar dates; final filtering uses the true UTC instant.
+        start_date = (start_day - timedelta(days=1)).isoformat()
+        end_date = (end_day + timedelta(days=1)).isoformat()
         clauses = ["scheduled_date >= ?", "scheduled_date <= ?"]
         params: list[object] = [start_date, end_date]
         if not include_cancelled:
@@ -255,8 +258,14 @@ class MacroCalendarStore:
         allowed = set(currencies)
         for row in rows:
             event = MacroEvent.from_dict(json.loads(row["payload_json"]))
-            if allowed.intersection(event.currency_codes):
-                results.append(event)
+            if not allowed.intersection(event.currency_codes):
+                continue
+            if event.scheduled_at_utc is not None:
+                if not (start_utc.astimezone(timezone.utc) <= event.scheduled_at_utc <= end_utc.astimezone(timezone.utc)):
+                    continue
+            elif not (start_day <= event.scheduled_date <= end_day):
+                continue
+            results.append(event)
         return tuple(results)
 
     def revision_count(self) -> int:
