@@ -102,6 +102,8 @@ class CorrectionLifecycle:
             _nonempty(getattr(self, name), name)
         if not isinstance(self.state, LifecycleState):
             raise TypeError("state must be a LifecycleState")
+        if not isinstance(self.trend_direction, TrendDirection):
+            raise TypeError("trend_direction must be a TrendDirection")
         if self.trend_direction not in (TrendDirection.UP, TrendDirection.DOWN):
             raise ValueError("lifecycle requires a directional trend")
         if not isinstance(self.impulse, Impulse):
@@ -133,6 +135,8 @@ class CorrectionLifecycle:
                 raise ValueError(f"{name} identity must match lifecycle")
             if ref.role is not EvidenceRole.CORRECTION:
                 raise ValueError(f"{name} must have the CORRECTION evidence role")
+            if ref.algorithm_version != self.algorithm_version or ref.parameter_version != self.parameter_version:
+                raise ValueError(f"{name} evidence versions must match lifecycle")
 
         if not isinstance(self.correction_pivots, tuple):
             raise TypeError("correction_pivots must be a tuple")
@@ -145,6 +149,10 @@ class CorrectionLifecycle:
                 raise ValueError("correction pivots must use M5")
             if candle.broker_server != self.broker_server or candle.symbol != self.symbol:
                 raise ValueError("correction pivot identity must match lifecycle")
+            if ref.role is not EvidenceRole.TREND_PIVOT:
+                raise ValueError("correction pivots must retain TREND_PIVOT evidence role")
+            if ref.algorithm_version != self.algorithm_version or ref.parameter_version != self.parameter_version:
+                raise ValueError("correction pivot evidence versions must match lifecycle")
             pivot_times.append(candle.candle_open_time_utc)
         if pivot_times != sorted(set(pivot_times)):
             raise ValueError("correction_pivots must be chronologically ordered")
@@ -168,6 +176,10 @@ class CorrectionLifecycle:
         )
         last_processed = _utc(self.last_processed_m5_utc, "last_processed_m5_utc")
         latest_processed_close = last_processed + timedelta(seconds=_M5_SECONDS)
+        if self.candidate_start_evidence.candle.candle_open_time_utc <= self.impulse.ended_at_utc:
+            raise ValueError("candidate start must follow the impulse terminal pivot")
+        if self.impulse.confirmed_at_utc > latest_processed_close:
+            raise ValueError("impulse cannot be confirmed after last processed candle")
         if self.candidate_start_evidence.candle.candle_open_time_utc > last_processed:
             raise ValueError("candidate start cannot follow last processed M5 candle")
         if candidate_at > latest_processed_close:
@@ -187,6 +199,8 @@ class CorrectionLifecycle:
             not isinstance(item, LifecycleWarning) for item in self.warnings
         ):
             raise TypeError("warnings must be a tuple of LifecycleWarning values")
+        if len(set(self.warnings)) != len(self.warnings):
+            raise ValueError("warnings must not contain duplicates")
 
         confirmed = (
             _utc(self.confirmed_at_utc, "confirmed_at_utc")
@@ -353,6 +367,8 @@ class TransitionResult:
             latest_close = self.lifecycle.last_processed_m5_utc + timedelta(seconds=_M5_SECONDS)
             if occurred > latest_close:
                 raise ValueError("transition cannot occur after the last processed M5 close")
+            if occurred < self.lifecycle.candidate_started_at_utc:
+                raise ValueError("transition cannot precede candidate creation")
 
     def to_dict(self) -> dict[str, Any]:
         return {
