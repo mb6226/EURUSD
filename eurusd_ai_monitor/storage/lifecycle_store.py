@@ -451,7 +451,7 @@ class LifecycleStore:
         _validate_identifier(lifecycle_id, "lifecycle_id")
         with closing(self._market_data_store._connect()) as connection:
             row = connection.execute(
-                "SELECT state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state WHERE lifecycle_id = ?",
+                "SELECT lifecycle_id, state, broker_server, symbol, snapshot_json FROM pa_lifecycle_state WHERE lifecycle_id = ?",
                 (lifecycle_id,),
             ).fetchone()
         if row is None:
@@ -459,7 +459,8 @@ class LifecycleStore:
         try:
             lifecycle = CorrectionLifecycle.from_dict(json.loads(row["snapshot_json"]))
             if (
-                lifecycle.state.value != row["state"]
+                lifecycle.lifecycle_id != row["lifecycle_id"]
+                or lifecycle.state.value != row["state"]
                 or lifecycle.broker_server != row["broker_server"]
                 or lifecycle.symbol != row["symbol"]
             ):
