@@ -46,6 +46,15 @@ class LifecycleRecoveryManager:
         details: dict[str, Any] = {}
         watermark = 0
         try:
+            previous = self._lifecycle_store.get_recovery_record(
+                broker_server, symbol
+            )
+            if previous is not None:
+                previous_status = RecoveryStatus(previous["status"])
+                if previous_status is not RecoveryStatus.NORMAL:
+                    # A blocked stream is sticky. Only a future explicit,
+                    # reviewed reconciliation workflow may clear it.
+                    return previous_status
             stream = self._lifecycle_store.load_stream_state(broker_server, symbol)
             watermark = stream.revision_watermark
             audited = self._lifecycle_store.audit_stream(broker_server, symbol)
