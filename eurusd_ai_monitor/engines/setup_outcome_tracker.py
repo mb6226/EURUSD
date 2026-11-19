@@ -4,8 +4,8 @@ from contextlib import closing
 from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-import sqlite3
 import json
+import sqlite3
 from zoneinfo import ZoneInfo
 
 from eurusd_ai_monitor.storage.market_data_store import Candle, TIMEFRAME_SECONDS

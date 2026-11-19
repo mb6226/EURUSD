@@ -81,7 +81,7 @@ class RegimeConditionedOutcomeEvaluator:
                 processed, evidence = int(row["candles_processed"]), int(row["evidence_count"])
                 if (not mfe.is_finite() or not mae.is_finite() or mfe < 0 or mae < 0
                         or processed <= 0 or processed != evidence):
-                    if processed == 0:
+                    if processed == 0 and evidence == 0:
                         no_evidence += 1
                     else:
                         integrity_errors += 1
