@@ -107,7 +107,7 @@ class RegimeConditionedOutcomeEvaluator:
                     or row["trend_direction"] not in {"UP", "DOWN", "UNKNOWN"}
                     or row["lower_timeframe_alignment"] not in {
                         "ALIGNED", "OPPOSED", "NEUTRAL", "UNAVAILABLE"
-                    }):
+                    } or not row["algorithm_version"]):
                 integrity_errors += 1
                 continue
             usable.append({
@@ -116,12 +116,17 @@ class RegimeConditionedOutcomeEvaluator:
                 "regime": str(row["regime"]),
                 "volatility": str(row["volatility_state"]),
                 "m1_alignment": str(row["lower_timeframe_alignment"]),
+                "algorithm_version": str(row["algorithm_version"]),
                 "mfe": mfe, "mae": mae,
             })
 
         groups = []
         dimensions = (
             ("REGIME", lambda x: x["regime"]),
+            ("ALGORITHM_VERSION_REGIME",
+             lambda x: (x["algorithm_version"], x["regime"])),
+            ("ALGORITHM_VERSION_REGIME_VOLATILITY",
+             lambda x: (x["algorithm_version"], x["regime"], x["volatility"])),
             ("VOLATILITY", lambda x: x["volatility"]),
             ("REGIME_VOLATILITY", lambda x: (x["regime"], x["volatility"])),
             ("SESSION_REGIME", lambda x: (x["session"], x["regime"])),
