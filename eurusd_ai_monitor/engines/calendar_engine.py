@@ -257,7 +257,13 @@ def parse_fomc_calendar_html(contents: str, as_of_date=None) -> list[dict]:
 
 def _impact(title: str, rules: dict[str, list[str]]) -> tuple[MacroImpact, str]:
     normalized = title.casefold()
+    exclude_high = any(
+        phrase.casefold() in normalized
+        for phrase in rules.get("EXCLUDE_HIGH", [])
+    )
     for level in ("HIGH", "MEDIUM", "LOW"):
+        if level == "HIGH" and exclude_high:
+            continue
         for phrase in rules.get(level, []):
             if phrase.casefold() in normalized:
                 return MacroImpact(level), f"title matched configured {level} rule: {phrase}"
@@ -476,6 +482,7 @@ class MacroCalendarEngine:
                 "age_seconds": age,
                 "event_count": state["event_count"] if state else 0,
                 "last_error_code": state["last_error_code"] if state else None,
+                "last_error_message": state["last_error_message"] if state else None,
             }
         serialized = []
         for event in events:
