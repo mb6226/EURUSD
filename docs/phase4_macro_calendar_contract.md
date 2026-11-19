@@ -14,10 +14,10 @@ The calendar is context-only:
 
 | Source | Format | Coverage | Time handling |
 |---|---|---|---|
-| BLS | Official iCalendar feed | U.S. labor, CPI, PPI and other BLS releases | `TZID` is honored; floating local times use `America/New_York` |
-| BEA | Official machine-readable JSON | GDP, Personal Income and Outlays, trade and other BEA releases | Offset-aware timestamps are converted to UTC; naive timestamps are rejected |
-| ECB | Official Governing Council calendar | EUR Governing Council and monetary-policy meeting dates | Date-only events remain date-only; the engine does not invent a time |
-| Federal Reserve | Official FOMC meeting calendar | USD policy-decision and strategy-meeting dates | The second meeting day is recorded as a date-only event; future meetings are marked tentative |
+| [BLS](https://www.bls.gov/schedule/news_release/bls.ics) | Official iCalendar feed | U.S. labor, CPI, PPI and other BLS releases | `TZID` is honored; floating local times use `America/New_York` |
+| [BEA](https://apps.bea.gov/API/signup/release_dates.json) | Official machine-readable JSON | GDP, Personal Income and Outlays, trade and other BEA releases | Offset-aware timestamps are converted to UTC; naive timestamps are rejected |
+| [ECB](https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html) | Official Governing Council calendar | EUR Governing Council and monetary-policy meeting dates | Date-only events remain date-only; the engine does not invent a time |
+| [Federal Reserve](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm) | Official FOMC meeting calendar | USD policy-decision and strategy-meeting dates | The second meeting day is recorded as a date-only event; future meetings are marked tentative |
 
 FOMC dates are represented on the second day of each two-day meeting; the official calendar does not provide a release time. Future FOMC dates are marked tentative until confirmed. Strategy-only meetings are labeled separately and are not mislabeled as rate decisions.
 
@@ -48,7 +48,7 @@ Impact tiers are transparent title-keyword rules in configuration, not an AI opi
 - Events missing from a later feed are not deleted or silently cancelled. Only an explicit source cancellation changes event status.
 - `macro_source_state` records last attempt, last success, event count and error details.
 - Failed refreshes preserve previously accepted events and the last successful timestamp. The published context marks the source `FAILED` or `STALE`.
-- The event database is separate from market and RAG storage.
+- The event database is separate from market and RAG storage. The existing `source_registry` contract is retained for time-series observations; scheduled events use their own schema rather than being coerced into observation records.
 
 ## Runtime integration
 
