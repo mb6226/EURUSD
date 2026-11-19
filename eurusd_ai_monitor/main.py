@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from threading import Lock, Thread
 from pathlib import Path
 
 import pandas as pd
@@ -20,10 +21,12 @@ from eurusd_ai_monitor.engines.market_context_builder import MarketContextBuilde
 from eurusd_ai_monitor.engines.price_action_coordinator import PriceActionCoordinator
 from eurusd_ai_monitor.engines.price_action_runtime import PriceActionRuntime
 from eurusd_ai_monitor.engines.lifecycle_recovery_manager import LifecycleRecoveryManager
+from eurusd_ai_monitor.engines.calendar_engine import MacroCalendarEngine
 from eurusd_ai_monitor.engines.technical_engine import TechnicalEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
+from eurusd_ai_monitor.storage.macro_calendar_store import MacroCalendarStore
 from eurusd_ai_monitor.storage.mt5_market_adapter import MT5MarketDataAdapter
 from eurusd_ai_monitor.alerts.signal_manager import SignalManager
 
@@ -222,6 +225,26 @@ def main():
         recovery_gate=recovery_manager,
     )
     recovered_streams = set()
+    macro_calendar_store = MacroCalendarStore()
+    macro_calendar_engine = MacroCalendarEngine.from_config(
+        macro_calendar_store,
+        ROOT / "calendar_sources.json",
+    )
+    calendar_refresh_lock = Lock()
+
+    def start_calendar_refresh() -> None:
+        if not calendar_refresh_lock.acquire(blocking=False):
+            return
+
+        def refresh_worker() -> None:
+            try:
+                macro_calendar_engine.refresh_due()
+            except Exception as exc:
+                print(f"[MACRO_CALENDAR] {type(exc).__name__}: {exc}")
+            finally:
+                calendar_refresh_lock.release()
+
+        Thread(target=refresh_worker, name="macro-calendar-refresh", daemon=True).start()
 
     connector.connect()
     print("[MONITOR] Alert-only mode. No order functions are present.")
@@ -235,6 +258,28 @@ def main():
                     timeframes=tuple(config["timeframes"]),
                     count=config["bars_to_fetch"],
                 )
+                try:
+                    start_calendar_refresh()
+                    macro_calendar_payload = macro_calendar_engine.build_context(
+                        now_utc=snapshot.timestamp_utc,
+                        horizon_hours=int(config.get("calendar_horizon_hours", 72)),
+                    )
+                except Exception as exc:
+                    macro_calendar_payload = {
+                        "status": "UNAVAILABLE",
+                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "horizon_hours": int(config.get("calendar_horizon_hours", 72)),
+                        "currencies": ["EUR", "USD"],
+                        "source_states": {},
+                        "stale_sources": ["CALENDAR_CONTEXT_UNAVAILABLE"],
+                        "upcoming_events": [],
+                        "event_count": 0,
+                        "high_impact_count": 0,
+                        "reason_code": "CALENDAR_CONTEXT_READ_FAILED",
+                        "reason": f"{type(exc).__name__}: {exc}",
+                        "trade_authority": "NONE",
+                        "decision_authority": "CONTEXT_ONLY",
+                    }
                 stream_key = (snapshot.broker_server, snapshot.symbol)
                 if stream_key not in recovered_streams:
                     recovery_manager.recover_stream(
@@ -314,6 +359,7 @@ def main():
                     "tick": tick,
                     "market_structure": structures,
                     "price_action_lifecycle": price_action_payload,
+                    "macro_calendar": macro_calendar_payload,
                     "technical_analysis": (
                         technical_analysis
                         if technical_analysis is not None

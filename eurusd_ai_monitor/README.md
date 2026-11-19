@@ -8,23 +8,25 @@ Alert-only starter for MetaTrader 5 + Python. It monitors EURUSD on M1 and M5.
 - Basic provisional range comparison: implemented for diagnostics only.
 - Chart screenshot exporter EA: included; attach it to one EURUSD M1 chart and one EURUSD M5 chart.
 - Actual vision-model interpretation: NOT YET CONNECTED.
-- Technical, news, calendar, fundamental, statistical, and learning modules are scaffolds only.
+- Technical structure and the persisted Price Action lifecycle are implemented with fail-closed recovery.
+- Macro calendar ingestion is implemented for official BLS, BEA, ECB, and Federal Reserve schedule sources; it is context-only and has no trade authority.
+- News, general fundamental analysis, statistical research, and learning modules remain scaffolds.
 - User's full Trend → Correction → Rejection → Pullback rules: NOT YET CODED.
 - BUY/SELL signal generation and order execution: DISABLED. The rules engine intentionally returns WAIT.
 
 Do not use this starter as a trading system or assume it has validated profitability.
 
 ## Project layout
-- `engines/`: MT5 data, screenshot validation, provisional price-action summary, decision engine, and future analysis-engine placeholders.
+- `engines/`: MT5 data, market context, Technical Engine, Price Action lifecycle/runtime, macro calendar context, screenshot validation, and remaining analysis-engine placeholders.
 - `alerts/`: JSONL signal logging.
-- `data/`: market snapshots and reserved news, calendar, screenshot, and historical-data folders.
+- `data/`: market snapshots, an independent SQLite macro calendar store, and reserved news, screenshot, and historical-data folders.
 - `knowledge/`: reserved for reviewed rules and analysis references.
 - `memory/`: reserved for future SQLite stores and analysis history.
 - `learning/`: feedback and evaluation placeholders; no online learning is active.
 - `logs/`: monitor output.
 - `mt5_ea/`: MetaTrader screenshot-exporter EA.
 
-The empty knowledge/data folders are placeholders. Screenshots continue to be read from MT5's `MQL5/Files` directory; they are not currently copied into `data/screenshots`. The memory database files are not created until their schemas are implemented.
+The knowledge folders remain placeholders. The macro calendar uses its own SQLite database under `data/calendar`; it does not share or mutate the market-data or RAG databases. Screenshots continue to be read from MT5's `MQL5/Files` directory; they are not currently copied into `data/screenshots`.
 
 ## Requirements
 - Windows desktop with MetaTrader 5 installed and logged in to a demo account.
@@ -56,6 +58,7 @@ The empty knowledge/data folders are placeholders. Screenshots continue to be re
 ## Next implementation steps
 1. Confirm broker symbol spelling (some brokers use EURUSD., EURUSDm, etc.).
 2. Validate data timestamps, broker server time, spread, and pip conversion.
-3. Connect a vision provider and make it return structured observations with evidence.
-4. Translate the user's exact entry rules into deterministic tests.
-5. Run replay/backtests and forward-test in alert-only mode before considering any order automation.
+3. Validate official macro-calendar source freshness and feed compatibility during local operation.
+4. Implement the remaining news and fundamental intelligence layers with official, provenance-preserving sources.
+5. Connect a vision provider only after its structured evidence contract is reviewed.
+6. Complete decision fusion, outcome tracking, replay/backtests and forward testing in alert-only mode.
