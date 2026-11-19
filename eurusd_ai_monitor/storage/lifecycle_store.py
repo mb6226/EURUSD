@@ -701,6 +701,157 @@ class LifecycleStore:
                 ) from exc
         return events
 
+
+    def record_recovery_status(
+        self,
+        broker_server: str,
+        symbol: str,
+        status: str,
+        reason_code: str,
+        revision_watermark: int,
+        checked_at_utc: datetime,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        """Atomically persist the latest fail-closed recovery assessment."""
+        _validate_identifier(broker_server, "broker_server")
+        _validate_identifier(symbol, "symbol")
+        _validate_identifier(status, "status")
+        _validate_identifier(reason_code, "reason_code")
+        self._validate_watermark(revision_watermark)
+        checked_text = _utc_text(checked_at_utc, "checked_at_utc")
+        details_json = _canonical_json(details or {})
+        with closing(self._market_data_store._connect()) as connection:
+            connection.execute(
+                """
+                INSERT INTO pa_lifecycle_recovery (
+                    broker_server, symbol, status, reason_code,
+                    revision_watermark, checked_at_utc, details_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(broker_server, symbol) DO UPDATE SET
+                    status = excluded.status,
+                    reason_code = excluded.reason_code,
+                    revision_watermark = excluded.revision_watermark,
+                    checked_at_utc = excluded.checked_at_utc,
+                    details_json = excluded.details_json
+                """,
+                (
+                    broker_server, symbol, status, reason_code,
+                    revision_watermark, checked_text, details_json,
+                ),
+            )
+            connection.commit()
+
+    def get_recovery_record(
+        self, broker_server: str, symbol: str
+    ) -> dict[str, Any] | None:
+        """Read the persisted recovery gate; missing state is never NORMAL."""
+        _validate_identifier(broker_server, "broker_server")
+        _validate_identifier(symbol, "symbol")
+        with closing(self._market_data_store._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT status, reason_code, revision_watermark,
+                       checked_at_utc, details_json
+                FROM pa_lifecycle_recovery
+                WHERE broker_server = ? AND symbol = ?
+                """,
+                (broker_server, symbol),
+            ).fetchone()
+        if row is None:
+            return None
+        try:
+            details = json.loads(row["details_json"])
+            if not isinstance(details, dict):
+                raise ValueError("recovery details must be a JSON object")
+            return {
+                "status": row["status"],
+                "reason_code": row["reason_code"],
+                "revision_watermark": int(row["revision_watermark"]),
+                "checked_at_utc": _timestamp_from_db(row["checked_at_utc"]),
+                "details": details,
+            }
+        except Exception as exc:
+            raise LifecycleIntegrityError("corrupt persisted recovery record") from exc
+
+    def audit_stream(self, broker_server: str, symbol: str) -> int:
+        """Validate every stored lifecycle snapshot and its append-only event chain."""
+        _validate_identifier(broker_server, "broker_server")
+        _validate_identifier(symbol, "symbol")
+        with closing(self._market_data_store._connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT lifecycle_id, state_version, state
+                FROM pa_lifecycle_state
+                WHERE broker_server = ? AND symbol = ?
+                ORDER BY lifecycle_id
+                """,
+                (broker_server, symbol),
+            ).fetchall()
+
+        audited = 0
+        for row in rows:
+            lifecycle_id = row["lifecycle_id"]
+            current = self.load_by_id(lifecycle_id)
+            if current is None:
+                raise LifecycleIntegrityError(
+                    f"lifecycle snapshot missing during audit: {lifecycle_id}"
+                )
+            events: list[LifecycleEvent] = []
+            after_sequence = 0
+            while True:
+                page = self.get_events(
+                    lifecycle_id, after_sequence=after_sequence, limit=500
+                )
+                if not page:
+                    break
+                events.extend(page)
+                after_sequence = page[-1].event_sequence
+                if len(page) < 500:
+                    break
+
+            expected_count = int(row["state_version"]) + 1
+            if len(events) != expected_count:
+                raise LifecycleIntegrityError(
+                    f"lifecycle {lifecycle_id} event count {len(events)} "
+                    f"does not match state_version {row['state_version']}"
+                )
+            previous_state = None
+            for index, event in enumerate(events, start=1):
+                transition = event.transition
+                event_lifecycle = transition.lifecycle
+                if event.event_sequence != index:
+                    raise LifecycleIntegrityError(
+                        f"lifecycle {lifecycle_id} event sequence is not contiguous"
+                    )
+                if event_lifecycle.lifecycle_id != lifecycle_id:
+                    raise LifecycleIntegrityError(
+                        f"lifecycle {lifecycle_id} event references another lifecycle"
+                    )
+                if event_lifecycle.state_version != index - 1:
+                    raise LifecycleIntegrityError(
+                        f"lifecycle {lifecycle_id} event state_version mismatch"
+                    )
+                if transition.previous_state is not previous_state:
+                    raise LifecycleIntegrityError(
+                        f"lifecycle {lifecycle_id} event previous_state chain mismatch"
+                    )
+                if index == 1 and transition.transition_type is not TransitionType.CREATED:
+                    raise LifecycleIntegrityError(
+                        f"lifecycle {lifecycle_id} does not begin with CREATED"
+                    )
+                previous_state = transition.current_state
+
+            if not events or previous_state is not current.state:
+                raise LifecycleIntegrityError(
+                    f"lifecycle {lifecycle_id} latest event differs from current snapshot"
+                )
+            if current.state_version != int(row["state_version"]):
+                raise LifecycleIntegrityError(
+                    f"lifecycle {lifecycle_id} indexed state_version mismatch"
+                )
+            audited += 1
+        return audited
+
     def get_last_processed(
         self,
         broker_server: str,
