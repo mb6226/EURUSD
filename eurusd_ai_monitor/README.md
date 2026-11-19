@@ -9,7 +9,7 @@ Alert-only starter for MetaTrader 5 + Python. It monitors EURUSD on M1 and M5.
 - Chart screenshot exporter EA: included; attach it to one EURUSD M1 chart and one EURUSD M5 chart.
 - Actual vision-model interpretation: NOT YET CONNECTED.
 - Technical structure and the persisted Price Action lifecycle are implemented with fail-closed recovery.
-- Macro calendar ingestion is implemented for official BLS, BEA, and ECB schedule sources; it is context-only and has no trade authority.
+- Macro calendar ingestion is implemented for official BLS, BEA, ECB, and Federal Reserve schedule sources; it is context-only and has no trade authority.
 - News, general fundamental analysis, statistical research, and learning modules remain scaffolds.
 - User's full Trend → Correction → Rejection → Pullback rules: NOT YET CODED.
 - BUY/SELL signal generation and order execution: DISABLED. The rules engine intentionally returns WAIT.
