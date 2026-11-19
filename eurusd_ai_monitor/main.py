@@ -43,6 +43,7 @@ from eurusd_ai_monitor.engines.regime_conditioned_outcome_evaluator import (
     RegimeConditionedOutcomeEvaluator,
 )
 from eurusd_ai_monitor.engines.market_regime_engine import MarketRegimeEngine
+from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -405,6 +406,9 @@ def main():
         minimum_group_samples=int(config.get("statistics_minimum_group_samples", 30)),
     )
     market_regime_engine = MarketRegimeEngine(pip_size=strategy_config.pip_size)
+    research_intelligence_engine = ResearchIntelligenceEngine(
+        max_current_age_seconds=int(config.get("research_intelligence_max_age_seconds", 300)),
+    )
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -690,8 +694,80 @@ def main():
                     macro_calendar_payload,
                     news_payload,
                 )
+                fusion_payload = fusion_assessment.to_dict()
+                research_sources = {
+                    "fusion_assessment": {
+                        "payload": fusion_payload,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": fusion_payload.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "market_regime_intelligence": {
+                        "payload": market_regime_report,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": market_regime_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "price_action_lifecycle": {
+                        "payload": price_action_payload,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": price_action_payload.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "setup_assessment": {
+                        "payload": setup_assessment,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": setup_assessment.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "session_eligibility": {
+                        "payload": session_eligibility,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": session_eligibility.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "setup_outcome_observation": {
+                        "payload": setup_outcome,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": setup_outcome.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "statistical_outcome_evaluation": {
+                        "payload": statistical_outcome_report,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": statistical_outcome_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                    "regime_conditioned_outcome_evaluation": {
+                        "payload": regime_conditioned_outcome_report,
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "evaluated_at_utc": regime_conditioned_outcome_report.get("evaluated_at_utc", snapshot.timestamp_utc.isoformat()),
+                    },
+                }
+                try:
+                    research_intelligence = research_intelligence_engine.build_report(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                        broker_server=snapshot.broker_server,
+                        symbol=snapshot.symbol,
+                        sources=research_sources,
+                    )
+                except Exception as exc:
+                    research_intelligence = {
+                        "status": "DEGRADED",
+                        "evaluated_at_utc": snapshot.timestamp_utc.isoformat(),
+                        "broker_server": snapshot.broker_server,
+                        "symbol": snapshot.symbol,
+                        "reason_codes": [
+                            f"RESEARCH_INTELLIGENCE_ERROR:{type(exc).__name__}"
+                        ],
+                        "decision_authority": "ASSESSMENT_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
                 payload = {
-                    "fusion_assessment": fusion_assessment.to_dict(),
+                    "fusion_assessment": fusion_payload,
+                    "research_intelligence": research_intelligence,
                     "symbol": snapshot.symbol,
                     "tick": tick,
                     "market_structure": structures,
