@@ -4,7 +4,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from eurusd_ai_monitor.engines.price_action_runtime import RecoveryStatus
-from eurusd_ai_monitor.engines.technical_engine import _strategy_parameter_version
+from eurusd_ai_monitor.engines.technical_engine import (
+    MARKET_STRUCTURE_ALGORITHM_VERSION,
+    _strategy_parameter_version,
+)
 from eurusd_ai_monitor.models.correction_lifecycle import CorrectionLifecycle
 from eurusd_ai_monitor.storage.lifecycle_store import (
     LifecycleIntegrityError,
@@ -59,14 +62,14 @@ class LifecycleRecoveryManager:
                         "current_revision_watermark": watermark,
                     })
                 elif (
-                    lifecycle.algorithm_version != config.algorithm_version
+                    lifecycle.algorithm_version != MARKET_STRUCTURE_ALGORITHM_VERSION
                     or lifecycle.parameter_version != _strategy_parameter_version(config)
                 ):
                     status = RecoveryStatus.QUARANTINED
                     reason = "ACTIVE_LIFECYCLE_VERSION_MISMATCH"
                     details.update({
                         "stored_algorithm_version": lifecycle.algorithm_version,
-                        "current_algorithm_version": config.algorithm_version,
+                        "current_algorithm_version": MARKET_STRUCTURE_ALGORITHM_VERSION,
                         "stored_parameter_version": lifecycle.parameter_version,
                         "current_parameter_version": _strategy_parameter_version(config),
                     })
