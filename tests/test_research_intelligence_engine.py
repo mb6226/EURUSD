@@ -200,6 +200,98 @@ class ResearchIntelligenceEngineTests(unittest.TestCase):
         self.assertEqual(state["source_status"], "INCOMPLETE")
         self.assertIn("M1_HISTORY_TOO_SHORT", state["reason_codes"])
 
+    def test_optional_macro_and_policy_sources_missing_remain_non_blocking(self):
+        items = sources()
+        for name in (
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+        ):
+            items[name] = {
+                "payload": {
+                    "status": "NOT_CONFIGURED",
+                    "evaluated_at_utc": NOW.isoformat(),
+                    "decision_authority": "ASSESSMENT_ONLY",
+                    "trade_authority": "NONE",
+                    "order_execution": "DISABLED",
+                },
+                "evaluated_at_utc": NOW.isoformat(),
+            }
+        result = self.engine.build_report(
+            evaluated_at_utc=NOW, broker_server="Broker", symbol="EURUSD",
+            sources=items,
+        )
+        self.assertNotEqual(result["status"], "BLOCKED")
+        for name in (
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+        ):
+            self.assertEqual(
+                result["current_context"][name]["source_status"], "MISSING"
+            )
+
+    def test_unavailable_macro_policy_intermarket_and_positioning_are_incomplete(self):
+        items = sources()
+        for name in (
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+            "intermarket_intelligence",
+            "positioning_sentiment_intelligence",
+        ):
+            items[name] = {
+                "payload": {
+                    "status": "UNAVAILABLE",
+                    "evaluated_at_utc": NOW.isoformat(),
+                    "reason_codes": ["NO_OBSERVATIONS"],
+                    "decision_authority": "ASSESSMENT_ONLY",
+                    "trade_authority": "NONE",
+                    "order_execution": "DISABLED",
+                },
+                "evaluated_at_utc": NOW.isoformat(),
+            }
+        result = self.engine.build_report(
+            evaluated_at_utc=NOW, broker_server="Broker", symbol="EURUSD",
+            sources=items,
+        )
+        self.assertNotEqual(result["status"], "BLOCKED")
+        for name in (
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+            "intermarket_intelligence",
+            "positioning_sentiment_intelligence",
+        ):
+            self.assertEqual(
+                result["current_context"][name]["source_status"], "INCOMPLETE"
+            )
+
+    def test_partial_macro_and_policy_sources_remain_incomplete_context(self):
+        items = sources()
+        for name in (
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+        ):
+            items[name] = {
+                "payload": {
+                    "status": "PARTIAL",
+                    "evaluated_at_utc": NOW.isoformat(),
+                    "reason_codes": ["TEST_PARTIAL"],
+                    "decision_authority": "ASSESSMENT_ONLY",
+                    "trade_authority": "NONE",
+                    "order_execution": "DISABLED",
+                },
+                "evaluated_at_utc": NOW.isoformat(),
+            }
+        result = self.engine.build_report(
+            evaluated_at_utc=NOW, broker_server="Broker", symbol="EURUSD",
+            sources=items,
+        )
+        for name in (
+            "macro_fundamentals_intelligence",
+            "policy_rate_differential_intelligence",
+        ):
+            self.assertEqual(
+                result["current_context"][name]["source_status"], "INCOMPLETE"
+            )
+
     def test_optional_intermarket_specialist_missing_does_not_break_legacy_cycle(self):
         result = self.build()
         self.assertEqual(result["status"], "COHERENT")

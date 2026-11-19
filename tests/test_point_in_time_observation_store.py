@@ -172,6 +172,51 @@ class PointInTimeObservationStoreTests(unittest.TestCase):
             with self.assertRaises(sqlite3.IntegrityError):
                 connection.execute("DELETE FROM observations")
 
+    def test_batched_as_of_read_returns_only_requested_point_in_time_products(self):
+        self.store.persist_fetch_result(result("100.0", stamp(2)))
+        self.store.persist_fetch_result(result("101.0", stamp(4)))
+        other = Observation(
+            source_id="OTHER_SOURCE", product_id="OTHER_PRODUCT",
+            value=Decimal("9"), unit="index", effective_at_utc=stamp(1),
+            published_at_utc=stamp(1), source_record_id="OTHER",
+        )
+        self.store.persist_fetch_result(FetchResult(
+            source_id="OTHER_SOURCE", product_id="OTHER_PRODUCT",
+            observations=(other,), source_url="https://example.org/data",
+            record_count=1, retrieved_at_utc=stamp(2),
+        ))
+
+        result_map = self.store.get_many_as_of(
+            [("TEST_SOURCE", "TEST_PRODUCT"), ("OTHER_SOURCE", "OTHER_PRODUCT"),
+             ("TEST_SOURCE", "TEST_PRODUCT")],
+            stamp(3),
+        )
+
+        self.assertEqual(set(result_map), {
+            ("TEST_SOURCE", "TEST_PRODUCT"), ("OTHER_SOURCE", "OTHER_PRODUCT")
+        })
+        self.assertEqual(result_map[("TEST_SOURCE", "TEST_PRODUCT")][0]["value"], "100.0")
+        self.assertEqual(result_map[("TEST_SOURCE", "TEST_PRODUCT")][0]["version"], 1)
+        self.assertEqual(result_map[("OTHER_SOURCE", "OTHER_PRODUCT")][0]["value"], "9")
+
+    def test_read_only_open_does_not_allow_persistence(self):
+        self.store.persist_fetch_result(result("101.2", stamp(2)))
+        reader = PointInTimeObservationStore.open_read_only(self.store.db_path)
+
+        self.assertEqual(
+            len(reader.get_many_as_of([("TEST_SOURCE", "TEST_PRODUCT")], stamp(3))
+                [("TEST_SOURCE", "TEST_PRODUCT")]),
+            1,
+        )
+        with self.assertRaises(sqlite3.OperationalError):
+            reader.persist_fetch_result(result("102.0", stamp(4)))
+
+    def test_read_only_open_missing_database_does_not_create_it(self):
+        missing = Path(self.temp.name) / "not-created.sqlite"
+        with self.assertRaises(FileNotFoundError):
+            PointInTimeObservationStore.open_read_only(missing)
+        self.assertFalse(missing.exists())
+
     def test_separate_sources_and_products_do_not_collide(self):
         self.store.persist_fetch_result(result("101.2", stamp(2)))
         other = Observation(

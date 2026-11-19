@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from threading import Lock, Thread
 from pathlib import Path
@@ -47,7 +47,16 @@ from eurusd_ai_monitor.engines.quantitative_market_statistics_engine import (
     QuantitativeMarketStatisticsEngine, QuantitativeThresholds,
 )
 from eurusd_ai_monitor.engines.liquidity_microstructure_engine import LiquidityMicrostructureEngine
-from eurusd_ai_monitor.engines.multi_domain_runtime import build_live_specialist_reports
+from eurusd_ai_monitor.engines.multi_domain_runtime import (
+    build_live_specialist_reports, build_live_fundamental_reports,
+)
+from eurusd_ai_monitor.engines.macro_fundamentals_engine import MacroFundamentalsEngine
+from eurusd_ai_monitor.engines.policy_rate_differential_engine import PolicyRateDifferentialEngine
+from eurusd_ai_monitor.engines.intermarket_intelligence_engine import IntermarketIntelligenceEngine
+from eurusd_ai_monitor.engines.positioning_sentiment_intelligence_engine import PositioningSentimentIntelligenceEngine
+from source_registry.observation_store import (
+    DEFAULT_OBSERVATION_DB, PointInTimeObservationStore,
+)
 from eurusd_ai_monitor.engines.research_intelligence_engine import ResearchIntelligenceEngine
 from eurusd_ai_monitor.engines.research_intelligence_runtime import build_research_intelligence_payload
 from eurusd_ai_monitor.engines.research_intelligence_sources import build_research_intelligence_sources
@@ -431,6 +440,25 @@ def main():
         minimum_samples=int(config.get("liquidity_minimum_samples", 20)),
         max_age_seconds=config.get("context_max_age_seconds", {"M1": 180, "M5": 900}),
     )
+    macro_fundamentals_engine = MacroFundamentalsEngine()
+    policy_rate_differential_engine = PolicyRateDifferentialEngine(
+        max_observation_age=timedelta(
+            days=int(config.get("policy_rate_max_observation_age_days", 60))
+        )
+    )
+    intermarket_intelligence_engine = IntermarketIntelligenceEngine()
+    positioning_sentiment_engine = PositioningSentimentIntelligenceEngine()
+    observation_store = None
+    observation_store_error = None
+    try:
+        observation_store = PointInTimeObservationStore.open_read_only(
+            DEFAULT_OBSERVATION_DB
+        )
+    except FileNotFoundError:
+        # No operational database is created by the monitor; sources remain explicit.
+        pass
+    except Exception as exc:
+        observation_store_error = exc
     research_intelligence_engine = ResearchIntelligenceEngine(
         max_current_age_seconds=int(config.get("research_intelligence_max_age_seconds", 300)),
     )
@@ -727,6 +755,15 @@ def main():
                     liquidity_engine=liquidity_microstructure_engine,
                     pip_size=strategy_config.pip_size,
                 )
+                live_specialist_reports.update(build_live_fundamental_reports(
+                    snapshot,
+                    observation_store=observation_store,
+                    macro_engine=macro_fundamentals_engine,
+                    policy_engine=policy_rate_differential_engine,
+                    intermarket_engine=intermarket_intelligence_engine,
+                    positioning_engine=positioning_sentiment_engine,
+                    observation_store_error=observation_store_error,
+                ))
                 research_sources = build_research_intelligence_sources(
                     {
                         "fusion_assessment": fusion_payload,

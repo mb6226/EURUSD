@@ -112,7 +112,7 @@ class ResearchIntelligenceRuntimeTests(unittest.TestCase):
             symbol="EURUSD",
             sources=sources,
         )
-        self.assertEqual(len(report["source_manifest"]), 12)
+        self.assertEqual(len(report["source_manifest"]), 14)
         manifest_sources = {item["source"] for item in report["source_manifest"]}
         self.assertIn("liquidity_microstructure_intelligence", manifest_sources)
         self.assertIs(sources["liquidity_microstructure_intelligence"]["payload"], payloads["liquidity_microstructure_intelligence"])

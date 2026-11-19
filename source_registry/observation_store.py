@@ -135,6 +135,7 @@ class PointInTimeObservationStore:
 
     def __init__(self, db_path: str | Path = DEFAULT_OBSERVATION_DB) -> None:
         self.db_path = Path(db_path).resolve()
+        self._read_only = False
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.db_path, timeout=30)
         try:
@@ -150,8 +151,41 @@ class PointInTimeObservationStore:
         finally:
             connection.close()
 
+    @classmethod
+    def open_read_only(cls, db_path: str | Path) -> "PointInTimeObservationStore":
+        """Open an existing observation database without creating or mutating it."""
+        path = Path(db_path).resolve()
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        instance = cls.__new__(cls)
+        instance.db_path = path
+        instance._read_only = True
+        connection = instance._connect()
+        try:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if version != SCHEMA_VERSION:
+                raise RuntimeError(
+                    f"Unsupported or uninitialized observation database schema version: {version}"
+                )
+            required = {"observations", "fetch_batches"}
+            present = {
+                row["name"] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            if not required.issubset(present):
+                raise RuntimeError("Observation database schema is incomplete")
+        finally:
+            connection.close()
+        return instance
+
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.db_path, timeout=30)
+        if getattr(self, "_read_only", False):
+            connection = sqlite3.connect(
+                self.db_path.as_uri() + "?mode=ro", uri=True, timeout=30
+            )
+        else:
+            connection = sqlite3.connect(self.db_path, timeout=30)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 30000")
@@ -340,6 +374,75 @@ class PointInTimeObservationStore:
                 ),
             )
         ]
+
+    def get_many_as_of(
+        self,
+        requests: list[tuple[str, str]],
+        as_of_utc: datetime,
+    ) -> dict[tuple[str, str], list[dict[str, Any]]]:
+        """Read several products in one point-in-time, read-only SQLite query."""
+        if not isinstance(requests, (list, tuple)):
+            raise TypeError("requests must be a list or tuple of (source_id, product_id)")
+        pairs = []
+        for pair in requests:
+            if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                raise ValueError("each request must contain source_id and product_id")
+            source_id, product_id = pair
+            if not isinstance(source_id, str) or not source_id.strip():
+                raise ValueError("source_id must be non-empty")
+            if not isinstance(product_id, str) or not product_id.strip():
+                raise ValueError("product_id must be non-empty")
+            normalized = (source_id, product_id)
+            if normalized not in pairs:
+                pairs.append(normalized)
+        if not pairs:
+            return {}
+        cutoff = _stamp(_utc(as_of_utc, "as_of_utc"))
+        pair_clause = " OR ".join("(source_id = ? AND product_id = ?)" for _ in pairs)
+        parameters: list[Any] = [value for pair in pairs for value in pair]
+        parameters.extend((cutoff, cutoff, cutoff))
+        query = (
+            "SELECT * FROM observations WHERE (" + pair_clause + ") "
+            "AND retrieved_at_utc <= ? AND published_at_utc IS NOT NULL "
+            "AND published_at_utc <= ? AND effective_at_utc <= ? "
+            "ORDER BY source_id, product_id, observation_key, retrieved_at_utc, version"
+        )
+        connection = self._connect()
+        try:
+            rows = connection.execute(query, parameters).fetchall()
+        finally:
+            connection.close()
+        latest: dict[tuple[str, str, str], sqlite3.Row] = {}
+        for row in rows:
+            key = (row["source_id"], row["product_id"], row["observation_key"])
+            current = latest.get(key)
+            if current is None or (
+                row["retrieved_at_utc"], row["version"]
+            ) > (
+                current["retrieved_at_utc"], current["version"]
+            ):
+                latest[key] = row
+        result = {pair: [] for pair in pairs}
+        for (source_id, product_id, _), row in latest.items():
+            result[(source_id, product_id)].append({
+                "source_id": row["source_id"],
+                "product_id": row["product_id"],
+                "observation_key": row["observation_key"],
+                "version": row["version"],
+                "effective_at_utc": row["effective_at_utc"],
+                "published_at_utc": row["published_at_utc"],
+                "retrieved_at_utc": row["retrieved_at_utc"],
+                "value": json.loads(row["value_json"]),
+                "unit": row["unit"],
+                "source_record_id": row["source_record_id"],
+                "source_url": row["source_url"],
+                "payload_sha256": row["payload_sha256"],
+            })
+        for values in result.values():
+            values.sort(key=lambda item: (
+                item["effective_at_utc"], item["observation_key"]
+            ))
+        return result
 
     def count_observations(self) -> int:
         connection = self._connect()
