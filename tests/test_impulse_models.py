@@ -30,7 +30,7 @@ def candle(index, high, low):
     )
 
 
-def evidence(index, high, low, confirmed_after_minutes=10):
+def evidence(index, high, low, confirmed_after_minutes=15):
     item = candle(index, high, low)
     return EvidenceRef(
         candle=item,
