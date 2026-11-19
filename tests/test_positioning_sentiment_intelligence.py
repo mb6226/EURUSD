@@ -44,13 +44,13 @@ class CFTCPositioningTests(unittest.TestCase):
   registry=load_registry()
   with tempfile.TemporaryDirectory() as directory:
    store=PointInTimeObservationStore(Path(directory)/"cftc.sqlite")
-   ingestion=SourceObservationIngestion(registry=registry,adapters=adapters,store=store,clock=lambda:datetime(2026,8,1,18,tzinfo=UTC))
+   ingestion=SourceObservationIngestion(registry=registry,adapters=adapters,store=store,clock=lambda:datetime(2026,7,25,18,tzinfo=UTC))
    for product in products:
     summary=ingestion.ingest(SOURCE_ID,product)
     self.assertEqual(summary.observations_received,30)
    self.assertEqual(store.count_observations(),90)
-   rows={p:store.get_as_of(SOURCE_ID,p,datetime(2026,8,2,tzinfo=UTC)) for p in products}
-  report=PositioningSentimentIntelligenceEngine().assess(as_of_utc=datetime(2026,8,2,tzinfo=UTC),observations=rows)
+   rows={p:store.get_as_of(SOURCE_ID,p,datetime(2026,7,26,tzinfo=UTC)) for p in products}
+  report=PositioningSentimentIntelligenceEngine().assess(as_of_utc=datetime(2026,7,26,tzinfo=UTC),observations=rows)
   self.assertEqual(report["status"],"AVAILABLE")
   self.assertEqual(set(report["groups"]),{"DEALER","ASSET_MANAGER","LEVERAGED_MONEY"})
 
