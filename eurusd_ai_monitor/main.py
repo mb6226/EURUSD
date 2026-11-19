@@ -33,6 +33,9 @@ from eurusd_ai_monitor.engines.setup_pattern_engine import SetupPatternEngine
 from eurusd_ai_monitor.engines.session_eligibility_engine import (
     SessionEligibilityRiskGate, SessionRiskStore,
 )
+from eurusd_ai_monitor.engines.setup_outcome_tracker import (
+    ObservationStore, SetupOutcomeTracker,
+)
 from eurusd_ai_monitor.strategy_config import load_strategy_config
 from eurusd_ai_monitor.storage.market_data_store import MarketDataStore
 from eurusd_ai_monitor.storage.lifecycle_store import LifecycleStore
@@ -381,6 +384,10 @@ def main():
         take_profit_pips=Decimal(str(risk_config["take_profit_pips"])),
         max_daily_risk_pips=Decimal(str(risk_config["max_daily_risk_pips"])),
     )
+    setup_outcome_tracker = SetupOutcomeTracker(
+        ObservationStore(data_dir / "setup_observations.sqlite3"),
+        pip_size=strategy_config.pip_size,
+    )
     lifecycle_store = LifecycleStore(market_store)
     recovery_manager = LifecycleRecoveryManager(lifecycle_store, market_store)
     price_action_runtime = PriceActionRuntime(
@@ -526,6 +533,24 @@ def main():
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     }
+                try:
+                    setup_outcome = setup_outcome_tracker.assess(
+                        evaluated_at_utc=snapshot.timestamp_utc,
+                        broker_server=snapshot.broker_server,
+                        symbol=snapshot.symbol,
+                        lifecycle_id=(active_lifecycle.lifecycle_id if active_lifecycle else None),
+                        setup_assessment=setup_assessment,
+                        session_eligibility=session_eligibility,
+                        m1_candles=snapshot.m1_candles,
+                    )
+                except Exception as exc:
+                    setup_outcome = {
+                        "status": "BLOCKED",
+                        "reason_code": f"SETUP_OUTCOME_ERROR:{type(exc).__name__}",
+                        "observation_type": "PRICE_EXCURSION_ONLY",
+                        "trade_authority": "NONE",
+                        "order_execution": "DISABLED",
+                    }
                 structures = {}
                 screenshots = {}
                 technical_analysis = None
@@ -602,6 +627,7 @@ def main():
                     "price_action_lifecycle": price_action_payload,
                     "setup_assessment": setup_assessment,
                     "session_eligibility": session_eligibility,
+                    "setup_outcome_observation": setup_outcome,
                     "macro_calendar": macro_calendar_payload,
                     "news_intelligence": news_payload,
                     "technical_analysis": (
