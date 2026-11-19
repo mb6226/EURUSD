@@ -42,7 +42,7 @@ def candle(index, high, low):
     )
 
 
-def evidence(index, high, low, role, confirmed_after_minutes=10):
+def evidence(index, high, low, role, confirmed_after_minutes=15):
     item = candle(index, high, low)
     return EvidenceRef(
         candle=item,
@@ -177,7 +177,7 @@ class TransitionResultModelTests(unittest.TestCase):
             previous_state=None,
             current_state=LifecycleState.CANDIDATE,
             lifecycle=candidate,
-            occurred_at_utc=candidate.candidate_started_at_utc,
+            occurred_at_utc=candidate.impulse.confirmed_at_utc,
             reason_codes=("COUNTERTREND_THRESHOLD_REACHED",),
             evidence_refs=(candidate.candidate_start_evidence,),
         )
