@@ -38,6 +38,7 @@ class LifecycleStateMachine:
         structure: TechnicalStructure,
         m5_candles: tuple[Candle, ...],
         expiry_bars: int = 30,
+        max_correction_ratio: Decimal = Decimal("0.80"),
     ) -> TransitionResult:
         if not isinstance(lifecycle, CorrectionLifecycle):
             raise TypeError("lifecycle must be a CorrectionLifecycle")
@@ -49,6 +50,13 @@ class LifecycleStateMachine:
             raise TypeError("m5_candles must be a tuple of Candle values")
         if type(expiry_bars) is not int or expiry_bars <= 0:
             raise ValueError("expiry_bars must be a positive integer")
+        if (
+            not isinstance(max_correction_ratio, Decimal)
+            or not max_correction_ratio.is_finite()
+            or max_correction_ratio <= 0
+            or max_correction_ratio > 1
+        ):
+            raise ValueError("max_correction_ratio must be a Decimal in (0, 1]")
 
         ordered = tuple(sorted(m5_candles, key=lambda c: c.candle_open_time_utc))
         if ordered != m5_candles:
@@ -146,7 +154,8 @@ class LifecycleStateMachine:
         fresh_pivots = tuple(
             pivot
             for pivot in structure.pivots
-            if pivot.evidence.candle.candle_open_time_utc >= candidate_open
+            if lifecycle.state is LifecycleState.CANDIDATE
+            and pivot.evidence.candle.candle_open_time_utc >= candidate_open
             and pivot.evidence.confirmed_at_utc <= structure.evaluated_at_utc
             and pivot.evidence.candle_id not in known_ids
         )
@@ -254,7 +263,7 @@ class LifecycleStateMachine:
             ) / lifecycle.impulse.pip_size
             ratio = depth / lifecycle.impulse.size_pips
             warnings = lifecycle.warnings
-            if ratio > Decimal("0.80") and LifecycleWarning.DEEP_CORRECTION not in warnings:
+            if ratio > max_correction_ratio and LifecycleWarning.DEEP_CORRECTION not in warnings:
                 warnings = warnings + (LifecycleWarning.DEEP_CORRECTION,)
             next_state = (
                 LifecycleState.DEEPENING
