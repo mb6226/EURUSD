@@ -78,11 +78,9 @@ class QuantitativeMarketStatisticsEngineTests(unittest.TestCase):
                 min(previous, close) - Decimal("0.00005"), close, 10, 1, 0,
             ))
             previous = close
-        # Use a separate valid M5 series and a timestamp after all M1 bars.
-        at = NOW + timedelta(minutes=1)
+        # The M1 series ends before NOW; the M5 window is independently aligned.
         report = self.engine.assess(snapshot(
-            rebuilt, make_candles("M5", 40, start=at - timedelta(minutes=200)),
-            at=at,
+            rebuilt, make_candles("M5", 40),
         ))
         stats = report["timeframes"]["M1"]
         self.assertGreater(Decimal(stats["positive_return_pct"]), 0)
