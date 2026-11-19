@@ -134,6 +134,41 @@ def _technical_structure_payload(structure) -> dict:
 def _price_action_runtime_payload(result, recovery_details: dict) -> dict:
     structure = result.technical_structure
     transition = result.transition
+    lifecycle = transition.lifecycle if transition is not None else None
+    lifecycle_payload = None
+    if lifecycle is not None:
+        lifecycle_payload = {
+            "lifecycle_id": lifecycle.lifecycle_id,
+            "state": lifecycle.state.value,
+            "trend_direction": lifecycle.trend_direction.value,
+            "impulse": {
+                "direction": lifecycle.impulse.direction.value,
+                "start_price": str(lifecycle.impulse.start_price),
+                "end_price": str(lifecycle.impulse.end_price),
+                "size_pips": str(lifecycle.impulse.size_pips),
+                "started_at_utc": lifecycle.impulse.started_at_utc.isoformat(),
+                "ended_at_utc": lifecycle.impulse.ended_at_utc.isoformat(),
+                "confirmed_at_utc": lifecycle.impulse.confirmed_at_utc.isoformat(),
+            },
+            "depth_pips": str(lifecycle.depth_pips),
+            "retracement_ratio": str(lifecycle.retracement_ratio),
+            "age_bars": lifecycle.age_bars,
+            "last_processed_m5_utc": lifecycle.last_processed_m5_utc.isoformat(),
+            "confirmed_at_utc": (
+                lifecycle.confirmed_at_utc.isoformat()
+                if lifecycle.confirmed_at_utc is not None else None
+            ),
+            "warnings": [warning.value for warning in lifecycle.warnings],
+            "algorithm_version": lifecycle.algorithm_version,
+            "parameter_version": lifecycle.parameter_version,
+            "evidence_candle_ids": [
+                lifecycle.impulse.start_pivot.candle_id,
+                lifecycle.impulse.end_pivot.candle_id,
+                lifecycle.candidate_start_evidence.candle_id,
+                lifecycle.extreme_evidence.candle_id,
+                *[ref.candle_id for ref in lifecycle.correction_pivots],
+            ],
+        }
     return {
         "status": result.status.value,
         "broker_server": result.broker_server,
@@ -145,6 +180,7 @@ def _price_action_runtime_payload(result, recovery_details: dict) -> dict:
             transition.transition_type.value if transition is not None else None
         ),
         "lifecycle_id": result.lifecycle_id,
+        "lifecycle_snapshot": lifecycle_payload,
         "lifecycle_state": (
             result.lifecycle_state.value if result.lifecycle_state is not None else None
         ),
@@ -253,10 +289,12 @@ def main():
                     or technical_error is not None
                     or price_action_blocked
                 ):
-                    decision_reasons = [
-                        technical_error or "Market context quality gate failed",
-                        *snapshot.quality.issues,
-                    ]
+                    decision_reasons = []
+                    if technical_error is not None:
+                        decision_reasons.append(technical_error)
+                    if not snapshot.quality.is_valid:
+                        decision_reasons.append("Market context quality gate failed")
+                        decision_reasons.extend(snapshot.quality.issues)
                     if price_action_blocked:
                         decision_reasons.extend(price_action_result.reason_codes)
                     decision = {
