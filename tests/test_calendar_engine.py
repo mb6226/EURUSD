@@ -11,6 +11,7 @@ from eurusd_ai_monitor.engines.calendar_engine import (
     parse_ecb_meeting_calendar_html,
     parse_fomc_calendar_html,
     parse_ics_events,
+    _impact,
 )
 from eurusd_ai_monitor.storage.macro_calendar_store import MacroCalendarStore
 
@@ -196,6 +197,35 @@ class MacroCalendarEngineTests(unittest.TestCase):
         engine.refresh_due()
         context = engine.build_context(self.now, horizon_hours=72)
         self.assertEqual(context["upcoming_events"][0]["impact"], "UNKNOWN")
+
+    def test_impact_exclusions_prevent_false_high_classification(self):
+        ecb_level, _ = _impact(
+            "Governing Council non-monetary policy meeting",
+            {
+                "HIGH": ["monetary policy meeting"],
+                "MEDIUM": [],
+                "LOW": ["non-monetary policy meeting"],
+                "EXCLUDE_HIGH": ["non-monetary policy meeting"],
+            },
+        )
+        regional_gdp_level, _ = _impact(
+            "Gross Domestic Product by State",
+            {
+                "HIGH": ["gross domestic product"],
+                "MEDIUM": [],
+                "LOW": ["state", "county"],
+                "EXCLUDE_HIGH": ["by state", "by county"],
+            },
+        )
+        self.assertEqual(ecb_level.value, "LOW")
+        self.assertEqual(regional_gdp_level.value, "LOW")
+
+    def test_rejects_naive_clock(self):
+        with self.assertRaisesRegex(CalendarSourceError, "timezone-aware"):
+            MacroCalendarEngine(
+                self.store, [self.source], fetcher=lambda url: ICS_FIXTURE,
+                clock=lambda: datetime(2026, 11, 19, 12),
+            ).refresh_due()
 
     def test_rejects_invalid_source_timezone(self):
         source = dict(self.source)
