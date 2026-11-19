@@ -66,7 +66,7 @@ class MacroFundamentalsEngineTests(unittest.TestCase):
         payload=inputs()
         payload["us_unemployment_observations"][-1]["effective_at_utc"]="2026-12-01T00:00:00Z"
         report=self.engine.assess(as_of_utc=AS_OF,**payload)
-        self.assertNotEqual(report["unemployment"]["reference_month"],"2026-10")
+        self.assertEqual(report["unemployment"]["status"],"UNAVAILABLE")
 
     def test_uses_latest_revision_known_at_cutoff(self):
         payload=inputs()
@@ -102,8 +102,12 @@ class MacroFundamentalsEngineTests(unittest.TestCase):
     def test_unemployment_requires_common_reference_month(self):
         payload=inputs()
         payload["ea_unemployment_observations"][-1]["effective_at_utc"]="2026-09-01T00:00:00Z"
+        payload["us_unemployment_observations"].append(
+            row("US_BLS_MACRO","US_UNEMPLOYMENT_RATE","4.1","2026-09","2026-10-02T13:30:00Z","2026-10-02T14:00:00Z","percent_of_labor_force")
+        )
         report=self.engine.assess(as_of_utc=AS_OF,**payload)
         self.assertEqual(report["unemployment"]["reference_month"],"2026-09")
+        self.assertEqual(report["unemployment"]["status"],"STALE")
 
     def test_partial_report_preserves_available_dimension(self):
         payload=inputs()
