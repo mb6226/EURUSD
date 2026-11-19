@@ -574,6 +574,21 @@ def main():
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     }
+                structures = {}
+                screenshots = {}
+                technical_analysis = None
+                technical_structure = None
+                technical_error = None
+                if snapshot.quality.is_valid:
+                    try:
+                        technical_structure = technical_engine.analyze_snapshot(snapshot)
+                        technical_analysis = _technical_structure_payload(technical_structure)
+                    except Exception as exc:
+                        technical_error = (
+                            f"TechnicalEngine failed: {type(exc).__name__}: {exc}"
+                        )
+                else:
+                    technical_error = "Market context quality gate failed"
                 try:
                     if technical_structure is None:
                         market_regime_report = {
@@ -597,21 +612,6 @@ def main():
                         "trade_authority": "NONE",
                         "order_execution": "DISABLED",
                     }
-                structures = {}
-                screenshots = {}
-                technical_analysis = None
-                technical_structure = None
-                technical_error = None
-                if snapshot.quality.is_valid:
-                    try:
-                        technical_structure = technical_engine.analyze_snapshot(snapshot)
-                        technical_analysis = _technical_structure_payload(technical_structure)
-                    except Exception as exc:
-                        technical_error = (
-                            f"TechnicalEngine failed: {type(exc).__name__}: {exc}"
-                        )
-                else:
-                    technical_error = "Market context quality gate failed"
                 for tf in config["timeframes"]:
                     candles = getattr(snapshot, f"{tf.lower()}_candles", ())
                     frame = _candles_frame(candles)
