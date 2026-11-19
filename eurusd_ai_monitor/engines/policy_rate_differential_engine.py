@@ -96,7 +96,7 @@ class PolicyRateDifferentialEngine:
                 "reason_codes": ["POLICY_RATE_EVIDENCE_EXCEEDS_MAX_AGE"],
                 "stale_products": stale,
                 "max_observation_age_seconds": int(self._max_age.total_seconds()),
-                "provenance": self._provenance(ecb, fed),
+                "provenance": self._provenance(ecb, fed, cutoff),
             }
 
         ecb_rate = ecb["value"]
@@ -175,7 +175,7 @@ class PolicyRateDifferentialEngine:
         )
 
     @staticmethod
-    def _provenance(ecb: Mapping[str, Any], fed: Mapping[str, Any]) -> dict[str, Any]:
+    def _provenance(ecb: Mapping[str, Any], fed: Mapping[str, Any], cutoff: datetime) -> dict[str, Any]:
         def compact(item: Mapping[str, Any]) -> dict[str, Any]:
             return {
                 "effective_at_utc": item["effective_at_utc"].isoformat(),
@@ -187,5 +187,5 @@ class PolicyRateDifferentialEngine:
         return {
             "eur_reference": {"source_id": ECB_SOURCE, "product_id": ECB_PRODUCT, **compact(ecb)},
             "usd_reference": {"source_id": FED_SOURCE, "product_id": FED_PRODUCT, **compact(fed)},
-            "point_in_time_cutoff_utc": None,
+            "point_in_time_cutoff_utc": cutoff.isoformat(),
         }
