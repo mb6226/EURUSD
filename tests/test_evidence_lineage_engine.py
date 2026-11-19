@@ -130,13 +130,17 @@ class EvidenceLineageEngineTests(unittest.TestCase):
             "provenance": {"m5_candle_ids": [self.m5_id],
                            "m1_confirmation_candle_ids": [self.m1_id]}
         }})
-        self.assertEqual(result["status"], "TRACEABLE")
+        self.assertEqual(result["status"], "PARTIAL")
+        item = next(x for x in result["source_manifest"] if x["source"] == "market_regime_intelligence")
+        self.assertEqual(item["status"], "TRACEABLE")
 
     def test_lifecycle_can_reference_mixed_timeframes(self):
         result = self.audit({"price_action_lifecycle": {
             "lifecycle_snapshot": {"evidence_candle_ids": [self.m5_id, self.m1_id]}
         }})
-        self.assertEqual(result["status"], "TRACEABLE")
+        self.assertEqual(result["status"], "PARTIAL")
+        item = next(x for x in result["source_manifest"] if x["source"] == "price_action_lifecycle")
+        self.assertEqual(item["status"], "TRACEABLE")
 
     def test_duplicate_inventory_id_degrades(self):
         result = self.audit(inventory=self.inventory + [self.inventory[0]])
@@ -163,7 +167,7 @@ class EvidenceLineageEngineTests(unittest.TestCase):
 
     def test_orphaned_candles_are_reported_not_failed(self):
         result = self.audit({"setup_assessment": {"rejection": {"candle_id": self.m1_id}}})
-        self.assertEqual(result["status"], "TRACEABLE")
+        self.assertEqual(result["status"], "PARTIAL")
         self.assertEqual(result["reference_coverage"]["orphaned_inventory_count"], 1)
 
     def test_builder_uses_stable_evidence_id_format(self):
