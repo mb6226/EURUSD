@@ -1,0 +1,79 @@
+{
+  "acceptance": {
+    "all_registry_auto_fetch_false": true,
+    "compileall_passed": true,
+    "full_suite_passed": true,
+    "full_suite_tests": 671,
+    "git_diff_check_passed": true,
+    "offline_unit_tests": 10
+  },
+  "data_plane": {
+    "enabled_product_count": 23,
+    "quality_eligible_product_count": 3,
+    "registered_source_count": 9,
+    "snapshot_sha256": "2b07780b2fa247d3e9b91ff6e0c4e0007107ed3796ff8c4bd4e027b42863573a",
+    "spot_archive_schema_version": 3,
+    "spot_archive_status": "PROVENANCE_UNAVAILABLE",
+    "status": "PARTIAL"
+  },
+  "generated_at_utc": "2026-11-20T02:20:11.077106Z",
+  "operational_boundaries": {
+    "database_migration_or_mutation": false,
+    "fusion_or_live_order_wiring": false,
+    "monitor_restart": false,
+    "network_requests": false,
+    "provider_activation": false,
+    "rag_mutation": false,
+    "risk_or_strategy_changes": false,
+    "trade_authority": "NONE"
+  },
+  "phase": "39",
+  "regime_assessment": {
+    "algorithm_version": "multidomain-market-regime-v1",
+    "as_of_utc": "2026-11-20T02:20:11.077106Z",
+    "available_context_domains": [
+      "positioning_sentiment"
+    ],
+    "decision_authority": "ASSESSMENT_ONLY",
+    "domain_coverage": {
+      "intermarket": {
+        "eligible_products": 0,
+        "observation_count": 0,
+        "status": "BLOCKED"
+      },
+      "macro_fundamentals": {
+        "eligible_products": 0,
+        "observation_count": 0,
+        "status": "BLOCKED"
+      },
+      "monetary_policy": {
+        "eligible_products": 0,
+        "observation_count": 0,
+        "status": "BLOCKED"
+      },
+      "positioning_sentiment": {
+        "eligible_products": 3,
+        "observation_count": 153,
+        "status": "ELIGIBLE"
+      },
+      "spot_fx": {
+        "eligible_products": 0,
+        "observation_count": 0,
+        "status": "BLOCKED"
+      }
+    },
+    "market_regime": "UNKNOWN",
+    "order_execution": "DISABLED",
+    "reason_codes": [
+      "NO_QUALITY_ELIGIBLE_EURUSD_M5_STREAM"
+    ],
+    "regime_status": "INSUFFICIENT_EVIDENCE",
+    "report_type": "MULTI_DOMAIN_MARKET_REGIME_INTELLIGENCE",
+    "snapshot_sha256": "2b07780b2fa247d3e9b91ff6e0c4e0007107ed3796ff8c4bd4e027b42863573a",
+    "status": "INSUFFICIENT_EVIDENCE",
+    "trade_authority": "NONE",
+    "trend_direction": "UNKNOWN",
+    "volatility_state": "UNKNOWN"
+  },
+  "title": "Multi-Domain Market Regime Intelligence"
+}

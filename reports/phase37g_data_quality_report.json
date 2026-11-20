@@ -1,0 +1,832 @@
+{
+  "report_type": "MULTI_DOMAIN_DATA_QUALITY_AND_REVISION_REPORT",
+  "version": "1.0.0",
+  "as_of_utc": "2026-11-20T02:00:00Z",
+  "product_count": 23,
+  "status_counts": {
+    "PASS": 3,
+    "STALE": 0,
+    "BLOCKED": 20,
+    "UNASSESSED": 0
+  },
+  "eligible_product_count": 3,
+  "products": [
+    {
+      "source_id": "BROKER_SPOT_REFERENCE",
+      "product_id": "EURUSD_SPOT_REFERENCE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "CFTC_TFF_POSITIONING",
+      "product_id": "EURO_FX_ASSET_MANAGER_NET_OI_PCT",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "PASS",
+      "quality_score": 100,
+      "observation_count": 51,
+      "latest_effective_at_utc": "2026-11-10T00:00:00Z",
+      "freshness_age_days": 10.083,
+      "freshness_threshold_days": 21,
+      "freshness": "FRESH",
+      "blocking_issue_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": true,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "CFTC_TFF_POSITIONING",
+      "product_id": "EURO_FX_DEALER_NET_OI_PCT",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "PASS",
+      "quality_score": 100,
+      "observation_count": 51,
+      "latest_effective_at_utc": "2026-11-10T00:00:00Z",
+      "freshness_age_days": 10.083,
+      "freshness_threshold_days": 21,
+      "freshness": "FRESH",
+      "blocking_issue_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": true,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "CFTC_TFF_POSITIONING",
+      "product_id": "EURO_FX_LEVERAGED_MONEY_NET_OI_PCT",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "PASS",
+      "quality_score": 100,
+      "observation_count": 51,
+      "latest_effective_at_utc": "2026-11-10T00:00:00Z",
+      "freshness_age_days": 10.083,
+      "freshness_threshold_days": 21,
+      "freshness": "FRESH",
+      "blocking_issue_count": 0,
+      "warning_count": 0,
+      "issues": [],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": true,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "ECB_INTERMARKET",
+      "product_id": "DE_10Y_GOVERNMENT_YIELD",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "ECB_POLICY_RATES",
+      "product_id": "ECB_DEPOSIT_FACILITY_RATE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 180,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "ECB_POLICY_RATES",
+      "product_id": "ECB_MAIN_REFINANCING_RATE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 180,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "ECB_POLICY_RATES",
+      "product_id": "ECB_MARGINAL_LENDING_RATE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 180,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "EUROSTAT_MACRO",
+      "product_id": "EA_HICP_ALL_ITEMS_INDEX",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 75,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "EUROSTAT_MACRO",
+      "product_id": "EA_UNEMPLOYMENT_RATE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 75,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FED_FOMC_POLICY",
+      "product_id": "FED_TARGET_RANGE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 180,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "BRENT_CRUDE_OIL_PRICE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "EURUSD_DAILY_REFERENCE_RATE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "SP500_INDEX",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "USD_BROAD_TRADE_WEIGHTED_INDEX",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "US_10Y_REAL_TREASURY_YIELD",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "US_10Y_TREASURY_YIELD",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "US_2Y_TREASURY_YIELD",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "US_VIX_CLOSE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "FRED_INTERMARKET",
+      "product_id": "WTI_CRUDE_OIL_PRICE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "LBMA_INTERMARKET",
+      "product_id": "GOLD_USD_TROY_OUNCE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 5,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "US_BLS_MACRO",
+      "product_id": "US_CPI_ALL_ITEMS_INDEX",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 75,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    },
+    {
+      "source_id": "US_BLS_MACRO",
+      "product_id": "US_UNEMPLOYMENT_RATE",
+      "as_of_utc": "2026-11-20T02:00:00Z",
+      "status": "BLOCKED",
+      "quality_score": 75,
+      "observation_count": 0,
+      "latest_effective_at_utc": null,
+      "freshness_age_days": null,
+      "freshness_threshold_days": 75,
+      "freshness": "UNKNOWN",
+      "blocking_issue_count": 1,
+      "warning_count": 0,
+      "issues": [
+        {
+          "code": "NO_OBSERVATIONS",
+          "severity": "BLOCKER",
+          "detail": "no point-in-time eligible observations were supplied"
+        }
+      ],
+      "revision_history": {
+        "observation_keys_with_revisions": 0,
+        "revision_count": 0,
+        "max_absolute_value_delta": null,
+        "revision_policy": "APPEND_ONLY_LATEST_VERSION_SELECTED_BY_AS_OF_READ"
+      },
+      "eligible_for_downstream_analytics": false,
+      "policy": {
+        "no_values_corrected_or_imputed": true,
+        "unknown_publication_time_blocks_eligibility": true,
+        "future_or_lookahead_evidence_blocks_eligibility": true,
+        "revision_history_is_append_only": true,
+        "thresholds_are_frequency_defaults_not_economic_truth_bounds": true
+      }
+    }
+  ],
+  "policy": {
+    "read_only_assessment": true,
+    "no_network_requests": true,
+    "no_database_mutation": true,
+    "no_automatic_repair_or_imputation": true,
+    "no_point_in_time_filter_bypass": true,
+    "quality_gate_not_yet_wired_into_fusion": true
+  },
+  "operational_snapshot": {
+    "observation_store_opened_read_only": true,
+    "observations_db_path": "C:\\Users\\mahdi\\Downloads\\EURUSD-AI-Intelligent-Market-Brain\\source_registry\\operational\\observations.sqlite",
+    "production_db_mutated": false,
+    "raw_archive_read": false,
+    "vision_enabled": false,
+    "auto_fetch_enabled": false,
+    "live_monitor_restarted": false
+  },
+  "validation": {
+    "focused_regression_tests": 42,
+    "full_unittest_suite": 648,
+    "full_suite_status": "PASS",
+    "compileall": "PASS",
+    "registry_validation": "PASS",
+    "sqlite_integrity": {
+      "observations.sqlite": "ok",
+      "raw_snapshots.sqlite": "ok",
+      "market_data.sqlite": "ok"
+    },
+    "git_diff_check": "PASS"
+  }
+}

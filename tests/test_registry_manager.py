@@ -97,7 +97,7 @@ class RegistryManagerTests(unittest.TestCase):
         result = self.manager.sync()
 
         self.assertEqual(result.sources_added, 9)
-        self.assertEqual(result.products_added, 17)
+        self.assertEqual(result.products_added, 23)
         with state_connection(self.db_path) as connection:
             source_statuses = {
                 row["status"]

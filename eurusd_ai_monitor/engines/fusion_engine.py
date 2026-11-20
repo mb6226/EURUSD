@@ -33,13 +33,15 @@ class DirectionalAgreement(str, Enum):
 
 
 _DIRECTIONAL_SPECIALISTS = frozenset({"technical", "price_action"})
-_CONTEXT_ONLY_SPECIALISTS = frozenset({"macro_calendar", "news"})
+_CONTEXT_ONLY_SPECIALISTS = frozenset({"macro_calendar", "news", "visual"})
+_OPTIONAL_SPECIALISTS = frozenset({"visual"})
 _REQUIRED_SPECIALISTS = (
     "technical",
     "price_action",
     "macro_calendar",
     "news",
 )
+_SUPPORTED_SPECIALISTS = frozenset(_REQUIRED_SPECIALISTS) | _OPTIONAL_SPECIALISTS
 
 
 def _utc(value: datetime, field: str) -> datetime:
@@ -65,7 +67,7 @@ class SpecialistEvidence:
     """Normalized, provenance-aware output from one specialist.
 
     Direction is permitted only for technical and price-action evidence.
-    Macro and news are context-only and cannot vote on market direction.
+    Macro, news, and visual observations are context-only and cannot vote.
     """
 
     specialist: str
@@ -78,7 +80,7 @@ class SpecialistEvidence:
     context_flags: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if self.specialist not in _REQUIRED_SPECIALISTS:
+        if self.specialist not in _SUPPORTED_SPECIALISTS:
             raise ValueError("unsupported specialist")
         if not isinstance(self.status, EvidenceStatus):
             raise TypeError("status must be EvidenceStatus")

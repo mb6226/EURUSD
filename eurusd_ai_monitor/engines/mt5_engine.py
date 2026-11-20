@@ -12,12 +12,21 @@ TIMEFRAME_MAP = {
 }
 
 class MT5Connector:
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: str, terminal_path: str | Path | None = None):
         self.symbol = symbol
+        self.terminal_path = Path(terminal_path).expanduser() if terminal_path else None
         self.connected = False
 
     def connect(self) -> None:
-        if not mt5.initialize():
+        if self.terminal_path is not None:
+            if not self.terminal_path.is_file():
+                raise FileNotFoundError(
+                    f"Configured MT5 terminal executable does not exist: {self.terminal_path}"
+                )
+            initialized = mt5.initialize(str(self.terminal_path))
+        else:
+            initialized = mt5.initialize()
+        if not initialized:
             raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
         info = mt5.terminal_info()
         if info is None:
@@ -50,6 +59,32 @@ class MT5Connector:
         if info is None:
             raise RuntimeError("MT5 terminal info unavailable")
         return Path(info.data_path)
+
+    def market_data_metadata(self) -> dict:
+        """Return read-only terminal/symbol metadata used to qualify bar provenance."""
+        if not self.connected:
+            raise RuntimeError("MT5 connector is not connected")
+        info = mt5.symbol_info(self.symbol)
+        chart_mode = getattr(info, "chart_mode", None) if info is not None else None
+        bid_mode = getattr(mt5, "SYMBOL_CHART_MODE_BID", 0)
+        last_mode = getattr(mt5, "SYMBOL_CHART_MODE_LAST", 1)
+        if chart_mode == bid_mode:
+            price_basis = "BID"
+        elif chart_mode == last_mode:
+            price_basis = "LAST"
+        else:
+            price_basis = "UNKNOWN"
+        version = mt5.version()
+        return {
+            "price_basis": price_basis,
+            "chart_mode_code": chart_mode,
+            "digits": getattr(info, "digits", None) if info is not None else None,
+            "point": getattr(info, "point", None) if info is not None else None,
+            "trade_tick_size": getattr(info, "trade_tick_size", None) if info is not None else None,
+            "terminal_version": list(version) if version else None,
+            "python_package_version": getattr(mt5, "__version__", None),
+            "bar_time_basis": "UTC",
+        }
 
     def tick(self) -> dict:
         tick = mt5.symbol_info_tick(self.symbol)

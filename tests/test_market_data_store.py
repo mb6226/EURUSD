@@ -55,13 +55,15 @@ class MarketDataStoreTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 )
             }
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 4)
 
         self.assertEqual(
             tables,
             {
                 "candles",
                 "candle_revisions",
+                "candle_ingestion_runs",
+                "candle_versions",
                 "backfill_checkpoints",
                 "pa_lifecycle_state",
                 "pa_lifecycle_events",
@@ -147,11 +149,13 @@ class MarketDataStoreTests(unittest.TestCase):
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 )
             }
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 4)
         self.assertIn("backfill_checkpoints", tables)
         self.assertIn("pa_lifecycle_state", tables)
         self.assertIn("pa_lifecycle_events", tables)
         self.assertIn("pa_lifecycle_recovery", tables)
+        self.assertIn("candle_versions", tables)
+        self.assertIn("candle_ingestion_runs", tables)
 
     def test_v2_market_database_migrates_without_losing_market_data(self):
         legacy_path = Path(self.temp_dir.name) / "v2_market.sqlite"
@@ -174,15 +178,81 @@ class MarketDataStoreTests(unittest.TestCase):
             [candle],
         )
         with closing(sqlite3.connect(legacy_path)) as db:
-            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 3)
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 4)
             tables = {
                 row[0] for row in db.execute(
                     "SELECT name FROM sqlite_master WHERE type = 'table'"
                 )
             }
         self.assertTrue({
-            "pa_lifecycle_state", "pa_lifecycle_events", "pa_lifecycle_recovery"
+            "pa_lifecycle_state", "pa_lifecycle_events", "pa_lifecycle_recovery",
+            "candle_versions", "candle_ingestion_runs",
         }.issubset(tables))
+
+    def test_v3_market_database_migrates_to_immutable_candle_versions(self):
+        legacy_path = Path(self.temp_dir.name) / "v3_market.sqlite"
+        MarketDataStore(legacy_path)
+        with closing(sqlite3.connect(legacy_path)) as db:
+            db.execute("DROP TABLE candle_versions")
+            db.execute("DROP TABLE candle_ingestion_runs")
+            db.execute("PRAGMA user_version = 3")
+            db.commit()
+        migrated = MarketDataStore(legacy_path)
+        self.assertEqual(migrated.db_path, legacy_path)
+        with closing(sqlite3.connect(legacy_path)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 4)
+            tables = {r[0] for r in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertIn("candle_versions", tables)
+        self.assertIn("candle_ingestion_runs", tables)
+
+    def test_candle_versions_are_idempotent_versioned_and_append_only(self):
+        candle = self.make_candle()
+        first_seen = datetime(2026, 11, 17, 12, 2, tzinfo=timezone.utc)
+        self.store.upsert_candles(
+            [candle], as_of_utc=first_seen, observed_at_utc=first_seen,
+            source_id="MT5_COPY_RATES",
+            provenance={"price_basis": "BID", "bar_time_basis": "UTC"},
+        )
+        # Re-fetching identical data records a run but does not duplicate a version.
+        repeated = first_seen + timedelta(minutes=1)
+        self.store.upsert_candles(
+            [candle], as_of_utc=repeated, observed_at_utc=repeated,
+            source_id="MT5_COPY_RATES",
+            provenance={"price_basis": "BID", "bar_time_basis": "UTC"},
+        )
+        corrected = self.make_candle(close="1.08070", high="1.08120")
+        corrected_at = repeated + timedelta(minutes=1)
+        self.store.upsert_candles(
+            [corrected], as_of_utc=corrected_at, observed_at_utc=corrected_at,
+            source_id="MT5_COPY_RATES",
+            provenance={"price_basis": "BID", "bar_time_basis": "UTC"},
+        )
+        with closing(sqlite3.connect(self.db_path)) as db:
+            versions = db.execute(
+                "SELECT values_json, observed_at_utc, source_id FROM candle_versions "
+                "ORDER BY version_id"
+            ).fetchall()
+            runs = db.execute(
+                "SELECT row_count, batch_sha256, provenance_json "
+                "FROM candle_ingestion_runs ORDER BY observed_at_utc"
+            ).fetchall()
+            self.assertEqual(len(versions), 2)
+            self.assertEqual(len(runs), 3)
+            self.assertEqual(runs[0][0], 1)
+            self.assertEqual(len(runs[0][1]), 64)
+            self.assertEqual(json.loads(runs[0][2])["price_basis"], "BID")
+            self.assertEqual(json.loads(versions[0][0])["close"], "1.08050")
+            self.assertEqual(json.loads(versions[1][0])["close"], "1.08070")
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute("UPDATE candle_versions SET source_id='tampered'")
+            db.rollback()
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute("DELETE FROM candle_versions")
+            db.rollback()
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute("UPDATE candle_ingestion_runs SET source_id='tampered'")
+            db.rollback()
 
     def test_lifecycle_events_are_append_only(self):
         with closing(sqlite3.connect(self.db_path)) as db:

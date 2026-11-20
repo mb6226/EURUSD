@@ -1,0 +1,160 @@
+{
+  "acceptance": {
+    "all_source_auto_fetch_false": true,
+    "archive_replay_smoke_completed": true,
+    "archive_replay_smoke_forecast_records": 6,
+    "archive_replay_smoke_outcomes_matured": 0,
+    "automatic_promotion": false,
+    "automatic_training_or_tuning": false,
+    "commit_merge": "NOT_PERFORMED",
+    "compileall_passed": true,
+    "focused_phase51_tests": 13,
+    "forecast_replay_ledger_readback_tests": 2,
+    "full_suite_passed": true,
+    "full_suite_tests": 820,
+    "git_diff_check_passed": true,
+    "legacy_candles_promoted": 0,
+    "live_models_modified": false,
+    "market_archive_integrity_ok": true,
+    "market_archive_schema_migrated_to_v4": true,
+    "monitor_restarted_with_v4_code": true,
+    "production_reports_read_only": true,
+    "report_json_validated": true,
+    "research_ledger_created": false,
+    "risk_or_order_controls_changed": false,
+    "verified_pre_migration_backup": true,
+    "versioned_ingestion_verified": true,
+    "vision_disabled": true
+  },
+  "archive_replay_smoke": {
+    "forecast_cutoff_count": 2,
+    "forecast_record_count": 6,
+    "interpretation": "Real versioned MT5 inputs generated forecast records; target outcomes have not matured yet.",
+    "outcome_available_count": 0,
+    "persisted": false,
+    "status": "COMPLETE",
+    "strict_integrity_policy_present": true
+  },
+  "blocker_codes": [
+    "15M_OOS_RESEARCH_GATE_NOT_MET",
+    "1H_OOS_RESEARCH_GATE_NOT_MET",
+    "4H_OOS_RESEARCH_GATE_NOT_MET",
+    "COMPLETE_POINT_IN_TIME_REPLAY_REQUIRED",
+    "CROSS_DOMAIN_ATTRIBUTION_UNAVAILABLE",
+    "REPLAY_IDENTITY_OR_SOURCE_HASH_MISSING",
+    "REPLAY_INTEGRITY_POLICY_UNVERIFIED",
+    "WALK_FORWARD_EVIDENCE_UNAVAILABLE"
+  ],
+  "decision_authority": "RESEARCH_GOVERNANCE_ONLY",
+  "engine_version": "continuous-learning-research-v1",
+  "horizon_gates": {
+    "15M": {
+      "attribution_sample_count": 0,
+      "attribution_status": "BLOCKED_NO_VALID_REPLAY",
+      "live_promotion": "PROHIBITED",
+      "status": "BLOCKED_OR_INSUFFICIENT",
+      "walk_forward_fold_count": 0,
+      "walk_forward_sample_count": 0,
+      "walk_forward_status": "BLOCKED_NO_VALID_REPLAY"
+    },
+    "1H": {
+      "attribution_sample_count": 0,
+      "attribution_status": "BLOCKED_NO_VALID_REPLAY",
+      "live_promotion": "PROHIBITED",
+      "status": "BLOCKED_OR_INSUFFICIENT",
+      "walk_forward_fold_count": 0,
+      "walk_forward_sample_count": 0,
+      "walk_forward_status": "BLOCKED_NO_VALID_REPLAY"
+    },
+    "4H": {
+      "attribution_sample_count": 0,
+      "attribution_status": "BLOCKED_NO_VALID_REPLAY",
+      "live_promotion": "PROHIBITED",
+      "status": "BLOCKED_OR_INSUFFICIENT",
+      "walk_forward_fold_count": 0,
+      "walk_forward_sample_count": 0,
+      "walk_forward_status": "BLOCKED_NO_VALID_REPLAY"
+    }
+  },
+  "inputs": {
+    "attribution_status": "BLOCKED",
+    "replay_status": "REPLAY_WINDOW_REQUIRED",
+    "same_replay_and_source_required": true,
+    "walk_forward_status": "BLOCKED"
+  },
+  "learning_policy": {
+    "automatic_model_promotion": false,
+    "automatic_parameter_tuning": false,
+    "automatic_training": false,
+    "candidate_state": "RESEARCH_ONLY",
+    "horizons_pooled": false,
+    "live_model_mutation": false,
+    "probabilities_or_confidence_synthesized": false,
+    "promotion_authority": "NONE",
+    "replay_integrity_required": true,
+    "same_source_history_required_for_comparison": true
+  },
+  "limitations": [
+    "This phase governs repeatable research; it does not train a model or claim continuous improvement.",
+    "A completed replay, walk-forward evidence and contemporaneous attribution are prerequisites for a research-ready horizon.",
+    "Model comparisons must pin identical replay/source history, horizon, evaluation window and immutable candidate code/parameter hashes.",
+    "Research evidence is not live-trading evidence and cannot authorize orders or alter risk.",
+    "Human review and a separate explicitly authorized deployment process are required before any future promotion."
+  ],
+  "market_archive": {
+    "backup": {
+      "integrity": "ok",
+      "legacy_candle_count": 1180,
+      "path": "C:\\Users\\mahdi\\Downloads\\EURUSD-AI-Intelligent-Market-Brain\\eurusd_ai_monitor\\data\\market\\market_data.sqlite.pre-v4-20261120T040115Z.bak",
+      "schema_version": 3
+    },
+    "candle_projection_count": 1194,
+    "ingestion_run_count": 330,
+    "integrity": "ok",
+    "legacy_candles_promoted": 0,
+    "pre_migration_backup_candle_count": 1180,
+    "schema_version": 4,
+    "versioned_candle_count": 1024,
+    "versioned_ingestion_verified": true,
+    "versioned_streams": [
+      {
+        "broker_server": "Headway-Real",
+        "symbol": "EURUSD",
+        "timeframe": "M1",
+        "version_count": 517
+      },
+      {
+        "broker_server": "Headway-Real",
+        "symbol": "EURUSD",
+        "timeframe": "M5",
+        "version_count": 507
+      }
+    ]
+  },
+  "order_execution": "DISABLED",
+  "phase": 51,
+  "production_preflight": {
+    "phase45_blocker": "REPLAY_WINDOW_REQUIRED",
+    "phase45_status": "REPLAY_WINDOW_REQUIRED",
+    "phase49_status": "BLOCKED",
+    "phase50_status": "BLOCKED",
+    "production_research_records_created": false,
+    "research_ledger_created": false
+  },
+  "replay_id": null,
+  "report_type": "EURUSD_CONTINUOUS_LEARNING_RESEARCH",
+  "research_cycle_id": "cf06c680f428c00b46f9f69e4f02245de05df775b182c90d0e935abbc6737a99",
+  "research_loop": [
+    "REGISTER_VERSIONED_HYPOTHESIS",
+    "PIN_CODE_PARAMETER_AND_SOURCE_HASHES",
+    "RUN_STRICT_POINT_IN_TIME_REPLAY",
+    "EVALUATE_WALK_FORWARD_OUT_OF_SAMPLE",
+    "ASSESS_CONTEMPORANEOUS_CROSS_DOMAIN_CONTEXT",
+    "COMPARE_AGAINST_IDENTICAL_BASELINE_AND_DATA",
+    "RECORD_REPRODUCIBLE_FINDINGS",
+    "HUMAN_REVIEW_REQUIRED_FOR_ANY_FUTURE_PROMOTION"
+  ],
+  "source_history_sha256": null,
+  "status": "BLOCKED",
+  "trade_authority": "NONE"
+}

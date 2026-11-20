@@ -60,6 +60,19 @@ class CalendarParserTests(unittest.TestCase):
         self.assertIsNone(records[1]["scheduled_at_utc"])
         self.assertEqual(records[1]["status"], "CANCELLED")
 
+    def test_ics_parser_normalizes_legacy_us_eastern_tzid(self):
+        ics = (
+            "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:legacy-eastern\n"
+            "DTSTART;TZID=US-Eastern:20261120T083000\n"
+            "SUMMARY:Employment Situation\nEND:VEVENT\nEND:VCALENDAR"
+        )
+        record = parse_ics_events(ics, "UTC")[0]
+        self.assertEqual(
+            record["scheduled_at_utc"],
+            datetime(2026, 11, 20, 13, 30, tzinfo=timezone.utc),
+        )
+        self.assertEqual(record["source_timezone"], "US-Eastern")
+
     def test_ics_parser_rejects_empty_and_unterminated_feeds(self):
         with self.assertRaises(CalendarSourceError):
             parse_ics_events("", "UTC")
@@ -105,6 +118,7 @@ class CalendarParserTests(unittest.TestCase):
         self.assertEqual(by_date["2027-01-27"]["status"], "TENTATIVE")
         self.assertIn("strategy meeting", by_date["2027-10-27"]["title"])
         self.assertIsNone(by_date["2027-10-27"]["scheduled_at_utc"])
+        self.assertEqual(len({item["source_event_id"] for item in records}), len(records))
 
     def test_ecb_html_parser_extracts_meeting_dates_without_inventing_times(self):
         html = """
@@ -118,6 +132,8 @@ class CalendarParserTests(unittest.TestCase):
         self.assertEqual(len(records), 3)
         self.assertTrue(all(item["scheduled_at_utc"] is None for item in records))
         self.assertIn("monetary policy meeting", records[1]["title"])
+        self.assertNotEqual(records[1]["source_event_id"], records[2]["source_event_id"])
+        self.assertEqual(len({item["source_event_id"] for item in records}), len(records))
 
 
 class MacroCalendarEngineTests(unittest.TestCase):

@@ -314,6 +314,50 @@ class CentralScenarioIntelligenceTests(unittest.TestCase):
             self.assertFalse(forbidden.intersection(scenario))
         self.assertEqual(result["order_execution"], "DISABLED")
 
+
+    def test_new_pit_domains_are_context_only_and_never_directional_votes(self):
+        sources = base_sources()
+        sources["point_in_time_market_regime"] = report(
+            "INSUFFICIENT_EVIDENCE", market_regime="UNKNOWN", volatility_state="UNKNOWN"
+        )
+        sources["point_in_time_quantitative_statistics"] = report(
+            "INSUFFICIENT_EVIDENCE", timeframes={}, excluded_timeframes={"M1": "NO_QUALITY_ELIGIBLE_STREAM"}
+        )
+        sources["session_time_intelligence"] = report(
+            "PARTIAL", active_reference_sessions=["LONDON"], historical_session_coverage={}
+        )
+        sources["cross_domain_relationship_intelligence"] = report(
+            "INSUFFICIENT_EVIDENCE", relationship_count=0, available_relationship_count=0, relationships=[]
+        )
+        sources["unified_historical_data_plane"] = report(
+            "PARTIAL", read_mode="STRICT_SYSTEM_KNOWLEDGE", snapshot_sha256="a" * 64,
+            quality_eligible_product_count=3
+        )
+        result = self.assess(sources)
+        self.assertEqual(result["directional_assessment"]["state"], "UP")
+        self.assertFalse(result["cross_domain_context"]["point_in_time_market_regime"]["directional_vote"])
+        self.assertFalse(result["cross_domain_context"]["point_in_time_quantitative_statistics"]["directional_vote"])
+        self.assertFalse(result["cross_domain_context"]["session_time"]["directional_vote"])
+        self.assertFalse(result["cross_domain_context"]["cross_domain_relationships"]["directional_vote"])
+        self.assertEqual(result["cross_domain_context"]["cross_domain_relationships"]["relationship_count"], 0)
+
+    def test_shared_price_lineage_is_not_counted_as_independent_confirmation(self):
+        sources = base_sources()
+        sources["point_in_time_market_regime"] = report("INSUFFICIENT_EVIDENCE")
+        sources["point_in_time_quantitative_statistics"] = report("INSUFFICIENT_EVIDENCE")
+        sources["session_time_intelligence"] = report("PARTIAL")
+        sources["cross_domain_relationship_intelligence"] = report("INSUFFICIENT_EVIDENCE")
+        result = self.assess(sources)
+        group = result["evidence_dependency_map"]["groups"]["EURUSD_BROKER_PRICE_LINEAGE"]
+        self.assertGreaterEqual(group["member_count"], 5)
+        self.assertEqual(group["independent_votes"], 0)
+        self.assertTrue(group["shared_lineage_warning"])
+        self.assertIsNone(result["scenario_assessment_contract"]["numeric_probability"])
+        relationship_group = result["evidence_dependency_map"]["groups"]["CROSS_DOMAIN_RELATIONSHIP_DERIVED_LINEAGE"]
+        self.assertEqual(relationship_group["independent_votes"], 0)
+        self.assertTrue(relationship_group["shared_lineage_warning"])
+        self.assertIn("intermarket", relationship_group["derived_from_domains"])
+
     def test_invalid_engine_inputs_fail_closed(self):
         with self.assertRaises(ValueError):
             self.engine.assess(

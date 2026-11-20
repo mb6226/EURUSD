@@ -1,23 +1,40 @@
 {
-  "symbol": "EURUSD",
-  "timeframes": ["M1", "M5"],
-  "poll_seconds": 2,
-  "bars_to_fetch": 300,
-  "screenshot_max_age_seconds": 30,
-  "spread_warning_pips": 2.0,
-  "pip_size": 0.0001,
-  "alert_only": true,
-  "risk": {
-    "stop_loss_pips": 5,
-    "take_profit_pips": 50,
-    "max_daily_risk_pips": 10,
-    "one_position_per_session": true,
-    "trailing_stop": false
-  },
-  "sessions": ["London", "New York"],
-  "vision": {
-    "enabled": false,
-    "mode": "both",
-    "note": "Vision provider is intentionally not connected in this starter. Add a provider after selecting the model/API."
-  }
+    "symbol":  "EURUSD",
+    "mt5_terminal_path":  "C:\\Program Files\\Headway MT5 Terminal\\terminal64.exe",
+    "timeframes":  [
+                       "M1",
+                       "M5"
+                   ],
+    "poll_seconds":  2,
+    "bars_to_fetch":  300,
+    "screenshot_max_age_seconds":  30,
+    "spread_warning_pips":  2.0,
+    "pip_size":  0.0001,
+    "alert_only":  true,
+    "risk":  {
+                 "stop_loss_pips":  5,
+                 "take_profit_pips":  50,
+                 "max_daily_risk_pips":  10,
+                 "one_position_per_session":  true,
+                 "trailing_stop":  false
+             },
+    "sessions":  [
+                     "London",
+                     "New York"
+                 ],
+    "vision":  {
+                   "enabled":  false,
+                   "provider":  "ollama-local",
+                   "base_url":  "http://127.0.0.1:11434",
+                   "model":  "qwen2.5vl:7b",
+                   "mode":  "both",
+                   "max_image_width":  960,
+                   "max_image_height":  540,
+                   "jpeg_quality":  82,
+                   "analysis_interval_seconds":  240,
+                   "max_result_age_seconds":  360,
+                   "request_timeout_seconds":  120,
+                   "max_output_tokens":  180,
+                   "note":  "Local-only vision inference. Screenshots are sent only to Ollama on this machine."
+               }
 }

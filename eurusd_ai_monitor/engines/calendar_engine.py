@@ -18,6 +18,13 @@ class CalendarSourceError(ValueError):
     """Raised when an official calendar payload cannot be safely normalized."""
 
 
+# A small set of legacy TZID labels observed in official iCalendar feeds.
+# Keep the original label in event metadata; normalize only for UTC conversion.
+_TZID_ALIASES = {
+    "US-Eastern": "America/New_York",
+}
+
+
 class _TextExtractor(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -52,8 +59,9 @@ def _parse_ics_datetime(value: str, params: dict[str, str], default_timezone: st
     else:
         parsed = datetime.strptime(value, "%Y%m%dT%H%M%S")
         tz_name = params.get("TZID", default_timezone)
+        zone_name = _TZID_ALIASES.get(tz_name, tz_name)
         try:
-            parsed = parsed.replace(tzinfo=ZoneInfo(tz_name))
+            parsed = parsed.replace(tzinfo=ZoneInfo(zone_name))
         except ZoneInfoNotFoundError as exc:
             raise CalendarSourceError(f"unknown iCalendar timezone: {tz_name}") from exc
     return parsed.date(), parsed.astimezone(timezone.utc)
@@ -191,7 +199,7 @@ def parse_ecb_meeting_calendar_html(contents: str) -> list[dict]:
         else:
             meeting_kind = "COUNCIL_EVENT"
         records.append({
-            "source_event_id": f"ECB|{scheduled_date.year:04d}-{scheduled_date.month:02d}|{meeting_kind}",
+            "source_event_id": f"ECB|{scheduled_date.isoformat()}|{meeting_kind}",
             "title": title,
             "description": "Official ECB meeting calendar. The page provides a date; no release time is inferred.",
             "scheduled_date": scheduled_date,
@@ -248,7 +256,7 @@ def parse_fomc_calendar_html(contents: str, as_of_date=None) -> list[dict]:
             )
             status = "TENTATIVE" if scheduled_date >= today else "CONFIRMED"
             records.append({
-                "source_event_id": f"FOMC|{year:04d}-{month:02d}",
+                "source_event_id": f"FOMC|{scheduled_date.isoformat()}",
                 "title": title,
                 "description": (
                     "Official FOMC calendar lists a two-day meeting. The event is dated on day 2; "

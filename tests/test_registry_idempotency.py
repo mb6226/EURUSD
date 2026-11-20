@@ -49,7 +49,7 @@ class RegistryIdempotencyTests(unittest.TestCase):
             second_snapshot = snapshot_database(db_path)
 
             self.assertEqual(first.sources_added, 9)
-            self.assertEqual(first.products_added, 17)
+            self.assertEqual(first.products_added, 23)
             self.assertEqual(second.sources_added, 0)
             self.assertEqual(second.products_added, 0)
             self.assertEqual(first_snapshot, second_snapshot)
@@ -66,9 +66,9 @@ class RegistryIdempotencyTests(unittest.TestCase):
 
                 expected_counts = {
                     "source_state": 9,
-                    "product_state": 17,
+                    "product_state": 23,
                     "source_status_history": 9,
-                    "product_status_history": 17,
+                    "product_status_history": 23,
                     "source_runs": 0,
                     "source_run_attempts": 0,
                 }

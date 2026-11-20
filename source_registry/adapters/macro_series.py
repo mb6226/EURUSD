@@ -20,7 +20,7 @@ MACRO_SERIES_UNITS = {
     (EUROSTAT_SOURCE_ID, "EA_UNEMPLOYMENT_RATE"): "percent_of_labor_force",
 }
 MACRO_SERIES_URLS = {
-    US_BLS_SOURCE_ID: "https://www.bls.gov/data/",
+    US_BLS_SOURCE_ID: "https://api.bls.gov/publicAPI/v1/timeseries/data/",
     EUROSTAT_SOURCE_ID: "https://ec.europa.eu/eurostat/data/database",
 }
 

@@ -17,7 +17,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from eurusd_ai_monitor.engines.mt5_engine import MT5Connector
 from eurusd_ai_monitor.engines.price_action_engine import summarize_structure
-from eurusd_ai_monitor.engines.vision_engine import inspect_screenshot
+from eurusd_ai_monitor.engines.vision_engine import (
+    LocalOllamaVisionProvider, VisionRuntime, inspect_screenshot,
+)
 from eurusd_ai_monitor.engines.decision_engine import evaluate
 from eurusd_ai_monitor.engines.fusion_engine import (
     EvidenceDirection, EvidenceStatus, FusionEngine, SpecialistEvidence,
@@ -295,9 +297,12 @@ def _fusion_evidence(
     raw_reasons = payload.get("reason_codes", ())
     if not raw_reasons and payload.get("reason_code"):
         raw_reasons = (payload["reason_code"],)
-    reasons = tuple(str(value) for value in raw_reasons if value)
+    reasons = tuple(dict.fromkeys(str(value) for value in raw_reasons if value))
+    source_ids = tuple(dict.fromkeys(source_ids))
+    evidence_ids = tuple(dict.fromkeys(str(value) for value in evidence_ids if value))
+    context_flags = tuple(dict.fromkeys(context_flags))
     normalized_direction = (
-        direction if specialist in {"macro_calendar", "news"}
+        direction if specialist in {"macro_calendar", "news", "visual"}
         else (direction if status is EvidenceStatus.AVAILABLE else EvidenceDirection.UNKNOWN)
     )
     return SpecialistEvidence(
@@ -320,6 +325,7 @@ def _build_fusion_assessment(
     price_action_payload: dict,
     macro_calendar_payload: dict,
     news_payload: dict,
+    screenshots: dict | None = None,
 ):
     technical_payload = technical_analysis or {
         "status": "UNAVAILABLE",
@@ -378,6 +384,60 @@ def _build_fusion_assessment(
         if isinstance(item, dict) and item.get("candle_id")
     )
 
+    visual_reports = screenshots or {}
+    visual_flags = []
+    visual_evidence_ids = []
+    visual_times = []
+    visual_available_count = 0
+    visual_directions = []
+    for timeframe in ("M1", "M5"):
+        screenshot = visual_reports.get(timeframe, {})
+        latest = screenshot.get("latest_analysis") or {}
+        analysis = latest.get("analysis") or {}
+        if latest.get("status") == "ANALYZED" and latest.get("is_recent") is True:
+            visual_available_count += 1
+            direction_label = str(analysis.get("observed_direction", "UNCLEAR")).upper()
+            quality_label = str(analysis.get("chart_quality", "DEGRADED")).upper()
+            visual_flags.append(f"VISUAL_{timeframe}_DIRECTION_{direction_label}")
+            visual_directions.append(direction_label)
+            visual_flags.append(f"VISUAL_{timeframe}_QUALITY_{quality_label}")
+            image_digest = latest.get("image_sha256")
+            if image_digest:
+                visual_evidence_ids.append(
+                    f"mt5-vision:{timeframe}:{str(image_digest)[:16]}"
+                )
+            if latest.get("evaluated_at_utc"):
+                visual_times.append(latest["evaluated_at_utc"])
+        else:
+            state = str(screenshot.get("analysis_status", "UNAVAILABLE")).upper()
+            visual_flags.append(f"VISUAL_{timeframe}_ANALYSIS_{state}")
+    if (
+        (technical_vote is EvidenceDirection.UP and "DOWN" in visual_directions)
+        or (technical_vote is EvidenceDirection.DOWN and "UP" in visual_directions)
+    ):
+        visual_flags.append("VISUAL_TECHNICAL_DIRECTION_DISAGREEMENT")
+    if (
+        pa_status == "AVAILABLE"
+        and (
+            (pa_direction is EvidenceDirection.UP and "DOWN" in visual_directions)
+            or (pa_direction is EvidenceDirection.DOWN and "UP" in visual_directions)
+        )
+    ):
+        visual_flags.append("VISUAL_PRICE_ACTION_DIRECTION_DISAGREEMENT")
+    visual_status = (
+        "AVAILABLE" if visual_available_count == 2
+        else "DEGRADED" if visual_available_count > 0
+        else "UNAVAILABLE"
+    )
+    visual_payload = {
+        "status": visual_status,
+        "source_id": "ollama-local:qwen2.5vl:7b",
+        "evaluated_at_utc": max(visual_times) if visual_times else snapshot.timestamp_utc.isoformat(),
+        "reason_codes": (
+            () if visual_available_count == 2
+            else ("VISUAL_EVIDENCE_PARTIAL" if visual_available_count else "VISUAL_EVIDENCE_UNAVAILABLE",)
+        ),
+    }
     evidence = (
         _fusion_evidence(
             "technical", technical_payload, direction=technical_vote,
@@ -395,6 +455,12 @@ def _build_fusion_assessment(
             "news", news_payload,
             context_flags=news_flags,
         ),
+        _fusion_evidence(
+            "visual", visual_payload,
+            direction=EvidenceDirection.NEUTRAL,
+            evidence_ids=tuple(visual_evidence_ids),
+            context_flags=tuple(visual_flags),
+        ),
     )
     return fusion_engine.assess(snapshot.timestamp_utc, evidence)
 
@@ -403,7 +469,10 @@ def main():
     config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
     data_dir = ROOT / "data" / "market"
     data_dir.mkdir(parents=True, exist_ok=True)
-    connector = MT5Connector(config["symbol"])
+    connector = MT5Connector(
+        config["symbol"],
+        terminal_path=config.get("mt5_terminal_path"),
+    )
     market_store = MarketDataStore()
     market_adapter = MT5MarketDataAdapter(connector, market_store)
     context_builder = MarketContextBuilder(
@@ -518,6 +587,28 @@ def main():
         Thread(target=refresh_worker, name="news-refresh", daemon=True).start()
 
     connector.connect()
+    vision_runtime = None
+    vision_config = config.get("vision", {})
+    if vision_config.get("enabled") and vision_config.get("provider") == "ollama-local":
+        try:
+            vision_provider = LocalOllamaVisionProvider(
+                base_url=vision_config.get("base_url", "http://127.0.0.1:11434"),
+                model=vision_config.get("model", "qwen2.5vl:7b"),
+                timeout_seconds=int(vision_config.get("request_timeout_seconds", 120)),
+                max_image_width=int(vision_config.get("max_image_width", 960)),
+                max_image_height=int(vision_config.get("max_image_height", 540)),
+                jpeg_quality=int(vision_config.get("jpeg_quality", 82)),
+                max_output_tokens=int(vision_config.get("max_output_tokens", 180)),
+            )
+            vision_runtime = VisionRuntime(
+                vision_provider,
+                analysis_interval_seconds=int(vision_config.get("analysis_interval_seconds", 240)),
+                max_result_age_seconds=int(vision_config.get("max_result_age_seconds", 360)),
+            )
+            vision_runtime.start()
+            print(f"[VISION] Local-only provider active: {vision_config.get('model', 'qwen2.5vl:7b')}")
+        except Exception as exc:
+            print(f"[VISION] Local provider unavailable: {type(exc).__name__}: {exc}")
     print("[MONITOR] Alert-only mode. No order functions are present.")
     print("[MONITOR] Market context is built from closed candles in SQLite.")
     print("[MONITOR] Press Ctrl+C to stop.")
@@ -712,10 +803,47 @@ def main():
                         frame,
                         closed_candles_only=True,
                     )
-                    screenshots[tf] = inspect_screenshot(
-                        connector.screenshot_path(tf),
+                    screenshot_path = connector.screenshot_path(tf)
+                    screenshot_info = inspect_screenshot(
+                        screenshot_path,
                         config["screenshot_max_age_seconds"],
                     )
+                    if vision_runtime is not None:
+                        vision_runtime.submit(tf, screenshot_path, screenshot_info)
+                        latest_vision = vision_runtime.latest(tf)
+                        if latest_vision is not None:
+                            matches_current = (
+                                latest_vision.get("image_sha256") == screenshot_info.get("sha256")
+                            )
+                            analysis_available = (
+                                latest_vision.get("status") == "ANALYZED"
+                                and latest_vision.get("is_recent") is True
+                            )
+                            screenshot_info.update({
+                                "latest_analysis": latest_vision,
+                                "analysis_image_sha256": latest_vision.get("image_sha256"),
+                                "analysis_age_seconds": latest_vision.get("result_age_seconds"),
+                                "analysis_latency_seconds": latest_vision.get("latency_seconds"),
+                                "analysis_matches_current_image": matches_current,
+                                "semantic_analysis_available": analysis_available,
+                                "vision_analysis": (
+                                    "ANALYZED" if analysis_available
+                                    else ("STALE" if latest_vision.get("status") == "ANALYZED" else latest_vision.get("status", "PENDING"))
+                                ),
+                                "analysis_status": (
+                                    "ANALYZED_CURRENT_IMAGE" if analysis_available and matches_current
+                                    else "ANALYZED_RECENT_FRAME" if analysis_available
+                                    else ("STALE" if latest_vision.get("status") == "ANALYZED" else latest_vision.get("status", "PENDING"))
+                                ),
+                                "provider": latest_vision.get("provider", "ollama-local"),
+                            })
+                        else:
+                            screenshot_info.update({
+                                "analysis_status": "PENDING",
+                                "vision_analysis": "PENDING",
+                                "provider": "ollama-local",
+                            })
+                    screenshots[tf] = screenshot_info
 
                 tick = dict(snapshot.tick or {})
                 price_action_blocked = price_action_result.status.value not in (
@@ -756,6 +884,7 @@ def main():
                     price_action_payload,
                     macro_calendar_payload,
                     news_payload,
+                    screenshots=screenshots,
                 )
                 fusion_payload = fusion_assessment.to_dict()
                 live_specialist_reports = build_live_specialist_reports(

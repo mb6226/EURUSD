@@ -9,6 +9,21 @@ from eurusd_ai_monitor.engines.point_in_time_reconstruction_engine import (
 )
 
 
+def _resolve_observation_requests(observation_requests, data_plane):
+    if data_plane is None:
+        return observation_requests, (
+            "EXPLICIT_CALLER" if observation_requests is not None else "NOT_REQUESTED"
+        )
+    if observation_requests is not None:
+        raise ValueError(
+            "pass either data_plane or observation_requests, not both"
+        )
+    builder = getattr(data_plane, "build_observation_requests", None)
+    if not callable(builder):
+        raise TypeError("data_plane must expose build_observation_requests()")
+    return builder(), "REGISTRY_DRIVEN_DATA_PLANE"
+
+
 def replay_point_in_time_jsonl(
     engine: PointInTimeReconstructionEngine,
     log_paths: Iterable[str | Path],
@@ -19,6 +34,7 @@ def replay_point_in_time_jsonl(
     start_utc,
     end_utc,
     observation_requests=None,
+    data_plane=None,
 ) -> dict:
     """Read archived point-in-time specialist reports without changing source logs.
 
@@ -86,6 +102,9 @@ def replay_point_in_time_jsonl(
         except OSError:
             unreadable += 1
 
+    resolved_requests, request_source = _resolve_observation_requests(
+        observation_requests, data_plane
+    )
     result = engine.replay(
         points,
         broker_server=broker_server,
@@ -93,10 +112,14 @@ def replay_point_in_time_jsonl(
         timeframe=timeframe,
         start_utc=start_utc,
         end_utc=end_utc,
-        observation_requests=observation_requests,
+        observation_requests=resolved_requests,
     )
     result["archive_ingestion"] = {
         "files_requested": len(paths),
+        "observation_request_source": request_source,
+        "observation_product_requests": sum(
+            len(items) for items in (resolved_requests or {}).values()
+        ),
         "records_seen": records_seen,
         "replay_points_found": len(points),
         "records_without_archived_specialist_reports": records_without_archived_reports,
@@ -121,6 +144,7 @@ def replay_deterministic_specialist_jsonl(
     start_utc,
     end_utc,
     observation_requests=None,
+    data_plane=None,
 ) -> dict:
     """Replay cycle timestamps from immutable monitor JSONL with no archived-report dependency."""
     if not callable(getattr(engine, "replay", None)):
@@ -155,13 +179,20 @@ def replay_deterministic_specialist_jsonl(
         except OSError:
             unreadable += 1
 
+    resolved_requests, request_source = _resolve_observation_requests(
+        observation_requests, data_plane
+    )
     result = engine.replay(
         points, broker_server=broker_server, symbol=symbol,
         start_utc=start_utc, end_utc=end_utc,
-        observation_requests=observation_requests,
+        observation_requests=resolved_requests,
     )
     result["archive_ingestion"] = {
         "files_requested": len(paths),
+        "observation_request_source": request_source,
+        "observation_product_requests": sum(
+            len(items) for items in (resolved_requests or {}).values()
+        ),
         "records_seen": records_seen,
         "replay_points_found": len(points),
         "records_missing_evaluation_timestamp": missing_timestamp,

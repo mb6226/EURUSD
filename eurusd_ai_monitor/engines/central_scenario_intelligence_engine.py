@@ -5,7 +5,7 @@ from math import isfinite
 from typing import Any, Mapping
 
 
-SCENARIO_ENGINE_VERSION = "1.0.0"
+SCENARIO_ENGINE_VERSION = "1.1.0"
 
 _DIRECTIONAL_SOURCES = (
     "technical_analysis",
@@ -27,6 +27,11 @@ _CONTEXT_SOURCES = (
     "setup_outcome_observation",
     "statistical_outcome_evaluation",
     "regime_conditioned_outcome_evaluation",
+    "point_in_time_market_regime",
+    "point_in_time_quantitative_statistics",
+    "session_time_intelligence",
+    "cross_domain_relationship_intelligence",
+    "unified_historical_data_plane",
 )
 _ALL_SOURCES = (*_DIRECTIONAL_SOURCES, *_CONTEXT_SOURCES)
 
@@ -186,7 +191,7 @@ class CentralScenarioIntelligenceEngine:
                 "WAITING_FOR_SESSION_ELIGIBILITY", "RESEARCH_ELIGIBLE", "BLOCKED"
             }:
                 normalized_status = "AVAILABLE"
-            elif status in {"NOT_CONFIGURED", "UNAVAILABLE", "INSUFFICIENT_DATA", "SKIPPED"}:
+            elif status in {"NOT_CONFIGURED", "UNAVAILABLE", "INSUFFICIENT_DATA", "INSUFFICIENT_EVIDENCE", "BLOCKED", "SKIPPED"}:
                 normalized_status = "INCOMPLETE"
             elif status in {"AVAILABLE", "ANALYZED", "PROCESSED", "NO_LIFECYCLE", "READY_FOR_RULES"}:
                 normalized_status = "AVAILABLE"
@@ -276,7 +281,7 @@ class CentralScenarioIntelligenceEngine:
         usable_sources = {
             name: (
                 sources.get(name)
-                if ledger[name]["status"] in {"AVAILABLE", "PARTIAL"}
+                if ledger[name]["status"] in {"AVAILABLE", "PARTIAL", "INCOMPLETE"}
                 else None
             )
             for name in _ALL_SOURCES
@@ -284,6 +289,7 @@ class CentralScenarioIntelligenceEngine:
         context = self._context_summary(usable_sources)
         tensions = self._tensions(direction_state, context, directional)
         scenarios = self._scenarios(direction_state, directional, tensions)
+        dependency_map = self._evidence_dependency_map(usable_sources)
         status = (
             "DEGRADED" if any(
                 item["status"] in {
@@ -316,6 +322,16 @@ class CentralScenarioIntelligenceEngine:
             "scenario_hypotheses": scenarios,
             "cross_domain_context": context,
             "cross_domain_tensions": tensions,
+            "evidence_dependency_map": dependency_map,
+            "scenario_assessment_contract": {
+                "scenario_type": "QUALITATIVE_CONDITIONAL_HYPOTHESES",
+                "numeric_probability": None,
+                "calibrated_confidence": None,
+                "out_of_sample_validation": "NOT_ESTABLISHED",
+                "context_only_sources_cast_directional_votes": False,
+                "correlated_specialists_counted_as_independent": False,
+                "scenario_invalidation_required": True,
+            },
             "evidence_coverage": {
                 "state": coverage,
                 "available_domain_count": available_domains,
@@ -489,6 +505,81 @@ class CentralScenarioIntelligenceEngine:
                 "execution_authority": False,
             },
             "historical_research": historical,
+            "point_in_time_market_regime": {
+                "status": payload("point_in_time_market_regime").get("status", "MISSING"),
+                "market_regime": payload("point_in_time_market_regime").get("market_regime", "UNKNOWN"),
+                "volatility_state": payload("point_in_time_market_regime").get("volatility_state", "UNKNOWN"),
+                "domain_coverage": payload("point_in_time_market_regime").get("domain_coverage", {}),
+                "directional_vote": False,
+                "reason_codes": payload("point_in_time_market_regime").get("reason_codes", []),
+            },
+            "point_in_time_quantitative_statistics": {
+                "status": payload("point_in_time_quantitative_statistics").get("status", "MISSING"),
+                "timeframes": payload("point_in_time_quantitative_statistics").get("timeframes", {}),
+                "excluded_timeframes": payload("point_in_time_quantitative_statistics").get("excluded_timeframes", {}),
+                "directional_vote": False,
+            },
+            "session_time": {
+                "status": payload("session_time_intelligence").get("status", "MISSING"),
+                "active_reference_sessions": payload("session_time_intelligence").get("active_reference_sessions", []),
+                "london_new_york_overlap_active": payload("session_time_intelligence").get("london_new_york_overlap_active"),
+                "historical_session_coverage": payload("session_time_intelligence").get("historical_session_coverage", {}),
+                "excluded_timeframes": payload("session_time_intelligence").get("excluded_timeframes", {}),
+                "directional_vote": False,
+            },
+            "cross_domain_relationships": {
+                "status": payload("cross_domain_relationship_intelligence").get("status", "MISSING"),
+                "relationship_count": payload("cross_domain_relationship_intelligence").get("relationship_count", 0),
+                "available_relationship_count": payload("cross_domain_relationship_intelligence").get("available_relationship_count", 0),
+                "relationships": payload("cross_domain_relationship_intelligence").get("relationships", []),
+                "directional_vote": False,
+                "interpretation": "DESCRIPTIVE_ASSOCIATION_ONLY_NOT_CAUSAL_OR_PREDICTIVE",
+            },
+            "unified_data_plane": {
+                "status": payload("unified_historical_data_plane").get("status", "MISSING"),
+                "snapshot_sha256": payload("unified_historical_data_plane").get("snapshot_sha256"),
+                "read_mode": payload("unified_historical_data_plane").get("read_mode"),
+                "quality_eligible_product_count": payload("unified_historical_data_plane").get("quality_eligible_product_count"),
+                "analytics_domain_count": payload("unified_historical_data_plane").get("analytics_domain_count"),
+                "directional_vote": False,
+            },
+        }
+
+    @staticmethod
+    def _evidence_dependency_map(sources: Mapping[str, Any]) -> dict[str, Any]:
+        """Declare shared-data dependencies so repeated views are never independent votes."""
+        groups = {
+            "EURUSD_BROKER_PRICE_LINEAGE": [
+                "technical_analysis", "price_action_lifecycle", "market_regime_intelligence",
+                "point_in_time_market_regime", "point_in_time_quantitative_statistics",
+                "session_time_intelligence", "liquidity_microstructure_intelligence",
+            ],
+            "CFTC_EURO_FX_POSITIONING_LINEAGE": ["positioning_sentiment_intelligence"],
+            "INTERMARKET_DRIVER_LINEAGE": ["intermarket_intelligence"],
+            "CROSS_DOMAIN_RELATIONSHIP_DERIVED_LINEAGE": ["cross_domain_relationship_intelligence"],
+            "MACRO_RELEASE_AND_POLICY_LINEAGE": [
+                "macro_fundamentals_intelligence", "policy_rate_differential_intelligence", "macro_calendar"
+            ],
+            "NEWS_SOURCE_LINEAGE": ["news_intelligence"],
+            "HISTORICAL_OUTCOME_RESEARCH_LINEAGE": [
+                "setup_outcome_observation", "statistical_outcome_evaluation", "regime_conditioned_outcome_evaluation"
+            ],
+        }
+        active = {}
+        for group, members in groups.items():
+            present = [name for name in members if isinstance(sources.get(name), Mapping)]
+            active[group] = {
+                "members_present": present,
+                "member_count": len(present),
+                "independent_votes": 0,
+                "shared_lineage_warning": len(present) > 1 or group == "CROSS_DOMAIN_RELATIONSHIP_DERIVED_LINEAGE" and bool(present),
+                "derived_from_domains": (["spot_fx", "macro_fundamentals", "monetary_policy", "intermarket", "positioning_sentiment"] if group == "CROSS_DOMAIN_RELATIONSHIP_DERIVED_LINEAGE" and present else []),
+            }
+        return {
+            "groups": active,
+            "policy": "MULTIPLE_SPECIALISTS_OR_FEATURES_WITH_SHARED_UNDERLYING_DATA_ARE_NOT_INDEPENDENT_CONFIRMATIONS",
+            "cross_domain_relationships_are_not_causal_proof": True,
+            "context_sources_cast_directional_votes": False,
         }
 
     @staticmethod

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+
 def evaluate(m1: dict, m5: dict, tick: dict, screenshots: dict) -> dict:
     """
-    Safety-first placeholder. Until the user-defined rules and vision model
-    are implemented and validated, this engine must never issue BUY or SELL.
+    Safety-first placeholder. Until the complete user-defined rules are
+    implemented and validated, this engine must never issue BUY or SELL.
     """
     reasons = []
     if m1.get("status") != "OK":
@@ -15,8 +16,14 @@ def evaluate(m1: dict, m5: dict, tick: dict, screenshots: dict) -> dict:
     for tf, result in screenshots.items():
         if result.get("status") != "IMAGE_READY":
             reasons.append(f"{tf} chart screenshot not fresh/ready")
-        else:
-            reasons.append(f"{tf} visual model not connected")
+        elif result.get("semantic_analysis_available") is not True:
+            analysis_status = str(result.get("analysis_status", "NOT_CONNECTED"))
+            if analysis_status == "PENDING":
+                reasons.append(f"{tf} visual analysis pending")
+            elif analysis_status in {"ERROR", "STALE"}:
+                reasons.append(f"{tf} visual analysis unavailable or stale")
+            else:
+                reasons.append(f"{tf} visual model not connected")
 
     reasons.append("User's complete Trend-Correction-Rejection-Pullback rules not yet encoded")
     return {

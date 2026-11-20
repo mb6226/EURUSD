@@ -1,0 +1,54 @@
+{
+  "phase": "37D",
+  "title": "Official Provider Expansion",
+  "providers": {
+    "BLS_CPI": {
+      "status": "IMPLEMENTED_NO_LIVE_FETCH",
+      "api": "BLS_PUBLIC_DATA_API_V2",
+      "hosts": [
+        "api.bls.gov",
+        "www.bls.gov"
+      ],
+      "value_vintage": "original_release_archive_value_match_and_embargo_timestamp"
+    },
+    "FRED_ALFRED": {
+      "status": "IMPLEMENTED_NO_LIVE_FETCH",
+      "products": {
+        "US_10Y_TREASURY_YIELD": "DGS10",
+        "USD_BROAD_TRADE_WEIGHTED_INDEX": "DTWEXBGS",
+        "SP500_INDEX": "SP500"
+      },
+      "vintage_mode": "output_type_2_realtime_start_end",
+      "publication_time": "DATE_GRAIN_ONLY_NOT_INTRADAY_VERIFIED",
+      "pit_observation_ready": false,
+      "api_key": "explicit_constructor_argument_only"
+    },
+    "ECB_SDMX": {
+      "status": "IMPLEMENTED_NO_LIVE_FETCH",
+      "product": "DE_10Y_GOVERNMENT_YIELD",
+      "history": "includeHistory=true",
+      "flow_and_key": "explicit_caller_configuration_no_guessing",
+      "publication_time": "not_provided_by_csv_contract",
+      "pit_observation_ready": false
+    }
+  },
+  "external_requests": 0,
+  "production_observations_added": 0,
+  "registry_changed": false,
+  "auto_fetch_enabled": false,
+  "acceptance": {
+    "focused_provider_tests": 36,
+    "full_repository_tests": 628,
+    "compileall": "PASS",
+    "git_diff_check": "PASS",
+    "registry_validation": "PASS",
+    "sqlite_integrity": "PASS"
+  },
+  "safety": {
+    "monitor_restarted": false,
+    "vision_enabled": false,
+    "live_trading_or_order_execution": false,
+    "risk_settings_changed": false,
+    "rag_database_mutated": false
+  }
+}
