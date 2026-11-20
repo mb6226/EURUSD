@@ -73,6 +73,14 @@
         "24h_or_more": 72
       },
       "policy": "No gaps were filled. These counts include weekends, broker rollover/maintenance and possible low/no-tick intervals; classification remains explicit rather than assuming every gap is missing data."
+    },
+    "csv_import": {
+      "M1_inserted": 397,
+      "M5_inserted": 0,
+      "backup_integrity": "ok",
+      "post_import_integrity": "ok",
+      "existing_latest_bar_conflicts_preserved": 2,
+      "source_id": "HEADWAY_MT5_CSV_HISTORY_EXPORT"
     }
   },
   "tick_audit": {
@@ -101,5 +109,26 @@
     "risk_settings_changed": false,
     "registry_auto_fetch_enabled": false,
     "rag_database_mutated": false
+  },
+  "csv_history_import": {
+    "status": "COMPLETE",
+    "M1": {
+      "source_rows": 100398,
+      "new_bars_imported": 397,
+      "matching_overlap": 100000,
+      "conflicting_latest_bar_preserved": 1,
+      "first_imported": "2026-08-13T17:31:00Z"
+    },
+    "M5": {
+      "source_rows": 74406,
+      "new_bars_imported": 0,
+      "matching_overlap": 74405,
+      "conflicting_latest_bar_preserved": 1,
+      "coverage_already_present": true
+    },
+    "backup_integrity": "ok",
+    "post_import_market_archive_integrity": "ok",
+    "backup_path": "C:\\Users\\mahdi\\Downloads\\EURUSD-AI-Intelligent-Market-Brain\\eurusd_ai_monitor\\data\\market\\market_data.sqlite.pre-csv-import-20261120T071200Z.bak",
+    "import_report": "reports/headway_csv_history_import_20261120.json"
   }
 }

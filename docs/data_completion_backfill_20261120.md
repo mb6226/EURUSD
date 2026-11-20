@@ -67,3 +67,16 @@ All backfilled candles and raw provider snapshots retain their actual retrieval/
 2. Determine whether Headway exposes a reliable multi-month/year tick-history range; if it does, implement an immutable tick archive before claiming Bid/Ask microstructure coverage.
 3. Resolve BLS release-calendar/archive access and acquire explicit ALFRED vintages / exact publication-time evidence for the remaining macro series.
 4. Integrate only PIT-eligible observations into strict replay; then define a formal replay window and wait for matured OOS outcomes before calibration or learning claims.
+
+## Additional user-supplied MT5 CSV history import
+
+Two Headway MT5 chart-history exports were found in the terminal's MQL5/Files directory and audited:
+
+- EURUSD_M1_202608131731_202611200655.csv: 100,398 rows; no malformed rows, duplicate timestamps or ordering defects.
+- EURUSD_M5_202511200005_202611200655.csv: 74,406 rows; no malformed rows, duplicate timestamps or ordering defects.
+
+The CSV timestamps were checked against overlapping Headway MT5 Python copy_rates candles at identical timestamps. UTC alignment was retained. The Windows file modification clock was not used as the data-observation timestamp because it differed from the MT5/Python clock.
+
+Only 397 missing M1 bars (2026-08-13 17:31 through 2026-08-14 00:15 UTC) were imported under source ID HEADWAY_MT5_CSV_HISTORY_EXPORT, with immutable candle versions, SHA-256 file provenance, and the actual ingestion time. The M5 export was already fully covered by the archive, so no duplicate M5 rows were inserted. The one differing final candle in each file was preserved rather than overwriting the newer live archive version.
+
+A consistent pre-import backup was created at market_data.sqlite.pre-csv-import-20261120T071200Z.bak and its SQLite integrity check passed. Post-import market archive integrity also passed. The monitor remained running.
