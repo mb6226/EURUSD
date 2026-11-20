@@ -15,7 +15,8 @@ Open http://127.0.0.1:8765
 - Recent monitor history (bounded tail read; 10 records) with decision, fusion/scenario status and market-quality validity timeline.
 - EURUSD M1 recent close chart.
 - All JSON reports in reports/ (Phase 37–51), with raw payload inspection.
-- Market archive integrity/table counts, runtime config, Python process list and monitor log metadata.
+- Market archive integrity/table counts plus read-only integrity, row counts and source/product coverage for the raw provider snapshot archive, PIT observation store and economic calendar store.
+- Runtime config, Python process list and monitor log metadata.
 
 ## Performance and truthfulness
 - Monitor logs can become large; the dashboard reads a bounded tail only and never loads the entire JSONL file into memory.

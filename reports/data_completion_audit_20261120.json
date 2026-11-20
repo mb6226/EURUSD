@@ -1,0 +1,118 @@
+{
+  "report_type": "EURUSD_DATA_COMPLETION_AUDIT",
+  "completed_at_utc": "2026-11-20T05:02:00Z",
+  "project_head": "fc8bfa7809cc98ee50d686d37928f7ff1269ccfb",
+  "headway_spot": {
+    "broker_server": "Headway-Real",
+    "symbol": "EURUSD",
+    "price_basis": "BID",
+    "terminal_maxbars": 100000,
+    "M1": {
+      "bars": 100004,
+      "first": "2026-08-14T00:16:00Z",
+      "last": "2026-11-20T06:58:00Z"
+    },
+    "M5": {
+      "bars": 100000,
+      "first": "2025-07-18T00:25:00Z",
+      "last": "2026-11-20T06:55:00Z"
+    },
+    "new_history_received": 199998,
+    "inserted": 198756,
+    "updated": 2,
+    "unchanged": 1240,
+    "revisions_recorded": 0,
+    "immutable_versions": 201333,
+    "ingestion_runs": 1459,
+    "integrity": "ok",
+    "tick_history": {
+      "recent_sample": {
+        "requested_from_utc": "2026-11-20T06:40:00Z",
+        "ticks_returned": 585,
+        "status": "AVAILABLE"
+      },
+      "prior_day_sample": {
+        "requested_from_utc": "2026-11-19T06:40:00Z",
+        "ticks_returned": 10,
+        "status": "AVAILABLE"
+      },
+      "one_year_back_sample": {
+        "requested_from_utc": "2025-11-20T06:40:00Z",
+        "requested_count": 10,
+        "status": "UNVERIFIED_TIMEOUT"
+      },
+      "historical_tick_archive_created": false,
+      "limitation": "The long-range historical tick request did not complete in the bounded audit. Bid/Ask ticks are verified for recent/current data only; no claim of one-year tick coverage is made."
+    },
+    "gap_audit": {
+      "M1": {
+        "gaps_over_1_5_intervals": 547,
+        "under_6h": 533,
+        "24h_or_more": 14
+      },
+      "M5": {
+        "gaps_over_1_5_intervals": 203,
+        "under_6h": 131,
+        "24h_or_more": 72
+      },
+      "policy": "No gaps were filled. These counts include weekends, broker rollover/maintenance and possible low/no-tick intervals; classification remains explicit rather than assuming every gap is missing data."
+    },
+    "spread_points": {
+      "M1": {
+        "min": 7,
+        "max": 113,
+        "average": 9.22
+      },
+      "M5": {
+        "min": 6,
+        "max": 165,
+        "average": 9.48
+      }
+    }
+  },
+  "fundamental_and_intermarket": {
+    "new_raw_snapshots": 21,
+    "raw_snapshots_total": 61,
+    "raw_archive_integrity": "ok",
+    "raw_payload_bytes": 5988376,
+    "FRED_series": 9,
+    "FRED_valid_observations": 82238,
+    "Eurostat_HICP_observations": 312,
+    "Eurostat_unemployment_observations": 321,
+    "BLS_CPI_observations": 322,
+    "BLS_unemployment_observations": 322,
+    "Fed_ECB_policy_pages_archived": 4,
+    "PIT_normalized_observations_added": 0
+  },
+  "existing_PIT_evidence": {
+    "source": "CFTC_TFF_POSITIONING",
+    "products": 3,
+    "observations": 153,
+    "observations_per_product": 51
+  },
+  "economic_calendar": {
+    "events": 196,
+    "integrity": "ok"
+  },
+  "replay_and_evaluation": {
+    "phase45_status": "REPLAY_WINDOW_REQUIRED",
+    "phase51_status": "BLOCKED",
+    "matured_OOS_outcomes": 0,
+    "historical_backfill_eligible_for_strict_system_knowledge_before_retrieval": false,
+    "reason": "Backfilled market bars and raw macro snapshots are stamped with actual retrieval time. No historical publication timestamps or original-vintage evidence were fabricated."
+  },
+  "safety": {
+    "all_registry_auto_fetch_false": true,
+    "monitor_left_running": true,
+    "vision_disabled": true,
+    "live_orders": false,
+    "risk_settings_changed": false,
+    "rag_database_mutated": false
+  },
+  "database_integrity": {
+    "market_archive": "ok",
+    "raw_snapshot_archive": "ok",
+    "observation_store": "ok",
+    "calendar_archive": "ok"
+  }
+}

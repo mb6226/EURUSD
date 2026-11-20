@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -34,8 +35,28 @@ class DashboardTailTests(unittest.TestCase):
         self.assertIn("history", snapshot)
         self.assertIn("reports", snapshot)
         self.assertIn("archive", snapshot)
+        self.assertIn("data_archives", snapshot)
+        self.assertEqual(set(snapshot["data_archives"]), {"raw_snapshots", "observations", "calendar"})
         self.assertIn("price_series", snapshot)
         self.assertLessEqual(len(snapshot["history"]), 10)
+
+    def test_inspect_store_reports_read_only_integrity_and_group_counts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "raw.sqlite"
+            connection = sqlite3.connect(path)
+            connection.execute("CREATE TABLE raw_snapshots (source_id TEXT, payload_bytes INTEGER)")
+            connection.execute("INSERT INTO raw_snapshots VALUES ('FRED_INTERMARKET', 123)")
+            connection.commit()
+            connection.close()
+            result = dashboard_server.inspect_store(path, {
+                "summary": ("raw_snapshots", "SELECT COUNT(*) AS snapshots, SUM(payload_bytes) AS payload_bytes FROM raw_snapshots"),
+                "by_source": ("raw_snapshots", "SELECT source_id, COUNT(*) AS snapshots FROM raw_snapshots GROUP BY source_id"),
+            })
+        self.assertEqual(result["integrity"], "ok")
+        self.assertEqual(result["status"], "HEALTHY")
+        self.assertEqual(result["snapshots"], 1)
+        self.assertEqual(result["payload_bytes"], 123)
+        self.assertEqual(result["by_source"][0]["source_id"], "FRED_INTERMARKET")
 
 
 if __name__ == "__main__":
