@@ -1,0 +1,105 @@
+{
+  "report_type": "HEADWAY_MT5_HISTORICAL_BACKFILL",
+  "completed_at_utc": "2026-11-20T04:54:24.100237+00:00",
+  "broker_server": "Headway-Real",
+  "symbol": "EURUSD",
+  "terminal_build": 6230,
+  "terminal_maxbars": 100000,
+  "price_basis": "BID",
+  "streams": {
+    "M1": {
+      "records": 99999,
+      "first_bar_utc": "2026-08-14T00:16:00+00:00",
+      "last_bar_utc": "2026-11-20T06:53:00+00:00"
+    },
+    "M5": {
+      "records": 99999,
+      "first_bar_utc": "2025-07-18T00:25:00+00:00",
+      "last_bar_utc": "2026-11-20T06:50:00+00:00"
+    }
+  },
+  "ingestion": {
+    "records_received": 199998,
+    "inserted": 198756,
+    "updated": 2,
+    "unchanged": 1240,
+    "revisions_recorded": 0,
+    "duplicates_ignored": 0,
+    "batches": 80
+  },
+  "integrity": "ok",
+  "point_in_time_policy": "Backfilled candles retain actual retrieval/observation time. They are not made visible to strict system-knowledge replay before that time.",
+  "limitations": [
+    "Only the latest 99,999 bars per timeframe were requested because terminal maxbars is 100,000.",
+    "Tick-level historical Bid/Ask was not included.",
+    "FX tick_volume is broker tick activity, not centralized traded volume."
+  ],
+  "archive_verification": {
+    "database_schema_version": 4,
+    "database_bytes": 148385792,
+    "database_integrity": "ok",
+    "candle_rows": {
+      "M1": 100004,
+      "M5": 100000,
+      "total": 200004
+    },
+    "immutable_candle_versions": {
+      "M1": 100677,
+      "M5": 100656,
+      "total": 201333
+    },
+    "ingestion_runs": 1459,
+    "spread_points": {
+      "M1": {
+        "min": 7,
+        "max": 113,
+        "average": 9.22
+      },
+      "M5": {
+        "min": 6,
+        "max": 165,
+        "average": 9.48
+      }
+    },
+    "gap_audit": {
+      "M1": {
+        "gaps_over_1_5_intervals": 547,
+        "under_6h": 533,
+        "24h_or_more": 14
+      },
+      "M5": {
+        "gaps_over_1_5_intervals": 203,
+        "under_6h": 131,
+        "24h_or_more": 72
+      },
+      "policy": "No gaps were filled. These counts include weekends, broker rollover/maintenance and possible low/no-tick intervals; classification remains explicit rather than assuming every gap is missing data."
+    }
+  },
+  "tick_audit": {
+    "recent_sample": {
+      "requested_from_utc": "2026-11-20T06:40:00Z",
+      "ticks_returned": 585,
+      "status": "AVAILABLE"
+    },
+    "prior_day_sample": {
+      "requested_from_utc": "2026-11-19T06:40:00Z",
+      "ticks_returned": 10,
+      "status": "AVAILABLE"
+    },
+    "one_year_back_sample": {
+      "requested_from_utc": "2025-11-20T06:40:00Z",
+      "requested_count": 10,
+      "status": "UNVERIFIED_TIMEOUT"
+    },
+    "historical_tick_archive_created": false,
+    "limitation": "The long-range historical tick request did not complete in the bounded audit. Bid/Ask ticks are verified for recent/current data only; no claim of one-year tick coverage is made."
+  },
+  "safety": {
+    "monitor_restarted": false,
+    "vision_enabled": false,
+    "live_trading_or_order_execution": false,
+    "risk_settings_changed": false,
+    "registry_auto_fetch_enabled": false,
+    "rag_database_mutated": false
+  }
+}
