@@ -1,0 +1,38 @@
+{
+  "phase": 46,
+  "report_type": "EURUSD_CENTRAL_SCENARIO_EVALUATION_FRAMEWORK",
+  "engine_version": "scenario-evaluation-v1",
+  "status": "NO_ARCHIVED_SCENARIOS",
+  "production_preflight": {
+    "phase43_scenario_archive": "NOT_CONFIGURED_OR_VERIFIED",
+    "phase43_scenario_evaluation_spec": "NOT_EMITTED_BY_CURRENT_ENGINE",
+    "phase45_spot_replay": "BLOCKED_CANDLE_VERSION_LEDGER_UNAVAILABLE",
+    "scored_scenario_count": 0,
+    "scenario_match_rate": null
+  },
+  "controls": {
+    "exact_cutoff_and_horizon_matching": true,
+    "contemporaneous_archive_hash_required": true,
+    "immutable_candle_version_evidence_required": true,
+    "no_horizon_inference": true,
+    "no_scenario_reconstruction": true,
+    "no_probabilities_or_calibration": true,
+    "no_trade_authority": true,
+    "order_execution": "DISABLED"
+  },
+  "acceptance": {
+    "focused_phase46_tests": 11,
+    "full_suite_tests": 741,
+    "full_suite_passed": true,
+    "compileall_passed": true,
+    "git_diff_check_passed": true,
+    "json_report_valid": true,
+    "no_archive_preflight": "NO_ARCHIVED_SCENARIOS",
+    "scored_scenario_count": 0,
+    "production_database_mutated": false,
+    "live_monitor_restarted": false,
+    "source_activation_or_external_fetch": false,
+    "risk_or_order_changes": false,
+    "commit_merge": "NOT_PERFORMED"
+  }
+}

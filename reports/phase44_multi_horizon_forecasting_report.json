@@ -1,0 +1,64 @@
+{
+  "phase": "44",
+  "title": "Multi-Horizon Forecasting",
+  "evaluated_at_utc": "2026-11-20T02:57:03.777052+00:00",
+  "data_plane_status": "PARTIAL",
+  "snapshot_sha256": "13f2a7609b9403330af929c44be65fa0f5b5fa0e9cf9ff32478656edbd828069",
+  "registry_sha256": "6f208211a94d7d9b57638880b2a52259e3efebafbd549015ee37c20aa737f699",
+  "quality_eligible_product_count": 3,
+  "spot_archive_status": "PROVENANCE_UNAVAILABLE",
+  "spot_streams": [
+    {
+      "symbol": "EURUSD",
+      "timeframe": "M1",
+      "status": null,
+      "eligible_for_analytics": null,
+      "observation_count": null
+    },
+    {
+      "symbol": "EURUSD",
+      "timeframe": "M5",
+      "status": null,
+      "eligible_for_analytics": null,
+      "observation_count": null
+    }
+  ],
+  "forecast_status": "INSUFFICIENT_EVIDENCE",
+  "reason_codes": [
+    "NO_QUALITY_ELIGIBLE_M5_STREAM"
+  ],
+  "horizon_statuses": {
+    "15M": "INSUFFICIENT_EVIDENCE",
+    "1H": "INSUFFICIENT_EVIDENCE",
+    "4H": "INSUFFICIENT_EVIDENCE"
+  },
+  "numeric_probabilities": {
+    "15M": null,
+    "1H": null,
+    "4H": null
+  },
+  "calibrated_confidence": {
+    "15M": null,
+    "1H": null,
+    "4H": null
+  },
+  "forecast_engine_version": "multi-horizon-forecast-v1",
+  "no_live_wiring_or_execution": true,
+  "acceptance": {
+    "focused_tests": 12,
+    "full_suite_tests": 721,
+    "full_suite_passed": true,
+    "compileall_passed": true,
+    "git_diff_check_passed": true,
+    "report_json_valid": true,
+    "sqlite_integrity_checks_passed": true,
+    "all_registry_auto_fetch_false": true,
+    "vision_disabled": true,
+    "production_snapshot_checked_read_only": true,
+    "production_forecast_status_matches_expected_insufficient_evidence": true,
+    "commit_merge": "NOT_PERFORMED",
+    "registry_scope_checked": "SOURCE_LEVEL",
+    "final_full_suite_tests": 721,
+    "final_focused_tests": 12
+  }
+}

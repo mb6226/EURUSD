@@ -1,0 +1,111 @@
+{
+  "phase": "43",
+  "name": "Central Multi-Domain Scenario Intelligence",
+  "engine_version": "1.1.0",
+  "production": {
+    "snapshot_as_of_utc": "2026-11-20T02:49:03.925695+00:00",
+    "snapshot_sha256": "68f46bde95229414387563cce8a0d6db6cf17d45b253700347ca31b423e2c2bb",
+    "data_plane_status": "PARTIAL",
+    "read_mode": "STRICT_SYSTEM_KNOWLEDGE",
+    "quality_eligible_product_count": 3,
+    "spot_archive_status": "PROVENANCE_UNAVAILABLE",
+    "pit_specialist_statuses": {
+      "point_in_time_market_regime": "INSUFFICIENT_EVIDENCE",
+      "point_in_time_quantitative_statistics": "INSUFFICIENT_EVIDENCE",
+      "session_time": "INSUFFICIENT_EVIDENCE",
+      "cross_domain_relationships": "INSUFFICIENT_EVIDENCE"
+    },
+    "central_scenario_status": "PARTIAL",
+    "directional_state": "UNRESOLVED",
+    "scenario_hypotheses": [
+      {
+        "scenario_id": "EURUSD_UP_CONTINUATION",
+        "status": "UNRESOLVED"
+      },
+      {
+        "scenario_id": "EURUSD_DOWN_CONTINUATION",
+        "status": "UNRESOLVED"
+      },
+      {
+        "scenario_id": "RANGE_OR_TRANSITION",
+        "status": "UNRESOLVED"
+      }
+    ],
+    "evidence_coverage": "LIMITED",
+    "price_lineage_dependency_group": {
+      "members_present": [
+        "point_in_time_market_regime",
+        "point_in_time_quantitative_statistics",
+        "session_time_intelligence"
+      ],
+      "member_count": 3,
+      "independent_votes": 0,
+      "shared_lineage_warning": true,
+      "derived_from_domains": []
+    },
+    "cross_domain_relationship_dependency_group": {
+      "members_present": [
+        "cross_domain_relationship_intelligence"
+      ],
+      "member_count": 1,
+      "independent_votes": 0,
+      "shared_lineage_warning": true,
+      "derived_from_domains": [
+        "spot_fx",
+        "macro_fundamentals",
+        "monetary_policy",
+        "intermarket",
+        "positioning_sentiment"
+      ]
+    }
+  },
+  "acceptance": {
+    "focused_central_engine_runtime_tests_passed": 25,
+    "full_suite_tests_passed": 709,
+    "full_suite_passed": true,
+    "compileall_passed": true,
+    "git_diff_check_passed": true,
+    "production_snapshot_orchestration_checked_read_only": true,
+    "all_registry_auto_fetch_false": true,
+    "sqlite_integrity": {
+      "source_registry/operational/observations.sqlite": "ok",
+      "source_registry/operational/raw_snapshots.sqlite": "ok",
+      "eurusd_ai_monitor/data/market/market_data.sqlite": "ok"
+    },
+    "vision_disabled": true,
+    "no_external_requests": true,
+    "no_provider_activation": true,
+    "no_database_mutation_or_migration": true,
+    "no_monitor_restart": true,
+    "no_live_monitor_rewiring": true,
+    "no_fusion_or_decision_authority_escalation": true,
+    "no_risk_or_order_changes": true,
+    "no_rag_mutation": true
+  },
+  "safety": {
+    "network_requests": false,
+    "provider_activation": false,
+    "database_mutated": false,
+    "registry_mutated": false,
+    "monitor_restarted": false,
+    "live_monitor_rewired": false,
+    "fusion_authority_changed": false,
+    "risk_settings_changed": false,
+    "orders_sent": false,
+    "rag_mutated": false
+  },
+  "interpretation": "PIT orchestration is verified. Production data remains PARTIAL; PIT regime, quantitative, session and cross-domain relationship reports are INSUFFICIENT_EVIDENCE. With no live directional reports supplied to this isolated research check, direction and all three scenario hypotheses remain UNRESOLVED. This is an integration and coverage result, not forecast-performance evidence.",
+  "scenario_contract": {
+    "scenario_type": "QUALITATIVE_CONDITIONAL_HYPOTHESES",
+    "numeric_probability": null,
+    "calibrated_confidence": null,
+    "out_of_sample_validation": "NOT_ESTABLISHED",
+    "context_only_sources_cast_directional_votes": false,
+    "correlated_specialists_counted_as_independent": false,
+    "scenario_invalidation_required": true
+  },
+  "decision_authority": "ASSESSMENT_ONLY",
+  "trade_authority": "NONE",
+  "order_execution": "DISABLED",
+  "commit_or_merge": "NOT_PERFORMED"
+}

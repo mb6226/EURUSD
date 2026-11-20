@@ -1,0 +1,67 @@
+{
+  "phase": "37F",
+  "title": "Multi-Domain Data Coverage",
+  "status": "IMPLEMENTED_LOCALLY_FULL_SUITE_PASS_NOT_ACTIVATED",
+  "registry": {
+    "source_count": 9,
+    "product_count": 23,
+    "required_domains": 11,
+    "registered_domains": 9,
+    "registration_ratio": 0.8181818181818182,
+    "live_data_availability": "NOT_ASSESSED_BY_REGISTRY_ONLY_REPORT"
+  },
+  "fred_alfred": {
+    "product_count": 9,
+    "series_ids": [
+      "DGS2",
+      "DGS10",
+      "DFII10",
+      "DTWEXBGS",
+      "SP500",
+      "VIXCLS",
+      "DCOILWTICO",
+      "DCOILBRENTEU",
+      "DEXUSEU"
+    ],
+    "vintage_grain": "DATE",
+    "strict_intraday_pit_ready": false,
+    "api_key_lookup_performed": false
+  },
+  "coverage_gaps": [
+    "ICE US Dollar Index (DXY): not substituted with the broader FRED trade-weighted USD index; licensing/source access review required.",
+    "Gold spot/reference price: LBMA licensing and publication-time semantics not verified; no acquisition.",
+    "FX options risk reversals/implied volatility and cross-currency basis: no licensed source/provider configured.",
+    "Intraday intermarket quotes and historical bid/ask ticks: daily reference series are not a substitute.",
+    "News/geopolitical evidence: no production source/provider is registered in this registry snapshot.",
+    "A registered product is not evidence that observations are present, current, complete, or PIT-eligible."
+  ],
+  "acquisition_plan": {
+    "network_requests_made": 0,
+    "auto_fetch_enabled": false,
+    "registry_mutated": false,
+    "databases_created_or_mutated": false
+  },
+  "operational_boundary": {
+    "external_requests_made": false,
+    "providers_activated": false,
+    "production_observations_added": false,
+    "monitor_restarted": false,
+    "orders_or_risk_changed": false,
+    "vision_enabled": false,
+    "rag_mutated": false
+  },
+  "validation": {
+    "focused_regression_tests": 23,
+    "full_unittest_suite": 637,
+    "full_suite_status": "PASS",
+    "compileall": "PASS",
+    "registry_schema_and_semantic_validation": "PASS",
+    "fred_registry_allowlist_consistency": "PASS",
+    "sqlite_integrity": {
+      "observations.sqlite": "ok",
+      "raw_snapshots.sqlite": "ok",
+      "market_data.sqlite": "ok"
+    },
+    "git_diff_check": "PASS"
+  }
+}

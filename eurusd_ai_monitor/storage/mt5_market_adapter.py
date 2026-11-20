@@ -108,6 +108,16 @@ class MT5MarketDataAdapter:
             candles,
             as_of_utc=effective_as_of,
             observed_at_utc=observed_at,
+            source_id="MT5_COPY_RATES",
+            provenance={
+                "provider": "MetaTrader5 Python integration",
+                "method": "copy_rates_from_pos",
+                "broker_server": broker_server,
+                "symbol": symbol,
+                "timeframes": list(frames),
+                "bar_time_basis": "UTC",
+                "price_basis": self._price_basis_metadata(),
+            },
         )
         return MT5SyncResult(
             broker_server=broker_server,
@@ -224,6 +234,19 @@ class MT5MarketDataAdapter:
                     batch,
                     as_of_utc=observed_at,
                     observed_at_utc=observed_at,
+                    source_id="MT5_COPY_RATES_RANGE",
+                    provenance={
+                        "provider": "MetaTrader5 Python integration",
+                        "method": "copy_rates_range",
+                        "broker_server": broker_server,
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "requested_start_utc": cursor.isoformat(),
+                        "requested_end_utc_exclusive": chunk_end.isoformat(),
+                        "chunk_days": chunk_days,
+                        "bar_time_basis": "UTC",
+                        "price_basis": self._price_basis_metadata(),
+                    },
                 )
                 totals.add(chunk_summary)
                 records_received += len(batch)
@@ -274,6 +297,18 @@ class MT5MarketDataAdapter:
                 "Active MT5 connection returned an empty broker server"
             )
         return server.strip()
+
+    def _price_basis_metadata(self) -> dict[str, object]:
+        reader = getattr(self._connector, "market_data_metadata", None)
+        if not callable(reader):
+            return {"price_basis": "UNKNOWN", "reason": "connector_metadata_unavailable"}
+        try:
+            metadata = reader()
+        except Exception as exc:
+            return {"price_basis": "UNKNOWN", "reason": type(exc).__name__}
+        if not isinstance(metadata, Mapping):
+            return {"price_basis": "UNKNOWN", "reason": "invalid_connector_metadata"}
+        return dict(metadata)
 
     def _now_utc(self) -> datetime:
         return _utc_datetime(self._clock(), "clock")

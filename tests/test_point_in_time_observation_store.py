@@ -231,6 +231,25 @@ class PointInTimeObservationStoreTests(unittest.TestCase):
         ))
         self.assertEqual(self.store.count_observations(), 2)
 
+    def test_batched_revision_history_returns_versions_for_multiple_products(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = PointInTimeObservationStore(Path(directory) / "observations.sqlite")
+            first = Observation("TEST", "RATE_A", Decimal("1.0"), "percent",
+                datetime(2026, 11, 19, tzinfo=UTC), datetime(2026, 11, 19, 11, tzinfo=UTC), "record-a")
+            second = Observation("TEST", "RATE_A", Decimal("1.1"), "percent",
+                datetime(2026, 11, 19, tzinfo=UTC), datetime(2026, 11, 19, 11, tzinfo=UTC), "record-a")
+            other = Observation("TEST", "RATE_B", Decimal("2.0"), "percent",
+                datetime(2026, 11, 19, tzinfo=UTC), datetime(2026, 11, 19, 11, tzinfo=UTC), "record-b")
+            for observation, retrieved in ((first, 12), (second, 13), (other, 13)):
+                store.persist_fetch_result(FetchResult("TEST", observation.product_id, (observation,),
+                    "https://example.test", 1, datetime(2026, 11, 19, retrieved, tzinfo=UTC)))
+            history = store.get_many_revision_history(
+                [("TEST", "RATE_A"), ("TEST", "RATE_B")],
+                as_of_utc=datetime(2026, 11, 19, 14, tzinfo=UTC),
+            )
+            self.assertEqual([item["version"] for item in history[("TEST", "RATE_A")]], [1, 2])
+            self.assertEqual([item["version"] for item in history[("TEST", "RATE_B")]], [1])
+
 
 if __name__ == "__main__":
     unittest.main()

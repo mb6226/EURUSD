@@ -1,0 +1,52 @@
+{
+  "phase": "37E",
+  "title": "Durable Spot History",
+  "status": "IMPLEMENTED_LOCALLY_TESTED_NOT_ACTIVATED",
+  "scope": {
+    "symbol": "EURUSD",
+    "timeframes": [
+      "M1",
+      "M5"
+    ],
+    "source": "MT5 read-only",
+    "live_historical_fetch_performed": false,
+    "production_database_migrated": false,
+    "monitor_restarted": false,
+    "registry_auto_fetch_changed": false,
+    "vision_enabled": false,
+    "orders_or_risk_changed": false
+  },
+  "deliverables": [
+    "schema v4 immutable candle_ingestion_runs ledger",
+    "schema v4 immutable candle_versions ledger",
+    "normalized batch SHA-256 and UTC observation/as-of provenance",
+    "MT5 copy_rates_from_pos and copy_rates_range provenance",
+    "chart price basis BID/LAST/UNKNOWN from symbol metadata",
+    "forming-to-closed state versioning",
+    "existing resumable bounded backfill retained"
+  ],
+  "validation": {
+    "focused_tests": 48,
+    "full_unittest_suite": 632,
+    "full_suite_status": "PASS",
+    "compileall": "PASS",
+    "git_diff_check": "PASS",
+    "schema_migration_v3_to_v4_test": "PASS",
+    "immutable_ledger_tests": "PASS"
+  },
+  "production_snapshot_read_only": {
+    "market_db_schema_version": 3,
+    "candles_at_final_check": 778,
+    "candle_revisions": 0,
+    "backfill_checkpoints": 0,
+    "integrity_check": "ok",
+    "m1_csv_last_row_utc": "2026-11-19T22:14:00Z",
+    "m5_csv_last_row_utc": "2026-11-19T22:10:00Z",
+    "monitor_processes_present": [
+      10128,
+      12440
+    ],
+    "operational_note": "Monitor processes were present, but rolling CSV timestamps were stale at final inspection; no restart was attempted."
+  },
+  "coverage_claim": "One-year historical coverage NOT VERIFIED; no broker history request was performed."
+}

@@ -1,0 +1,67 @@
+{
+  "acceptance": {
+    "all_registry_auto_fetch_false": true,
+    "compileall_passed": true,
+    "focused_regression_tests": 29,
+    "full_suite_passed": true,
+    "full_suite_tests": 681,
+    "git_diff_check_passed": true,
+    "offline_unit_tests": 10,
+    "production_result_matches_expected_insufficient_evidence": true,
+    "production_snapshot_checked": true
+  },
+  "data_plane": {
+    "enabled_product_count": 23,
+    "quality_eligible_product_count": 3,
+    "registered_source_count": 9,
+    "snapshot_sha256": "5952047c2e2e7772e5d3b7dba6ac6c7c5b18fbe80dd7cfcfb4606966f5795712",
+    "spot_archive_schema_version": 3,
+    "spot_archive_status": "PROVENANCE_UNAVAILABLE",
+    "status": "PARTIAL"
+  },
+  "generated_at_utc": "2026-11-20T02:24:11.795874Z",
+  "operational_boundaries": {
+    "database_migration_or_mutation": false,
+    "fusion_or_live_order_wiring": false,
+    "monitor_restart": false,
+    "network_requests": false,
+    "provider_activation": false,
+    "rag_mutation": false,
+    "risk_or_strategy_changes": false,
+    "trade_authority": "NONE"
+  },
+  "phase": "40",
+  "quantitative_assessment": {
+    "algorithm_version": "pit-quantitative-statistics-v1",
+    "as_of_utc": "2026-11-20T02:24:11.795874Z",
+    "decision_authority": "ASSESSMENT_ONLY",
+    "excluded_timeframes": {
+      "M1": "NO_QUALITY_ELIGIBLE_STREAM",
+      "M5": "NO_QUALITY_ELIGIBLE_STREAM"
+    },
+    "interpretation_limits": [
+      "Statistics describe the supplied historical sample; they are not forecasts or calibrated probabilities.",
+      "Historical VaR and expected shortfall are empirical sample summaries, not guarantees or forward risk limits.",
+      "Close-to-close drawdown is not an intrabar or executable trading drawdown.",
+      "M1 and M5 are overlapping, dependent views and must not be pooled as independent samples.",
+      "No strategy profitability, win rate, entry/exit quality, or execution performance is inferred.",
+      "Only strict system-knowledge point-in-time, quality-eligible, closed and versioned EURUSD spot candles are accepted."
+    ],
+    "order_execution": "DISABLED",
+    "read_mode": "STRICT_SYSTEM_KNOWLEDGE",
+    "reason_codes": [
+      "NO_QUALITY_ELIGIBLE_STREAM"
+    ],
+    "registry_sha256": "6f208211a94d7d9b57638880b2a52259e3efebafbd549015ee37c20aa737f699",
+    "report_type": "POINT_IN_TIME_QUANTITATIVE_STATISTICS",
+    "sample_policy": {
+      "lookback_bars": 250,
+      "minimum_bars": 60
+    },
+    "snapshot_sha256": "5952047c2e2e7772e5d3b7dba6ac6c7c5b18fbe80dd7cfcfb4606966f5795712",
+    "status": "INSUFFICIENT_EVIDENCE",
+    "timeframes": {},
+    "trade_authority": "NONE"
+  },
+  "title": "Statistical & Quantitative Intelligence"
+}

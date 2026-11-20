@@ -1,0 +1,53 @@
+{
+  "acceptance": {
+    "all_source_auto_fetch_false": true,
+    "attribution_applied_to_live_decisions": false,
+    "causal_or_feature_importance_claims_emitted": false,
+    "commit_merge": "NOT_PERFORMED",
+    "compileall_passed": true,
+    "focused_phase50_tests": 16,
+    "forecast_engines_modified": false,
+    "full_suite_passed": true,
+    "full_suite_tests": 805,
+    "git_diff_check_passed": true,
+    "monitors_restarted": false,
+    "production_attribution_metrics_emitted": false,
+    "production_blocker": "REPLAY_WINDOW_REQUIRED",
+    "production_database_mutated": false,
+    "production_replay_report_read_only": true,
+    "rag_mutated": false,
+    "report_json_validated": true,
+    "risk_settings_changed": false,
+    "vision_disabled": true
+  },
+  "accepted_completed_records": 0,
+  "by_horizon": {
+    "15M": {
+      "status": "BLOCKED_NO_VALID_REPLAY"
+    },
+    "1H": {
+      "status": "BLOCKED_NO_VALID_REPLAY"
+    },
+    "4H": {
+      "status": "BLOCKED_NO_VALID_REPLAY"
+    }
+  },
+  "decision_authority": "ASSESSMENT_ONLY",
+  "engine_version": "cross-domain-attribution-v1",
+  "order_execution": "DISABLED",
+  "phase": 50,
+  "production_preflight": {
+    "completed_production_replay_available": false,
+    "historical_domain_context_available": false,
+    "phase45_blocker": "REPLAY_WINDOW_REQUIRED",
+    "phase45_replay_status": "REPLAY_WINDOW_REQUIRED",
+    "production_attribution_metrics_emitted": false
+  },
+  "reason_codes": [
+    "REPLAY_NOT_COMPLETE"
+  ],
+  "replay_id": null,
+  "report_type": "EURUSD_CROSS_DOMAIN_ATTRIBUTION",
+  "status": "BLOCKED",
+  "trade_authority": "NONE"
+}

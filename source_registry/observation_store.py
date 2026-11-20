@@ -444,6 +444,67 @@ class PointInTimeObservationStore:
             ))
         return result
 
+    def get_revision_history(
+        self,
+        source_id: str,
+        product_id: str,
+        *,
+        as_of_utc: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return append-only versions for audit under optional strict as-of cutoff."""
+        return self.get_many_revision_history(
+            [(source_id, product_id)], as_of_utc=as_of_utc
+        ).get((source_id, product_id), [])
+
+    def get_many_revision_history(
+        self,
+        requests: list[tuple[str, str]],
+        *,
+        as_of_utc: datetime | None = None,
+    ) -> dict[tuple[str, str], list[dict[str, Any]]]:
+        """Read append-only versions for multiple products in one read-only query."""
+        if not isinstance(requests, (list, tuple)):
+            raise TypeError("requests must be a list or tuple of (source_id, product_id)")
+        pairs: list[tuple[str, str]] = []
+        for pair in requests:
+            if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                raise ValueError("each request must contain source_id and product_id")
+            source_id, product_id = pair
+            if not isinstance(source_id, str) or not source_id.strip():
+                raise ValueError("source_id must be non-empty")
+            if not isinstance(product_id, str) or not product_id.strip():
+                raise ValueError("product_id must be non-empty")
+            normalized = (source_id, product_id)
+            if normalized not in pairs:
+                pairs.append(normalized)
+        result = {pair: [] for pair in pairs}
+        if not pairs:
+            return result
+        pair_clause = " OR ".join("(source_id = ? AND product_id = ?)" for _ in pairs)
+        clauses = ["(" + pair_clause + ")"]
+        parameters: list[Any] = [value for pair in pairs for value in pair]
+        if as_of_utc is not None:
+            cutoff = _stamp(_utc(as_of_utc, "as_of_utc"))
+            clauses.extend(("retrieved_at_utc <= ?", "published_at_utc IS NOT NULL", "published_at_utc <= ?", "effective_at_utc <= ?"))
+            parameters.extend((cutoff, cutoff, cutoff))
+        query = "SELECT * FROM observations WHERE " + " AND ".join(clauses) + " ORDER BY source_id, product_id, observation_key, version, retrieved_at_utc"
+        connection = self._connect()
+        try:
+            rows = connection.execute(query, parameters).fetchall()
+        finally:
+            connection.close()
+        for row in rows:
+            pair = (row["source_id"], row["product_id"])
+            result[pair].append({
+                "source_id": row["source_id"], "product_id": row["product_id"],
+                "observation_key": row["observation_key"], "version": row["version"],
+                "effective_at_utc": row["effective_at_utc"], "published_at_utc": row["published_at_utc"],
+                "retrieved_at_utc": row["retrieved_at_utc"], "value": json.loads(row["value_json"]),
+                "unit": row["unit"], "source_record_id": row["source_record_id"],
+                "payload_sha256": row["payload_sha256"],
+            })
+        return result
+
     def count_observations(self) -> int:
         connection = self._connect()
         try:

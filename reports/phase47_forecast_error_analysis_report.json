@@ -1,0 +1,42 @@
+{
+  "acceptance": {
+    "commit_merge": "NOT_PERFORMED",
+    "no_live_forecast_or_decision_changes": true,
+    "production_error_metrics_emitted": false,
+    "production_replay_report_read_only": true,
+    "synthetic_fixtures_not_used_as_market_performance": true
+  },
+  "accepted_completed_forecasts": 0,
+  "by_horizon": {
+    "15M": {
+      "sample_count": 0,
+      "status": "NO_COMPLETED_OUTCOMES"
+    },
+    "1H": {
+      "sample_count": 0,
+      "status": "NO_COMPLETED_OUTCOMES"
+    },
+    "4H": {
+      "sample_count": 0,
+      "status": "NO_COMPLETED_OUTCOMES"
+    }
+  },
+  "decision_authority": "ASSESSMENT_ONLY",
+  "engine_version": "forecast-error-analysis-v1",
+  "minimum_samples": 30,
+  "order_execution": "DISABLED",
+  "phase": 47,
+  "production_preflight": {
+    "completed_production_replay_available": false,
+    "phase45_blocker": "REPLAY_WINDOW_REQUIRED",
+    "phase45_replay_status": "REPLAY_WINDOW_REQUIRED",
+    "production_error_metrics_emitted": false
+  },
+  "reason_codes": [
+    "REPLAY_NOT_COMPLETE"
+  ],
+  "replay_id": null,
+  "report_type": "EURUSD_FORECAST_ERROR_ANALYSIS",
+  "status": "BLOCKED",
+  "trade_authority": "NONE"
+}

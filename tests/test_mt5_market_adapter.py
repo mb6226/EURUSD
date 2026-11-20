@@ -138,6 +138,26 @@ class MT5MarketAdapterTests(unittest.TestCase):
         self.assertEqual(len(m5), 1)
         self.assertEqual(m1[0].close, Decimal("1.0805"))
 
+    def test_sync_records_source_provenance_and_unknown_price_basis_explicitly(self):
+        candle_time = self.now - timedelta(minutes=1)
+        self.connector.frames = {"M1": rates_frame(rate_row(candle_time))}
+        self.adapter.sync_latest(timeframes=("M1",))
+        with closing(sqlite3.connect(self.db_path)) as db:
+            run = db.execute(
+                "SELECT source_id, provenance_json FROM candle_ingestion_runs"
+            ).fetchone()
+            version = db.execute(
+                "SELECT source_id, observed_at_utc, as_of_utc FROM candle_versions"
+            ).fetchone()
+        self.assertEqual(run[0], "MT5_COPY_RATES")
+        import json
+        provenance = json.loads(run[1])
+        self.assertEqual(provenance["method"], "copy_rates_from_pos")
+        self.assertEqual(provenance["price_basis"]["price_basis"], "UNKNOWN")
+        self.assertEqual(provenance["bar_time_basis"], "UTC")
+        self.assertEqual(version[0], "MT5_COPY_RATES")
+        self.assertEqual(version[1], version[2])
+
     def test_current_candle_updates_then_becomes_available_when_closed(self):
         candle_time = datetime(2026, 11, 17, 12, 0, tzinfo=timezone.utc)
         self.connector.frames = {"M1": rates_frame(rate_row(candle_time))}
@@ -164,6 +184,11 @@ class MT5MarketAdapterTests(unittest.TestCase):
         )
         self.assertEqual(len(closed), 1)
         self.assertEqual(str(closed[0].close), "1.0807")
+        with closing(sqlite3.connect(self.db_path)) as db:
+            versions = db.execute(
+                "SELECT is_closed FROM candle_versions ORDER BY version_id"
+            ).fetchall()
+        self.assertEqual([row[0] for row in versions], [0, 0, 1])
 
     def test_second_timeframe_failure_does_not_store_first_timeframe(self):
         self.connector.frames = {

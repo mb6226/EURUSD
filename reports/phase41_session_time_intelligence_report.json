@@ -1,0 +1,137 @@
+{
+  "acceptance": {
+    "compileall_passed": true,
+    "focused_tests_passed": 26,
+    "full_suite_passed": true,
+    "full_suite_tests_passed": 693,
+    "git_diff_check_passed": true,
+    "no_database_mutation_or_migration": true,
+    "no_external_requests": true,
+    "no_fusion_wiring": true,
+    "no_monitor_restart": true,
+    "no_risk_or_order_changes": true,
+    "production_snapshot_checked_read_only": true,
+    "registry_source_auto_fetch_all_false": true,
+    "report_json_validated": true,
+    "sqlite_integrity": {
+      "eurusd_ai_monitor/data/market/market_data.sqlite": "ok",
+      "source_registry/operational/observations.sqlite": "ok",
+      "source_registry/operational/raw_snapshots.sqlite": "ok"
+    }
+  },
+  "active_reference_sessions": [
+    "SYDNEY",
+    "TOKYO"
+  ],
+  "active_session_overlaps": [
+    "SYDNEY_TOKYO"
+  ],
+  "algorithm_version": "session-time-intelligence-v1",
+  "as_of_utc": "2026-11-20T02:30:28.048082Z",
+  "calendar_day_utc": "2026-11-20",
+  "calendar_event_context": {
+    "date_only_events": 0,
+    "excluded_unverified_or_cancelled_events": 0,
+    "publication_and_retrieval_cutoff_enforced": true,
+    "status": "NO_VERIFIED_EVENTS",
+    "timed_events": []
+  },
+  "calendar_event_input": "NOT_CONNECTED_TO_STRICT_UNIFIED_SNAPSHOT",
+  "decision_authority": "CONTEXT_ONLY",
+  "excluded_timeframes": {
+    "M1": "NO_QUALITY_ELIGIBLE_STREAM",
+    "M5": "NO_QUALITY_ELIGIBLE_STREAM"
+  },
+  "historical_session_coverage": {},
+  "interpretation_limits": [
+    "Session labels describe local financial-centre clock windows, not exchange or broker open status.",
+    "Session bar counts describe data coverage only; they do not measure volatility, liquidity, returns, or profitability.",
+    "No intraday session edge is inferred from missing or insufficient spot history.",
+    "DST is handled by IANA timezone rules for each UTC instant; no fixed UTC offset is assumed.",
+    "Weekly FX open/close and holidays are broker- and instrument-specific and remain unknown without verified schedules.",
+    "Calendar events without an exact timezone-aware scheduled timestamp remain date-only and are not placed into intraday event windows."
+  ],
+  "london_new_york_overlap_active": false,
+  "order_execution": "DISABLED",
+  "overlap_label": null,
+  "policy": {
+    "broker_weekly_open_close": "UNKNOWN_UNLESS_BROKER_CALENDAR_IS_VERIFIED",
+    "date_only_events_are_not_assigned_intraday_times": true,
+    "dst_handling": "CONVERT_AWARE_UTC_INSTANT_TO_LOCAL_ZONE",
+    "no_forecast_or_trading_signal": true,
+    "no_lookahead": true,
+    "session_windows_are_reference_clock_windows": true,
+    "timezone_database": "IANA_ZONEINFO"
+  },
+  "production_coverage": {
+    "eligible_stream_count": 0,
+    "enabled_product_count": 23,
+    "legacy_candle_count": 1071,
+    "quality_eligible_product_count": 3,
+    "registered_source_count": 9,
+    "spot_archive_schema_version": 3,
+    "spot_archive_status": "PROVENANCE_UNAVAILABLE",
+    "stream_count": 2,
+    "versioned_candle_count": 0
+  },
+  "production_data_plane_status": "PARTIAL",
+  "read_mode": "STRICT_SYSTEM_KNOWLEDGE",
+  "reason_codes": [
+    "NO_QUALITY_ELIGIBLE_SPOT_HISTORY",
+    "ONE_OR_MORE_TIMEFRAMES_EXCLUDED"
+  ],
+  "registry_sha256": "6f208211a94d7d9b57638880b2a52259e3efebafbd549015ee37c20aa737f699",
+  "report_type": "POINT_IN_TIME_SESSION_TIME_INTELLIGENCE",
+  "safety": {
+    "database_mutated": false,
+    "fusion_wiring_changed": false,
+    "monitor_restarted": false,
+    "network_requests": false,
+    "orders_sent": false,
+    "registry_mutated": false,
+    "risk_settings_changed": false
+  },
+  "saturday_calendar_flag": false,
+  "session_clock_context": {
+    "LONDON": {
+      "dst_active": false,
+      "local_time": "2026-11-20T02:30:28.048082+00:00",
+      "timezone": "Europe/London",
+      "utc_offset": "+0000",
+      "window_end_local": "17:00:00",
+      "window_start_local": "08:00:00",
+      "within_reference_window": false
+    },
+    "NEW_YORK": {
+      "dst_active": false,
+      "local_time": "2026-11-19T21:30:28.048082-05:00",
+      "timezone": "America/New_York",
+      "utc_offset": "-0500",
+      "window_end_local": "17:00:00",
+      "window_start_local": "08:00:00",
+      "within_reference_window": false
+    },
+    "SYDNEY": {
+      "dst_active": true,
+      "local_time": "2026-11-20T13:30:28.048082+11:00",
+      "timezone": "Australia/Sydney",
+      "utc_offset": "+1100",
+      "window_end_local": "17:00:00",
+      "window_start_local": "08:00:00",
+      "within_reference_window": true
+    },
+    "TOKYO": {
+      "dst_active": false,
+      "local_time": "2026-11-20T11:30:28.048082+09:00",
+      "timezone": "Asia/Tokyo",
+      "utc_offset": "+0900",
+      "window_end_local": "18:00:00",
+      "window_start_local": "09:00:00",
+      "within_reference_window": true
+    }
+  },
+  "snapshot_sha256": "d040fb20455362ff2e67ab3b516f1977549d991c22d81b52aae6c89a311471dc",
+  "status": "INSUFFICIENT_EVIDENCE",
+  "trade_authority": "NONE",
+  "utc_weekday": "FRIDAY"
+}

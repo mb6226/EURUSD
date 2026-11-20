@@ -1,0 +1,287 @@
+{
+  "automatic_fetch": false,
+  "broker_server": "Headway-Real",
+  "end_utc": "2026-11-20T04:05:26Z",
+  "engine_version": "pit-forecast-replay-v1",
+  "evaluation_cutoff_utc": "2026-11-20T04:06:36Z",
+  "forecast_cutoff_count": 2,
+  "forecast_record_count": 6,
+  "horizon_metrics": {
+    "15M": {
+      "directional_accuracy": null,
+      "forecast_count": 2,
+      "mean_absolute_error_pips": null,
+      "mean_signed_error_pips": null,
+      "outcome_available_count": 0,
+      "probability_metrics": "NOT_AVAILABLE_NO_CALIBRATED_PROBABILITIES"
+    },
+    "1H": {
+      "directional_accuracy": null,
+      "forecast_count": 2,
+      "mean_absolute_error_pips": null,
+      "mean_signed_error_pips": null,
+      "outcome_available_count": 0,
+      "probability_metrics": "NOT_AVAILABLE_NO_CALIBRATED_PROBABILITIES"
+    },
+    "4H": {
+      "directional_accuracy": null,
+      "forecast_count": 2,
+      "mean_absolute_error_pips": null,
+      "mean_signed_error_pips": null,
+      "outcome_available_count": 0,
+      "probability_metrics": "NOT_AVAILABLE_NO_CALIBRATED_PROBABILITIES"
+    }
+  },
+  "integrity_policy": {
+    "forecast_inputs_filtered_by_observed_and_as_of_at_each_cutoff": true,
+    "future_outcomes_excluded_from_forecast_snapshot": true,
+    "later_revisions_never_rewrite_forecast_or_target_version": true,
+    "only_closed_candles_used": true,
+    "system_knowledge_replay_only": true,
+    "target_outcome_uses_first_closed_version_observed_after_target_close": true
+  },
+  "limitations": [
+    "This is historical system-knowledge replay, not public-information replay.",
+    "No central scenario report is backfilled or synthesized; historical scenario context is unavailable unless independently archived at each cutoff.",
+    "Directional and error metrics are descriptive; no profitability, calibration or trading performance is claimed.",
+    "Only strict versioned EURUSD M5 candle evidence is eligible."
+  ],
+  "outcome_available_count": 0,
+  "persisted_record_preview": [
+    {
+      "absolute_error_pips": null,
+      "actual_move_pips": null,
+      "anchor_close_price": 1.09617,
+      "anchor_open_time_utc": "2026-11-20T03:55:00.000000Z",
+      "anchor_version_id": "575",
+      "direction_hit": null,
+      "expected_move_pips": -2.55,
+      "forecast_cutoff_utc": "2026-11-20T04:01:25.468081Z",
+      "forecast_direction": "DOWN",
+      "forecast_id": "07ad08dc053ffc2d702b1a19b7c9089bd05a4675f04ac0e41893766e39f72de5",
+      "forecast_json": {
+        "calibrated_confidence": null,
+        "descriptive_band_1_sigma_pips": [
+          -5.41666,
+          0.31666
+        ],
+        "descriptive_band_2_sigma_pips": [
+          -8.28332,
+          3.18332
+        ],
+        "direction": "DOWN",
+        "expected_move_pips_baseline": -2.55,
+        "historical_dispersion_pips": 2.86666,
+        "horizon_bars": 3,
+        "horizon_minutes": 15,
+        "method": "RECENT_12_BAR_MEDIAN_RETURN_DRIFT_WITH_SQRT_TIME_HISTORICAL_DISPERSION",
+        "numeric_probability": null,
+        "scenario_alignment": "NOT_COMPARABLE",
+        "status": "AVAILABLE"
+      },
+      "forecast_status": "AVAILABLE",
+      "horizon": "15M",
+      "horizon_minutes": 15,
+      "outcome_direction": null,
+      "registry_sha256": null,
+      "replay_id": "e39ee748ab57ed51e435d4ff956e7bb92889eefa7a5a7dbe1964eb6cec75c8a6",
+      "scenario_context": "NOT_SUPPLIED_FOR_HISTORICAL_CUTOFF",
+      "signed_error_pips": null,
+      "snapshot_sha256": "4dda049d4aa467e43e2ed3db777419f58e01b3af70298eb50590218db3383426",
+      "target_close_price": null,
+      "target_close_time_utc": "2026-11-20T04:15:00Z",
+      "target_open_time_utc": "2026-11-20T04:10:00Z",
+      "target_version_id": null
+    },
+    {
+      "absolute_error_pips": null,
+      "actual_move_pips": null,
+      "anchor_close_price": 1.09617,
+      "anchor_open_time_utc": "2026-11-20T03:55:00.000000Z",
+      "anchor_version_id": "575",
+      "direction_hit": null,
+      "expected_move_pips": -10.2,
+      "forecast_cutoff_utc": "2026-11-20T04:01:25.468081Z",
+      "forecast_direction": "DOWN",
+      "forecast_id": "51f7769477c7749b323172aac161cd03670844af9b8bc2197d387cf64a79519d",
+      "forecast_json": {
+        "calibrated_confidence": null,
+        "descriptive_band_1_sigma_pips": [
+          -15.93332,
+          -4.46668
+        ],
+        "descriptive_band_2_sigma_pips": [
+          -21.66665,
+          1.26665
+        ],
+        "direction": "DOWN",
+        "expected_move_pips_baseline": -10.2,
+        "historical_dispersion_pips": 5.73332,
+        "horizon_bars": 12,
+        "horizon_minutes": 60,
+        "method": "RECENT_12_BAR_MEDIAN_RETURN_DRIFT_WITH_SQRT_TIME_HISTORICAL_DISPERSION",
+        "numeric_probability": null,
+        "scenario_alignment": "NOT_COMPARABLE",
+        "status": "AVAILABLE"
+      },
+      "forecast_status": "AVAILABLE",
+      "horizon": "1H",
+      "horizon_minutes": 60,
+      "outcome_direction": null,
+      "registry_sha256": null,
+      "replay_id": "e39ee748ab57ed51e435d4ff956e7bb92889eefa7a5a7dbe1964eb6cec75c8a6",
+      "scenario_context": "NOT_SUPPLIED_FOR_HISTORICAL_CUTOFF",
+      "signed_error_pips": null,
+      "snapshot_sha256": "4dda049d4aa467e43e2ed3db777419f58e01b3af70298eb50590218db3383426",
+      "target_close_price": null,
+      "target_close_time_utc": "2026-11-20T05:00:00Z",
+      "target_open_time_utc": "2026-11-20T04:55:00Z",
+      "target_version_id": null
+    },
+    {
+      "absolute_error_pips": null,
+      "actual_move_pips": null,
+      "anchor_close_price": 1.09617,
+      "anchor_open_time_utc": "2026-11-20T03:55:00.000000Z",
+      "anchor_version_id": "575",
+      "direction_hit": null,
+      "expected_move_pips": -40.8,
+      "forecast_cutoff_utc": "2026-11-20T04:01:25.468081Z",
+      "forecast_direction": "DOWN",
+      "forecast_id": "df18526455b15dc09d7f6d864c9494c38c7818b2ce3d1bbbcb0d47365bbf5ce8",
+      "forecast_json": {
+        "calibrated_confidence": null,
+        "descriptive_band_1_sigma_pips": [
+          -52.26665,
+          -29.33335
+        ],
+        "descriptive_band_2_sigma_pips": [
+          -63.73329,
+          -17.86671
+        ],
+        "direction": "DOWN",
+        "expected_move_pips_baseline": -40.8,
+        "historical_dispersion_pips": 11.46665,
+        "horizon_bars": 48,
+        "horizon_minutes": 240,
+        "method": "RECENT_12_BAR_MEDIAN_RETURN_DRIFT_WITH_SQRT_TIME_HISTORICAL_DISPERSION",
+        "numeric_probability": null,
+        "scenario_alignment": "NOT_COMPARABLE",
+        "status": "AVAILABLE"
+      },
+      "forecast_status": "AVAILABLE",
+      "horizon": "4H",
+      "horizon_minutes": 240,
+      "outcome_direction": null,
+      "registry_sha256": null,
+      "replay_id": "e39ee748ab57ed51e435d4ff956e7bb92889eefa7a5a7dbe1964eb6cec75c8a6",
+      "scenario_context": "NOT_SUPPLIED_FOR_HISTORICAL_CUTOFF",
+      "signed_error_pips": null,
+      "snapshot_sha256": "4dda049d4aa467e43e2ed3db777419f58e01b3af70298eb50590218db3383426",
+      "target_close_price": null,
+      "target_close_time_utc": "2026-11-20T08:00:00Z",
+      "target_open_time_utc": "2026-11-20T07:55:00Z",
+      "target_version_id": null
+    },
+    {
+      "absolute_error_pips": null,
+      "actual_move_pips": null,
+      "anchor_close_price": 1.09624,
+      "anchor_open_time_utc": "2026-11-20T04:00:00.000000Z",
+      "anchor_version_id": "718",
+      "direction_hit": null,
+      "expected_move_pips": -2.55,
+      "forecast_cutoff_utc": "2026-11-20T04:05:00.814866Z",
+      "forecast_direction": "DOWN",
+      "forecast_id": "813e83d943f75a3a22b146f8c5df85a4339d4150705551d096a4193029a3a008",
+      "forecast_json": {
+        "calibrated_confidence": null,
+        "descriptive_band_1_sigma_pips": [
+          -5.39092,
+          0.29092
+        ],
+        "descriptive_band_2_sigma_pips": [
+          -8.23183,
+          3.13183
+        ],
+        "direction": "DOWN",
+        "expected_move_pips_baseline": -2.55,
+        "historical_dispersion_pips": 2.84092,
+        "horizon_bars": 3,
+        "horizon_minutes": 15,
+        "method": "RECENT_12_BAR_MEDIAN_RETURN_DRIFT_WITH_SQRT_TIME_HISTORICAL_DISPERSION",
+        "numeric_probability": null,
+        "scenario_alignment": "NOT_COMPARABLE",
+        "status": "AVAILABLE"
+      },
+      "forecast_status": "AVAILABLE",
+      "horizon": "15M",
+      "horizon_minutes": 15,
+      "outcome_direction": null,
+      "registry_sha256": null,
+      "replay_id": "e39ee748ab57ed51e435d4ff956e7bb92889eefa7a5a7dbe1964eb6cec75c8a6",
+      "scenario_context": "NOT_SUPPLIED_FOR_HISTORICAL_CUTOFF",
+      "signed_error_pips": null,
+      "snapshot_sha256": "cf627ebbe8a9485d59e751b80c8898a2d5dd2ee1aff5146ce5e1794370d4ef03",
+      "target_close_price": null,
+      "target_close_time_utc": "2026-11-20T04:20:00Z",
+      "target_open_time_utc": "2026-11-20T04:15:00Z",
+      "target_version_id": null
+    },
+    {
+      "absolute_error_pips": null,
+      "actual_move_pips": null,
+      "anchor_close_price": 1.09624,
+      "anchor_open_time_utc": "2026-11-20T04:00:00.000000Z",
+      "anchor_version_id": "718",
+      "direction_hit": null,
+      "expected_move_pips": -10.2,
+      "forecast_cutoff_utc": "2026-11-20T04:05:00.814866Z",
+      "forecast_direction": "DOWN",
+      "forecast_id": "28356bfd05039f695c2c2fc3453b588432ca14f70c438dc1fb7c30a18a11bf2f",
+      "forecast_json": {
+        "calibrated_confidence": null,
+        "descriptive_band_1_sigma_pips": [
+          -15.88183,
+          -4.51817
+        ],
+        "descriptive_band_2_sigma_pips": [
+          -21.56366,
+          1.16366
+        ],
+        "direction": "DOWN",
+        "expected_move_pips_baseline": -10.2,
+        "historical_dispersion_pips": 5.68183,
+        "horizon_bars": 12,
+        "horizon_minutes": 60,
+        "method": "RECENT_12_BAR_MEDIAN_RETURN_DRIFT_WITH_SQRT_TIME_HISTORICAL_DISPERSION",
+        "numeric_probability": null,
+        "scenario_alignment": "NOT_COMPARABLE",
+        "status": "AVAILABLE"
+      },
+      "forecast_status": "AVAILABLE",
+      "horizon": "1H",
+      "horizon_minutes": 60,
+      "outcome_direction": null,
+      "registry_sha256": null,
+      "replay_id": "e39ee748ab57ed51e435d4ff956e7bb92889eefa7a5a7dbe1964eb6cec75c8a6",
+      "scenario_context": "NOT_SUPPLIED_FOR_HISTORICAL_CUTOFF",
+      "signed_error_pips": null,
+      "snapshot_sha256": "cf627ebbe8a9485d59e751b80c8898a2d5dd2ee1aff5146ce5e1794370d4ef03",
+      "target_close_price": null,
+      "target_close_time_utc": "2026-11-20T05:05:00Z",
+      "target_open_time_utc": "2026-11-20T05:00:00Z",
+      "target_version_id": null
+    }
+  ],
+  "phase": 45,
+  "production_database_mutated": false,
+  "replay_id": "e39ee748ab57ed51e435d4ff956e7bb92889eefa7a5a7dbe1964eb6cec75c8a6",
+  "report_type": "EURUSD_POINT_IN_TIME_FORECAST_REPLAY",
+  "skipped_cutoff_reasons": {},
+  "source_history_sha256": "56c87b4412613da559db7fed0d6a740de6562cfa99a1faea65ad97bd89bb40cf",
+  "start_utc": "2026-11-20T04:01:25Z",
+  "status": "COMPLETE",
+  "symbol": "EURUSD",
+  "timeframe": "M5"
+}

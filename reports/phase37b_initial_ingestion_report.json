@@ -1,0 +1,94 @@
+{
+  "phase": "37B",
+  "title": "Official Provider Adapters & First Historical Ingestion",
+  "completed_at_utc": "2026-11-19T21:44:11.208789+00:00",
+  "providers": {
+    "BLS_CPI": {
+      "source_id": "US_BLS_MACRO",
+      "product_id": "US_CPI_ALL_ITEMS_INDEX",
+      "series_id": "CUUR0000SA0",
+      "status": "RAW_API_SNAPSHOT_ONLY",
+      "api_payload_archived": true,
+      "release_calendar_fetch": "HTTP_403_FORBIDDEN",
+      "pit_observations_persisted": 0,
+      "reason": "Original release archive and schedule could not be retrieved from the local environment; publication timestamps and as-released values were not guessed."
+    },
+    "CFTC_TFF_EURO_FX": {
+      "source_id": "CFTC_TFF_POSITIONING",
+      "dataset_id": "gpe5-46if",
+      "contract_market_code": "099741",
+      "report_rows": 51,
+      "report_date_start": "2025-11-25",
+      "report_date_end": "2026-11-10",
+      "regular_2026_release_dates_parsed": 52,
+      "special_announcement_mappings_parsed": 17,
+      "report_dates_with_verified_publication_time": 51,
+      "publication_timestamp_start_utc": "2025-12-15T20:30:00+00:00",
+      "publication_timestamp_end_utc": "2026-11-16T20:30:00+00:00",
+      "release_time_basis": "15:30 America/New_York from official CFTC release information",
+      "products": {
+        "EURO_FX_DEALER_NET_OI_PCT": {
+          "observations_received": 51,
+          "observations_inserted": 51,
+          "observations_unchanged": 0,
+          "observations_revised": 0
+        },
+        "EURO_FX_ASSET_MANAGER_NET_OI_PCT": {
+          "observations_received": 51,
+          "observations_inserted": 51,
+          "observations_unchanged": 0,
+          "observations_revised": 0
+        },
+        "EURO_FX_LEVERAGED_MONEY_NET_OI_PCT": {
+          "observations_received": 51,
+          "observations_inserted": 51,
+          "observations_unchanged": 0,
+          "observations_revised": 0
+        }
+      },
+      "pit_observations_persisted": 153
+    }
+  },
+  "storage": {
+    "raw_archive": {
+      "path": "source_registry/operational/raw_snapshots.sqlite",
+      "snapshots": 30,
+      "payload_bytes": 3013170,
+      "append_only": true
+    },
+    "observation_store": {
+      "path": "source_registry/operational/observations.sqlite",
+      "observations": 153,
+      "strict_retrieval_time_cutoff_preserved": true
+    }
+  },
+  "point_in_time_semantics": {
+    "system_knowledge_as_of_after_local_retrieval": {
+      "EURO_FX_DEALER_NET_OI_PCT": 51,
+      "EURO_FX_ASSET_MANAGER_NET_OI_PCT": 51,
+      "EURO_FX_LEVERAGED_MONEY_NET_OI_PCT": 51
+    },
+    "system_knowledge_as_of_before_local_retrieval": {
+      "EURO_FX_DEALER_NET_OI_PCT": 0,
+      "EURO_FX_ASSET_MANAGER_NET_OI_PCT": 0,
+      "EURO_FX_LEVERAGED_MONEY_NET_OI_PCT": 0
+    },
+    "public_source_availability_replay": "NOT_YET_IMPLEMENTED",
+    "warning": "Do not bypass retrieved_at_utc filtering. A separately attested public-source-availability mode is required for historical replay of backfilled observations."
+  },
+  "acceptance": {
+    "provider_focused_tests": 10,
+    "phase37_acquisition_and_provider_tests": 23,
+    "full_repository_tests": 614,
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "safety": {
+    "registry_auto_fetch_enabled": false,
+    "monitor_restarted": false,
+    "vision_enabled": false,
+    "live_trading_or_order_execution": false,
+    "risk_settings_changed": false,
+    "rag_database_mutated": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "automatic_fetch": false,
+  "engine_version": "pit-forecast-replay-v1",
+  "market_archive_metadata": {
+    "legacy_candle_count": 1186,
+    "read_only": true,
+    "schema_version": 4,
+    "streams": [
+      {
+        "broker_server": "Headway-Real",
+        "symbol": "EURUSD",
+        "timeframe": "M1"
+      },
+      {
+        "broker_server": "Headway-Real",
+        "symbol": "EURUSD",
+        "timeframe": "M5"
+      }
+    ],
+    "version_ledger_available": true,
+    "versioned_candle_count": 754
+  },
+  "persisted_record_preview": [],
+  "phase": 45,
+  "production_database_mutated": false,
+  "report_type": "EURUSD_POINT_IN_TIME_FORECAST_REPLAY",
+  "status": "REPLAY_WINDOW_REQUIRED"
+}

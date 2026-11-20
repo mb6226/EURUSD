@@ -254,10 +254,30 @@
       },
       "products": [
         {
-          "product_id": "US_10Y_TREASURY_YIELD",
-          "measure": "US 10-year Treasury constant maturity yield",
+          "product_id": "BRENT_CRUDE_OIL_PRICE",
+          "measure": "Europe Brent crude oil spot price reference",
           "data_type": "TIME_SERIES",
-          "unit": "percent_per_annum",
+          "unit": "usd_per_barrel",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "EURUSD_DAILY_REFERENCE_RATE",
+          "measure": "Federal Reserve H.10 daily USD per EUR reference rate (not executable spot)",
+          "data_type": "TIME_SERIES",
+          "unit": "usd_per_eur",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "SP500_INDEX",
+          "measure": "S&P 500 reference index",
+          "data_type": "TIME_SERIES",
+          "unit": "index_points",
           "observation_frequency": "DAILY",
           "effective_date_field": "observed_at_utc",
           "publication_time_field": "published_at_utc",
@@ -274,10 +294,50 @@
           "value_kind": "SCALAR"
         },
         {
-          "product_id": "SP500_INDEX",
-          "measure": "S&P 500 reference index",
+          "product_id": "US_10Y_REAL_TREASURY_YIELD",
+          "measure": "US 10-year inflation-indexed Treasury real yield",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "US_10Y_TREASURY_YIELD",
+          "measure": "US 10-year Treasury constant maturity yield",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "US_2Y_TREASURY_YIELD",
+          "measure": "US 2-year Treasury constant maturity yield",
+          "data_type": "TIME_SERIES",
+          "unit": "percent_per_annum",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "US_VIX_CLOSE",
+          "measure": "CBOE VIX daily close reference series",
           "data_type": "TIME_SERIES",
           "unit": "index_points",
+          "observation_frequency": "DAILY",
+          "effective_date_field": "observed_at_utc",
+          "publication_time_field": "published_at_utc",
+          "value_kind": "SCALAR"
+        },
+        {
+          "product_id": "WTI_CRUDE_OIL_PRICE",
+          "measure": "WTI Cushing crude oil spot price reference",
+          "data_type": "TIME_SERIES",
+          "unit": "usd_per_barrel",
           "observation_frequency": "DAILY",
           "effective_date_field": "observed_at_utc",
           "publication_time_field": "published_at_utc",
