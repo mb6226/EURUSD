@@ -1,0 +1,102 @@
+{
+  "report_type": "HEADWAY_MT5_CSV_HISTORY_IMPORT",
+  "status": "COMPLETE",
+  "observed_at_utc": "2026-11-20T05:11:28.740391+00:00",
+  "broker_server": "Headway-Real",
+  "symbol": "EURUSD",
+  "backup": "C:\\Users\\mahdi\\Downloads\\EURUSD-AI-Intelligent-Market-Brain\\eurusd_ai_monitor\\data\\market\\market_data.sqlite.pre-csv-import-20261120T071200Z.bak",
+  "backup_integrity": "ok",
+  "market_archive_integrity": "ok",
+  "import_policy": "Missing-only, append-only version ledger; no overwrite of existing candles.",
+  "source_files": {
+    "M1": {
+      "source_rows": 100398,
+      "inserted_missing": 397,
+      "overlap_matching": 100000,
+      "overlap_conflicting_preserved": [
+        {
+          "time": "2026-11-20T06:55:00.000000Z",
+          "csv": [
+            "1.09765",
+            "1.09767",
+            "1.09764",
+            "1.09767",
+            7,
+            7,
+            0
+          ],
+          "archive": [
+            "1.09765",
+            "1.09770",
+            "1.09764",
+            "1.09769",
+            18,
+            7,
+            0
+          ]
+        }
+      ],
+      "store_result": {
+        "inserted": 397,
+        "updated": 0,
+        "unchanged": 0,
+        "revisions_recorded": 0,
+        "duplicates_ignored": 0
+      },
+      "first": "2026-08-13T17:31:00+00:00",
+      "last": "2026-11-20T06:55:00+00:00",
+      "sha256": "f6d2fccce61988b9f1e8db282c2411f8d384aa10586e08126f424b27b7452cf1"
+    },
+    "M5": {
+      "source_rows": 74406,
+      "inserted_missing": 0,
+      "overlap_matching": 74405,
+      "overlap_conflicting_preserved": [
+        {
+          "time": "2026-11-20T06:55:00.000000Z",
+          "csv": [
+            "1.09765",
+            "1.09770",
+            "1.09764",
+            "1.09768",
+            22,
+            7,
+            0
+          ],
+          "archive": [
+            "1.09765",
+            "1.09789",
+            "1.09764",
+            "1.09789",
+            88,
+            7,
+            0
+          ]
+        }
+      ],
+      "store_result": null,
+      "first": "2025-11-20T00:05:00+00:00",
+      "last": "2026-11-20T06:55:00+00:00",
+      "sha256": "e6070197b6482508666e31e1dbb2011b8560736fcd7efbde88666f1fb30848f5"
+    }
+  },
+  "archive_candle_counts": {
+    "M1": 100414,
+    "M5": 100003
+  },
+  "candle_version_count": 202165,
+  "ingestion_run_count": 1819,
+  "safety": {
+    "monitor_not_stopped": true,
+    "live_orders": false,
+    "risk_settings_changed": false,
+    "provider_auto_fetch_changed": false,
+    "rag_mutated": false
+  },
+  "notes": [
+    "CSV timestamps matched overlapping Headway MT5 Python copy_rates timestamps at identical bar times; UTC basis retained.",
+    "Existing current-bar discrepancies were preserved and not overwritten.",
+    "M5 CSV was fully represented in archive; no M5 rows were imported.",
+    "The Windows file modification clock differed from MT5/Python UTC clock; file mtime was not used as historical observation time."
+  ]
+}
