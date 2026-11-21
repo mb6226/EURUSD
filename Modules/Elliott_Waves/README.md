@@ -73,3 +73,14 @@ required before promotion.
 ## Stage 9 — Expert-label calibration and validation
 
 Run `py -3 scripts\run_stage9_expert_validation.py` to audit expert reviews, require agreement from two distinct reviewers, and perform chronological score calibration only after minimum sample gates are met. The local Chart Lab at `http://127.0.0.1:8765` now records reviewer ID, self-declared role, qualification statement and independent-review confirmation. Self-declared credentials are not verified automatically. OCR and approximate chart mappings are never ground truth. See `Modules\Elliott_Waves\Dataset\STAGE9_EXPERT_REVIEW.md`.
+
+
+## Research-engine integration
+
+The Detection package now includes an independent ATR-reversal pivot detector and raw wave-structure measurement API:
+
+- `detect_atr_pivots(candles, atr_period=14, atr_multiplier=1.5, min_bars=2)` provides an alternative to fixed-pip directional-change pivots.
+- `wilder_atr(candles, period=14)` exposes the causal ATR series used by that detector.
+- `measure_wave_structure(pivots)` reports impulse / ABC leg sizes, actual retracement and extension ratios, durations, and hard-rule diagnostics without forcing Fibonacci cutoffs.
+
+These are research alternatives, not replacements for the existing Stage-1 engine. See `Detection/RESEARCH_INTEGRATION.md` for the third-party audit and licensing decisions. Run `py -3 -m pytest -q` before using the branch.

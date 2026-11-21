@@ -19,7 +19,7 @@ Implemented:
 - optional provisional latest pivot;
 - rolling impulse (1-2-3-4-5) candidate generation;
 - basic ABC correction and flat-like candidate generation;
-- hard-rule checks, heuristic ranking and human-readable reasons;
+- hard-rule checks, heuristic ranking and human-readable reasons;\n- alternative causal ATR-reversal pivots and raw impulse / ABC measurements (research-only);
 - JSON reports for M5, M15, H1, H4 and D1.
 
 Run the multi-timeframe Stage-1 analysis from the project root:
