@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "max_articles_per_source": 12,
+  "max_images_per_article": 2,
+  "request_timeout_seconds": 20,
+  "user_agent": "EURUSD-AI-ResearchCollector/0.1 (local personal research)",
+  "sources": [
+    {
+      "id": "elliottwaveinsight_forex",
+      "name": "Elliott Wave Insight - Forex",
+      "listing_url": "https://elliottwaveinsight.com/category/market-analysis/forex/",
+      "allowed_domain": "elliottwaveinsight.com",
+      "image_allowed_domains": [
+        "elliottwaveinsight.com"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "ew_strategy_free",
+      "name": "EW Strategy - Free Charts",
+      "listing_url": "https://ew-strategy.com/free-charts",
+      "allowed_domain": "ew-strategy.com",
+      "image_allowed_domains": [
+        "ew-strategy.com",
+        "tradingview.com"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "fxstreet_eurusd",
+      "name": "FXStreet - EURUSD analysis",
+      "listing_url": "https://www.fxstreet.com/analysis/latest?Tags=EURUSD",
+      "allowed_domain": "fxstreet.com",
+      "image_allowed_domains": [
+        "fxstreet.com",
+        "fxsstatic.com"
+      ],
+      "enabled": true
+    }
+  ]
+}

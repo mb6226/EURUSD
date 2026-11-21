@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eurusd-modular-ai"
+version = "0.1.0"
+description = "Modular EURUSD market research and machine-learning framework"
+requires-python = ">=3.10"
+dependencies = ["tzdata>=2024.1"]
+
+[project.optional-dependencies]
+ml = ["scikit-learn>=1.4", "joblib>=1.3"]
+dev = ["pytest>=8"]
+image-ocr = ["pillow>=10", "rapidocr-onnxruntime>=1.2"]
+
+[project.scripts]
+eurusd-ai = "eurusd_ai.cli:main"
+
+[tool.setuptools]
+packages = [
+  "eurusd_ai", "eurusd_ai.modules", "eurusd_ai.modules.elliott_waves",
+  "Modules", "Modules.Elliott_Waves", "Modules.Elliott_Waves.Detection",
+  "Modules.Elliott_Waves.Training", "Modules.Elliott_Waves.Data",
+  "Modules.Elliott_Waves.Dataset", "Modules.Elliott_Waves.Models",
+  "Modules.Elliott_Waves.Evaluation", "Modules.Elliott_Waves.Research_Collector"
+]
+package-dir = {"" = "src", "Modules" = "Modules"}

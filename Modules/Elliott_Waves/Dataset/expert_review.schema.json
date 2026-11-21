@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EURUSD Elliott Expert Review",
+  "type": "object",
+  "required": [
+    "candidate_id", "symbol", "timeframe", "verdict", "label",
+    "notes", "candidate", "reviewed_at", "reviewer_id",
+    "reviewer_role", "reviewer_qualification", "independent_review"
+  ],
+  "properties": {
+    "candidate_id": {"type": "string", "minLength": 3},
+    "symbol": {"const": "EURUSD"},
+    "timeframe": {"enum": ["M5", "M15", "H1", "H4", "D1"]},
+    "verdict": {"enum": ["accepted", "rejected", "needs_correction"]},
+    "label": {"enum": ["impulse", "zigzag", "flat", "triangle", "diagonal", "other"]},
+    "notes": {"type": "string"},
+    "candidate": {
+      "type": "object",
+      "required": ["score", "pivots"],
+      "properties": {
+        "score": {"type": "number"},
+        "pivots": {"type": "array", "minItems": 3}
+      }
+    },
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "reviewer_id": {"type": "string", "minLength": 2},
+    "reviewer_role": {"enum": ["expert", "non_expert"]},
+    "reviewer_qualification": {"type": "string"},
+    "independent_review": {"const": true}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"reviewer_role": {"const": "expert"}}},
+      "then": {"properties": {"reviewer_qualification": {"type": "string", "minLength": 12}}}
+    },
+    {
+      "if": {"properties": {"verdict": {"const": "needs_correction"}}},
+      "then": {"properties": {"notes": {"type": "string", "minLength": 10}}}
+    }
+  ],
+  "additionalProperties": true
+}

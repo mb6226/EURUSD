@@ -1,0 +1,40 @@
+__pycache__/
+data/.dukascopy-cache/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+Modules/Elliott_Waves/Models/*.joblib
+Modules/Elliott_Waves/Models/*.pkl
+artifacts/
+
+# Local secrets and runtime logs
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+
+data/.incremental-download/
+
+
+# Local market data and generated datasets
+data/
+*.jsonl
+*.joblib
+
+
+# Generated reports, model artifacts and chart-review outputs
+Modules/Elliott_Waves/Evaluation/
+!Modules/Elliott_Waves/Evaluation/__init__.py
+Modules/Elliott_Waves/Models/registry/
+Modules/Elliott_Waves/Dataset/external_references/chart_images/
+Modules/Elliott_Waves/Dataset/external_references/chart_review.html
+Modules/Elliott_Waves/Dataset/external_references/*report*.md
+Modules/Elliott_Waves/Dataset/external_references/latest_report.md
+Modules/Elliott_Waves/Dataset/generated/dataset_manifest.json
+Modules/Elliott_Waves/Training/stage3/training_metrics.json
+
